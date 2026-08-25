@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('production analytics never receive document or customer contents', async ({ page }) => {
+  test.setTimeout(60_000);
   test.skip(!process.env.PLAYWRIGHT_BASE_URL, 'Production analytics are enabled only in the deployed build');
 
   const requests: string[] = [];
@@ -36,8 +37,13 @@ test('production analytics never receive document or customer contents', async (
   await download;
   await page.getByLabel('Convert this document').selectOption('receipt');
   await page.getByRole('button', { name: 'Convert' }).click();
+  // GA4 batches events. Let the first page flush before navigation so the
+  // network transcript proves the allowlisted events and their payloads.
+  await expect.poll(() => requests.join('\n'), { timeout: 15_000 }).toContain('document_converted');
   await page.reload();
-  await page.waitForTimeout(3_000);
+  // The post-reload beacon intentionally waits when there is no interaction,
+  // preserving the performance budget on returning visits.
+  await expect.poll(() => requests.join('\n'), { timeout: 20_000 }).toContain('returning_workspace_loaded');
 
   const transcript = requests.join('\n');
   for (const value of sensitiveValues) {
