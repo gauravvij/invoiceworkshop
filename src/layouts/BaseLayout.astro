@@ -1,0 +1,109 @@
+---
+import '@/styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  noindex?: boolean;
+  schema?: Record<string, unknown> | Array<Record<string, unknown>>;
+}
+
+const { title, description, path, noindex = false, schema } = Astro.props;
+const canonical = new URL(path, Astro.site).toString();
+const gaId = import.meta.env.GA4_MEASUREMENT_ID || import.meta.env.PUBLIC_GA4_MEASUREMENT_ID;
+const defaultSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Invoice Workshop',
+  url: 'https://invoiceworkshop.com/',
+  description: 'Free business paperwork tools. No signup. Your business details stay saved in your browser.',
+};
+const schemas = [defaultSchema, ...(Array.isArray(schema) ? schema : schema ? [schema] : [])];
+---
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <meta name="theme-color" content="#17324d" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Invoice Workshop" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content="https://invoiceworkshop.com/og/invoice-workshop.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Invoice Workshop — free business paperwork tools" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://invoiceworkshop.com/og/invoice-workshop.png" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(schemas)} />
+    {gaId && <script is:inline define:vars={{ gaId }}>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', gaId, { allow_google_signals: false, send_page_view: true });
+      const loadAnalytics = () => {
+        if (document.querySelector('script[data-invoice-workshop-analytics]')) return;
+        const script = document.createElement('script');
+        script.async = true;
+        script.dataset.invoiceWorkshopAnalytics = 'true';
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
+        document.head.appendChild(script);
+      };
+      const interactionEvents = ['pointerdown', 'keydown'];
+      const loadAfterInteraction = () => {
+        loadAnalytics();
+        interactionEvents.forEach((event) => window.removeEventListener(event, loadAfterInteraction));
+      };
+      interactionEvents.forEach((event) => window.addEventListener(event, loadAfterInteraction, { once: true, passive: true }));
+      window.addEventListener('load', () => window.setTimeout(loadAnalytics, 8000), { once: true });
+    </script>}
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <header class="site-header no-print">
+      <div class="header-inner">
+        <a class="brand" href="/" aria-label="Invoice Workshop home">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#107166"/><path d="M12 9h12l5 5v17H12z" fill="#fff"/><path d="M24 9v6h5M16 20h9M16 24h9M16 28h6" fill="none" stroke="#107166" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Invoice Workshop</span>
+        </a>
+        <nav class="main-nav" aria-label="Primary navigation">
+          <a href="/">Invoice Generator</a>
+          <a href="/invoice-template/">Invoice Template</a>
+          <details class="nav-tools">
+            <summary>More tools</summary>
+            <div class="nav-menu">
+              <a href="/proforma-invoice-generator/">Proforma Invoice Generator</a>
+              <a href="/quotation-generator/">Quotation Generator</a>
+              <a href="/estimate-generator/">Estimate Generator</a>
+              <a href="/work-order-generator/">Work Order Generator</a>
+              <a href="/purchase-order-generator/">Purchase Order Generator</a>
+              <a href="/construction-invoice-template/">Construction Invoice</a>
+              <a href="/contractor-invoice-template/">Contractor Invoice</a>
+            </div>
+          </details>
+        </nav>
+      </div>
+    </header>
+    <main id="main-content"><slot /></main>
+    <footer class="site-footer no-print">
+      <div class="footer-inner">
+        <div class="footer-brand"><strong>Invoice Workshop</strong><p>Free business paperwork tools. No signup. Your business details stay saved in your browser.</p></div>
+        <div class="footer-links"><strong>Tools</strong><a href="/">Invoice Generator</a><a href="/quotation-generator/">Quotation Generator</a><a href="/estimate-generator/">Estimate Generator</a><a href="/work-order-generator/">Work Order Generator</a></div>
+        <div class="footer-links"><strong>Company</strong><a href="/about/">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/contact/">Contact</a></div>
+      </div>
+      <div class="footer-bottom">© {new Date().getFullYear()} Invoice Workshop. Document tools are provided for general business use and are not legal or tax advice.</div>
+    </footer>
+  </body>
+</html>

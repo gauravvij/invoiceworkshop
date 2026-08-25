@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "invoiceworkshop",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-25",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": true
+  },
+  "routes": [
+    {
+      "pattern": "invoiceworkshop.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.invoiceworkshop.com",
+      "custom_domain": true
+    }
+  ]
+}

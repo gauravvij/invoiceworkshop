@@ -1,0 +1,34 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import DocumentWorkspace from './workspace/DocumentWorkspace';
+import type { GeneratorContent } from '@/content/generators';
+
+interface Props { content: GeneratorContent }
+const { content } = Astro.props;
+const breadcrumb = content.path === '/' ? undefined : {
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Invoice Workshop', item: 'https://invoiceworkshop.com/' },
+    { '@type': 'ListItem', position: 2, name: content.h1, item: new URL(content.path, Astro.site).toString() },
+  ],
+};
+const software = {
+  '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: content.h1,
+  applicationCategory: 'BusinessApplication', operatingSystem: 'Web', url: new URL(content.path, Astro.site).toString(),
+  description: content.description, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  featureList: 'Browser-only document editing, local autosave, client-side PDF generation, no signup',
+};
+---
+<BaseLayout title={content.title} description={content.description} path={content.path} schema={breadcrumb ? [software, breadcrumb] : software}>
+  <section class="hero">
+    <p class="eyebrow">{content.eyebrow}</p>
+    <h1>{content.h1}</h1>
+    <p class="hero-intro">{content.intro}</p>
+    <p class="privacy-reassurance"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 8V6a4.5 4.5 0 0 1 9 0v2M4 8h12v9H4z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>{content.reassurance}</p>
+    <ul class="hero-features" aria-label="Key benefits"><li>Free to use</li><li>No account</li><li>Autosaves locally</li><li>Professional PDF</li></ul>
+  </section>
+  <DocumentWorkspace client:idle initialKind={content.kind} vertical={content.vertical} />
+  <div class="content-shell">
+    {content.sections.map((section) => <section class="content-section"><h2>{section.heading}</h2><div class="content-copy">{section.paragraphs.map((paragraph) => <p>{paragraph}</p>)}{section.bullets && <ul>{section.bullets.map((item) => <li>{item}</li>)}</ul>}</div></section>)}
+    <section class="related-tools content-section"><div class="related-heading"><h2>Related business tools</h2><p>Move from proposal to payment without retyping the details.</p></div><div class="related-grid">{content.related.map((item) => <a class="related-card" href={item.href}><strong>{item.label}</strong><span>{item.text}</span></a>)}</div></section>
+  </div>
+</BaseLayout>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#f4faf9"/><stop offset="1" stop-color="#e7f3f1"/></linearGradient><filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#17324d" flood-opacity=".16"/></filter></defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1070" cy="80" r="190" fill="#107166" opacity=".08"/><circle cx="80" cy="610" r="220" fill="#e8a43a" opacity=".10"/>
+  <g transform="translate(78 78)"><rect width="64" height="64" rx="15" fill="#107166"/><path d="M18 13h20l9 9v29H18z" fill="#fff"/><path d="M38 13v10h9M25 31h15M25 38h15M25 45h10" fill="none" stroke="#107166" stroke-width="3" stroke-linecap="round"/></g>
+  <text x="162" y="119" fill="#17324d" font-family="Inter,Arial,sans-serif" font-size="35" font-weight="750">Invoice Workshop</text>
+  <text x="78" y="242" fill="#17324d" font-family="Inter,Arial,sans-serif" font-size="68" font-weight="800">Free business paperwork.</text>
+  <text x="78" y="315" fill="#17324d" font-family="Inter,Arial,sans-serif" font-size="68" font-weight="800">No signup.</text>
+  <text x="80" y="383" fill="#4f687a" font-family="Inter,Arial,sans-serif" font-size="29">Create, save and convert professional documents</text>
+  <text x="80" y="424" fill="#4f687a" font-family="Inter,Arial,sans-serif" font-size="29">privately in your browser.</text>
+  <g filter="url(#shadow)" transform="translate(810 137) rotate(3)"><rect width="270" height="350" rx="8" fill="#fff"/><rect x="30" y="34" width="70" height="16" rx="4" fill="#107166"/><rect x="170" y="34" width="68" height="20" rx="3" fill="#17324d"/><rect x="30" y="92" width="94" height="7" rx="3" fill="#b9c8d2"/><rect x="30" y="109" width="70" height="7" rx="3" fill="#d2dde4"/><rect x="30" y="150" width="208" height="25" rx="3" fill="#17324d"/><g fill="#d9e3e8"><rect x="30" y="189" width="208" height="4"/><rect x="30" y="219" width="208" height="4"/><rect x="30" y="249" width="208" height="4"/></g><rect x="153" y="284" width="85" height="7" rx="3" fill="#b9c8d2"/><rect x="153" y="306" width="85" height="13" rx="3" fill="#107166"/></g>
+  <rect x="78" y="491" width="440" height="54" rx="27" fill="#107166"/><text x="298" y="526" text-anchor="middle" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">invoiceworkshop.com</text>
+</svg>

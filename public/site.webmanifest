@@ -1,0 +1,10 @@
+{
+  "name": "Invoice Workshop",
+  "short_name": "Invoice Workshop",
+  "description": "Free business paperwork tools. No signup. Saved in your browser.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#17324d",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

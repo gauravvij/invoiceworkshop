@@ -1,0 +1,14 @@
+.document-parties dt {
+  color: #586d7e;
+}
+
+.document-notes > small {
+  color: #5f7485;
+}
+
+.workspace-gate {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
