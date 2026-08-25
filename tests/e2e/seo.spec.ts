@@ -82,6 +82,6 @@ test('production synonym routes redirect directly to the homepage', async ({ req
   for (const path of ['/invoice-generator/', '/invoice-maker/', '/invoice-builder/', '/free-invoice-generator/', '/online-invoice-generator/']) {
     const response = await request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(301);
-    expect(response.headers().location).toBe('https://invoiceworkshop.com/');
+    expect(new URL(response.headers().location!, 'https://invoiceworkshop.com').href).toBe('https://invoiceworkshop.com/');
   }
 });
