@@ -57,7 +57,7 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 
 ## Post deployment
 
-- [ ] Enable Cloudflare Web Analytics.
+- [x] Enable Cloudflare Web Analytics with automatic beacon installation.
 - [x] Verify GA4 page views and privacy-safe product events.
 - [x] Record production launch timestamp and commit in `SEARCH_BASELINE.md`.
 - [ ] Record initial Search Console measurements when available.
