@@ -9,7 +9,7 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] `www` redirects to the canonical apex.
 - [x] Production certificate is valid.
 - [x] Worker name and `wrangler.jsonc` name are both `invoiceworkshop`.
-- [ ] GitHub deployment is connected and verified.
+- [x] GitHub deployment is connected and verified.
 - [ ] Non-production branch previews are verified.
 - [x] Non-canonical Worker hosts receive a noindex response header in Worker code.
 
@@ -42,7 +42,7 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] Type checks and production static build pass.
 - [x] Unit tests cover money, rounding, conversions, numbering and serialization.
 - [x] Browser flows, SEO and accessibility suites exist.
-- [ ] Chromium, Firefox, WebKit and mobile suites pass in CI.
+- [x] Chromium, Firefox, WebKit and mobile suites pass in CI.
 - [x] Lighthouse reports for four key pages meet launch budgets and are saved.
 - [ ] Manual PDF/logo/print inspection is complete in current Chrome, Edge, Safari and Firefox.
 

@@ -4,7 +4,9 @@ Launch timestamp: 2026-08-25 13:15 UTC
 
 Initial launch commit: `7a43a58`
 
-Cloudflare Worker version after edge redirect verification: `ea5aaa9c-18d0-4840-b5fe-b1a487073c95`
+First automated `main` deployment: 2026-08-25 13:29 UTC
+
+Cloudflare Worker version: `6a708e04-22f0-495d-a06f-845e048f8b5c`
 
 | Page | Primary query | Launch impressions | Launch clicks | Average position | Notes |
 |---|---|---:|---:|---:|---|
