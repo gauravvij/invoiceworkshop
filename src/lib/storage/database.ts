@@ -14,12 +14,6 @@ const DB_VERSION = 1;
 
 type StoreName = 'profiles' | 'clients' | 'catalog' | 'documents' | 'settings';
 
-const requestResult = <T>(request: IDBRequest<T>): Promise<T> =>
-  new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('The browser storage request failed.'));
-  });
-
 const openDatabase = (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) {
@@ -46,13 +40,13 @@ const withStore = async <T>(
   const database = await openDatabase();
   try {
     const transaction = database.transaction(name, mode);
-    const result = await requestResult(operation(transaction.objectStore(name)));
-    await new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve();
+    const request = operation(transaction.objectStore(name));
+    return await new Promise<T>((resolve, reject) => {
+      transaction.oncomplete = () => resolve(request.result);
       transaction.onerror = () => reject(transaction.error ?? new Error('Local storage transaction failed.'));
       transaction.onabort = () => reject(transaction.error ?? new Error('Local storage transaction was cancelled.'));
+      request.onerror = () => reject(request.error ?? new Error('The browser storage request failed.'));
     });
-    return result;
   } finally {
     database.close();
   }
@@ -63,13 +57,14 @@ const put = <T>(store: StoreName, value: T) => withStore<IDBValidKey>(store, 're
 const remove = (store: StoreName, id: string) => withStore<undefined>(store, 'readwrite', (objectStore) => objectStore.delete(id));
 
 export const loadWorkspace = async (): Promise<WorkspaceSnapshot> => {
-  const [profiles, clients, catalogItems, documents, settings] = await Promise.all([
-    getAll<BusinessProfile>('profiles'),
-    getAll<Client>('clients'),
-    getAll<CatalogItem>('catalog'),
-    getAll<DocumentRecord>('documents'),
-    getAll<NumberingSettings & { id: string }>('settings'),
-  ]);
+  // Open the stores in sequence so a brand-new database completes its upgrade
+  // before another connection is requested. Firefox is particularly strict
+  // about concurrent opens while an IndexedDB schema is being created.
+  const profiles = await getAll<BusinessProfile>('profiles');
+  const clients = await getAll<Client>('clients');
+  const catalogItems = await getAll<CatalogItem>('catalog');
+  const documents = await getAll<DocumentRecord>('documents');
+  const settings = await getAll<NumberingSettings & { id: string }>('settings');
   return {
     profile: profiles[0] ?? emptyBusiness(),
     clients,

@@ -201,15 +201,27 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
 
   const saveNow = async () => {
     setSaveState('saving');
+    const isNewDocument = !knownDocumentIds.current.has(document.id);
+    const nextSettings = isNewDocument && numbering
+      ? nextDocumentNumber(numbering, document.kind).settings
+      : numbering;
+    if (isNewDocument) knownDocumentIds.current.add(document.id);
     try {
-      await saveDocument({ ...document, updatedAt: new Date().toISOString() });
-      await saveBusinessProfile(document.business);
-      if (document.client.name.trim()) await saveClient({ ...document.client, updatedAt: new Date().toISOString() });
+      const stamped = { ...document, updatedAt: new Date().toISOString() };
+      await Promise.all([
+        saveDocument(stamped),
+        saveBusinessProfile(document.business),
+        document.client.name.trim() ? saveClient({ ...document.client, updatedAt: new Date().toISOString() }) : Promise.resolve(),
+        isNewDocument && nextSettings ? saveNumbering(nextSettings) : Promise.resolve(),
+      ]);
+      if (isNewDocument && nextSettings) setNumbering(nextSettings);
+      setDocuments((current) => [stamped, ...current.filter((item) => item.id !== stamped.id)]);
       setClients((current) => document.client.name.trim() ? [document.client, ...current.filter((item) => item.id !== document.client.id)] : current);
       setSaveState('saved');
       setMessage(`${documentLabels[document.kind]} saved locally.`);
       trackEvent('document_saved', { document_type: document.kind });
     } catch (error) {
+      if (isNewDocument) knownDocumentIds.current.delete(document.id);
       setSaveState('error');
       setMessage(error instanceof Error ? error.message : 'Could not save this document.');
     }
@@ -226,7 +238,11 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
 
   const duplicate = async () => {
     if (!numbering) return;
-    const allocated = nextDocumentNumber(numbering, document.kind);
+    const currentIsNew = !knownDocumentIds.current.has(document.id);
+    const availableSettings = currentIsNew
+      ? nextDocumentNumber(numbering, document.kind).settings
+      : numbering;
+    const allocated = nextDocumentNumber(availableSettings, document.kind);
     const now = new Date().toISOString();
     const copy = {
       ...structuredClone(document),
@@ -236,7 +252,12 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
       createdAt: now,
       updatedAt: now,
     };
-    await Promise.all([saveDocument(copy), saveNumbering(allocated.settings)]);
+    await Promise.all([
+      currentIsNew ? saveDocument(document) : Promise.resolve(),
+      saveDocument(copy),
+      saveNumbering(allocated.settings),
+    ]);
+    if (currentIsNew) knownDocumentIds.current.add(document.id);
     knownDocumentIds.current.add(copy.id);
     setNumbering(allocated.settings);
     setDocuments((current) => [copy, ...current]);
