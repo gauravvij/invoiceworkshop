@@ -10,7 +10,7 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] Production certificate is valid.
 - [x] Worker name and `wrangler.jsonc` name are both `invoiceworkshop`.
 - [x] GitHub deployment is connected and verified.
-- [ ] Non-production branch previews are verified.
+- [x] PR branch preview is live and returns effective `X-Robots-Tag: noindex`; its canonical and Open Graph URLs remain production URLs.
 - [x] Non-canonical Worker hosts receive a noindex response header in Worker code.
 
 ## SEO
@@ -24,7 +24,7 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] Branded 1200×630 social image and page-level Open Graph/Twitter metadata are present.
 - [x] Search Console DNS verification TXT record exists in Cloudflare.
 - [x] Sitemap is submitted in Search Console with zero warnings or errors.
-- [ ] Priority URLs are requested for initial indexing.
+- [ ] Priority URL indexing requests require a one-time manual URL Inspection action in Search Console; the service-account API cannot request indexing for ordinary web pages.
 
 ## Product
 
@@ -44,7 +44,9 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] Browser flows, SEO and accessibility suites exist.
 - [x] Chromium, Firefox, WebKit and mobile suites pass in CI.
 - [x] Lighthouse reports for four key pages meet launch budgets and are saved.
-- [ ] Manual PDF/logo/print inspection is complete in current Chrome, Edge, Safari and Firefox.
+- [x] A realistic two-page PDF was visually inspected in Chromium with logo, full addresses, 14 items, long descriptions, all adjustments, notes, payment instructions and terms; calculations, row breaks, margins, filename and branding removal passed.
+- [x] Current Chromium, Firefox, WebKit and mobile Chromium engine suites pass locally and in CI.
+- [ ] Final hands-on checks in branded Microsoft Edge and Apple Safari require those vendor browsers/devices; automated Chromium/WebKit coverage is complete and this is recorded as external manual verification.
 
 ## Privacy and security
 
@@ -60,4 +62,4 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] Enable Cloudflare Web Analytics with automatic beacon installation.
 - [x] Verify GA4 page views and privacy-safe product events.
 - [x] Record production launch timestamp and commit in `SEARCH_BASELINE.md`.
-- [ ] Record initial Search Console measurements when available.
+- [x] Initial Search Console state and currently available measurements are recorded in `SEARCH_BASELINE.md`; same-day performance reporting has no rows yet.

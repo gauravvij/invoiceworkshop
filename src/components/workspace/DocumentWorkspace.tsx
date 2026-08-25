@@ -46,7 +46,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
   const [clients, setClients] = useState<Client[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [saveState, setSaveState] = useState<SaveState>('loading');
-  const [message, setMessage] = useState('Loading your private workspace…');
+  const [message, setMessage] = useState('Loading your saved workspace…');
   const [interactive, setInteractive] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [conversionTarget, setConversionTarget] = useState<DocumentKind | ''>('');
@@ -290,7 +290,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
     try {
       const { downloadDocumentPdf } = await import('@/lib/documents/pdf');
       await downloadDocumentPdf(document);
-      setMessage('PDF downloaded. Your document data never left this device.');
+      setMessage('PDF downloaded. Your document was created on this device.');
       trackEvent('pdf_downloaded', { document_type: document.kind });
     } catch {
       setMessage('PDF creation failed. Try Print as a fallback.');
@@ -328,7 +328,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
       <fieldset className="workspace-gate" disabled={!interactive}>
       <div className="workspace-toolbar no-print">
         <div>
-          <strong>Your private workspace</strong>
+          <strong>Your local workspace</strong>
           <span className={`save-state save-state--${saveState}`} aria-live="polite">{message}</span>
         </div>
         <div className="toolbar-actions">
@@ -337,7 +337,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
           </button>
           <button type="button" className="button button--quiet" onClick={newDocument}>New</button>
           <button type="button" className="button button--quiet" onClick={saveNow}>Save now</button>
-          <button type="button" className="button button--primary" onClick={downloadPdf}>Download PDF</button>
+          <button type="button" className="button button--primary toolbar-download-cta" onClick={downloadPdf}>Download PDF</button>
         </div>
       </div>
 
@@ -413,7 +413,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
             )}
           </EditorSection>
 
-          <EditorSection title="Items" hint="Money is calculated using integer minor units to avoid floating-point errors.">
+          <EditorSection title="Items" hint="Totals, taxes and discounts are calculated automatically.">
             {catalog.length > 0 && (
               <label className="field catalog-picker">
                 <span>Add a saved product or service</span>
@@ -489,6 +489,10 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
 
         <DocumentPreview document={document} totals={totals} />
       </div>
+      <div className="mobile-output-bar no-print">
+        <span>Ready to finish?</span>
+        <button type="button" className="button button--primary" onClick={downloadPdf}>Download PDF</button>
+      </div>
       </fieldset>
     </section>
   );
@@ -554,12 +558,11 @@ function DocumentPreview({ document, totals }: { document: DocumentRecord; total
             <div className="grand-total"><span>Total</span><strong>{formatMoney(totals.totalMinor, document.currency)}</strong></div>
             {totals.depositMinor > 0 && <><div><span>Deposit paid</span><strong>−{formatMoney(totals.depositMinor, document.currency)}</strong></div><div className="balance-due"><span>Balance due</span><strong>{formatMoney(totals.balanceDueMinor, document.currency)}</strong></div></>}
           </div>
-          <footer className="document-notes">
+          {(document.notes || document.paymentInstructions || document.terms) && <footer className="document-notes">
             {document.notes && <div><strong>Notes</strong><p>{document.notes}</p></div>}
             {document.paymentInstructions && <div><strong>Payment instructions</strong><p>{document.paymentInstructions}</p></div>}
             {document.terms && <div><strong>Terms</strong><p>{document.terms}</p></div>}
-            <small>Created with InvoiceWorkshop.com · Private, browser-based document tools</small>
-          </footer>
+          </footer>}
         </article>
       </div>
     </aside>

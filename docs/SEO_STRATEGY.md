@@ -63,3 +63,9 @@ Track by page/query group:
 - movement from supporting wedges toward the homepage economic target.
 
 Record launch baselines in `docs/SEARCH_BASELINE.md`. Do not create new URLs merely because Search Console exposes close keyword variants; consolidate variants by intent first.
+
+## SEO Architecture Freeze
+
+After the pre-growth hardening deployment, keep the canonical URLs, main URL structure, homepage intent, H1 strategy, major title targeting, page set and sitemap architecture stable through the initial observation period. Do not add, rename or split indexable pages without Search Console/SERP evidence and an explicit SEO review.
+
+Do not react to daily ranking fluctuations or create pages from keyword-tool suggestions alone. New indexable pages require demonstrated search opportunity and a genuinely distinct product or user need.

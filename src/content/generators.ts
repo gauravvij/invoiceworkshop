@@ -20,11 +20,11 @@ export const generators: Record<string, GeneratorContent> = {
     description: 'Create a professional invoice for free with saved business details, customers, line items and instant PDF download. No signup required.',
     h1: 'Free Invoice Generator', eyebrow: 'Professional invoices without the admin',
     intro: 'Create professional invoices online for free. No signup required. Add your logo, items, taxes and payment details, then download a PDF instantly.',
-    reassurance: 'Your business and customer data stays in your browser.',
+    reassurance: 'Your business and customer details stay saved in this browser.',
     sections: [
       { heading: 'Create an invoice online', paragraphs: ['Start with the working editor above. Add your business and customer, list the products or services supplied, set tax and discounts, then review the live preview before downloading or printing. Your draft saves automatically on this device.'] },
       { heading: 'What should an invoice include?', paragraphs: ['A clear invoice normally identifies the seller and customer, uses a unique invoice number, states issue and due dates, itemizes the work or goods, and shows the currency, taxes, discounts and amount due. Payment instructions and concise terms help the customer understand what to do next.'], bullets: ['Seller and customer contact details', 'Unique invoice number and dates', 'Item descriptions, quantities and rates', 'Subtotal, discounts, tax and total', 'Payment instructions and terms'] },
-      { heading: 'No signup, but it remembers you', paragraphs: ['Invoice Workshop stores substantive workspace data in your browser using IndexedDB. Return on the same browser and device to reuse your business profile, customers and common items. Nothing is uploaded to an Invoice Workshop server in this version. Export a local backup whenever you want an extra copy.'] },
+      { heading: 'No signup, but it remembers you', paragraphs: ['Return on the same browser and device to reuse your business profile, customers, common items and drafts. Invoice Workshop does not upload your document contents. Export a local backup whenever you want an extra copy.'] },
       { heading: 'Invoice generator vs. invoice template', paragraphs: ['A static template gives you a layout to edit manually. This invoice maker calculates totals, maintains reusable records, previews the finished document and creates a PDF. It keeps the speed of a template while behaving more like persistent invoicing software—without an account.'] },
     ],
     related: [
@@ -39,7 +39,7 @@ export const generators: Record<string, GeneratorContent> = {
   },
   proforma: {
     path: '/proforma-invoice-generator/', kind: 'proforma', title: 'Free Proforma Invoice Generator | Invoice Workshop',
-    description: 'Create a free proforma invoice, save it privately in your browser and convert it into a final invoice when ready. No signup required.',
+    description: 'Create a free proforma invoice, save it in your browser and convert it into a final invoice when ready. No signup required.',
     h1: 'Free Proforma Invoice Generator', eyebrow: 'Set expectations before the final invoice',
     intro: 'Create a clear preliminary invoice with itemized costs, dates and terms, then download a polished PDF or convert it into a final invoice.',
     reassurance: 'Your proforma invoice and customer details stay on this device.',
@@ -68,7 +68,7 @@ export const generators: Record<string, GeneratorContent> = {
     description: 'Create a free professional work order with scope, jobsite, items and terms. Save locally and convert completed work into an invoice.',
     h1: 'Free Work Order Generator', eyebrow: 'Turn approved scope into actionable work',
     intro: 'Document the customer, jobsite, scope, materials, labor and dates in a clear work order, then convert completed work into an invoice.',
-    reassurance: 'Work orders autosave privately in your browser—no account needed.',
+    reassurance: 'Work orders stay saved in this browser—no account needed.',
     sections: [
       { heading: 'What is a work order?', paragraphs: ['A work order records work that is requested or authorized. It gives the person doing the work a practical reference for the customer, location, tasks, materials, pricing and timing. It can also help connect the original estimate to the final invoice.'] },
       { heading: 'Information to include', paragraphs: ['Use a unique work-order number and identify the customer and jobsite. Describe the scope in operational terms, itemize labor and materials when helpful, and record relevant dates, references, approvals and completion notes.'], bullets: ['Customer, project and jobsite', 'Requested work and deliverables', 'Labor, materials and quantities', 'Schedule and reference numbers', 'Terms, notes and completion status'] },
@@ -107,7 +107,7 @@ export const generators: Record<string, GeneratorContent> = {
     description: 'Create construction invoices with jobsite, labor, materials, deposits, progress notes and PDF download. Free and saved locally.',
     h1: 'Construction Invoice Template & Generator', eyebrow: 'Built for projects, labor and materials',
     intro: 'Create a genuine construction invoice with project and jobsite details, labor, materials, deposits, change-order references and progress notes.',
-    reassurance: 'Project and customer data stays in your browser.',
+    reassurance: 'Project and customer details stay in this browser.',
     sections: [
       { heading: 'Invoice construction work clearly', paragraphs: ['Construction billing benefits from visible project context. Record the jobsite and project, separate labor, materials and equipment into useful line items, and reference the estimate, contract or change order that supports the charge.'] },
       { heading: 'Construction-specific fields', paragraphs: ['Use the project fields above for site and progress information. Deposits reduce the displayed balance without changing the original invoice total. For progress billing, describe the stage or period being billed and keep supporting records with your project files.'], bullets: ['Project name and jobsite', 'Labor, materials and equipment', 'Deposit paid and balance due', 'Progress-billing note', 'Contract or change-order reference'] },
@@ -117,10 +117,10 @@ export const generators: Record<string, GeneratorContent> = {
   },
   contractor: {
     path: '/contractor-invoice-template/', kind: 'invoice', vertical: 'contractor', title: 'Free Contractor Invoice Template & Generator | Invoice Workshop',
-    description: 'Create a contractor invoice with job details, labor, materials, deposits, terms and instant PDF. Free, private and no signup.',
+    description: 'Create a contractor invoice with job details, labor, materials, deposits, terms and instant PDF. Free and saved locally, with no signup.',
     h1: 'Contractor Invoice Template & Generator', eyebrow: 'Practical billing for independent work',
     intro: 'Bill contract work with clear project details, services, materials, tax, deposits, payment instructions and a professional PDF.',
-    reassurance: 'Your contractor workspace is saved only on this device.',
+    reassurance: 'Your contractor details stay saved in this browser.',
     sections: [
       { heading: 'Create a contractor invoice', paragraphs: ['Identify the customer and job, describe what was delivered, and separate services, hours, materials or reimbursable costs so the invoice is easy to check. Add the agreed payment terms and a useful reference to the proposal or work order.'] },
       { heading: 'Useful contractor invoice details', paragraphs: ['The exact requirements depend on your work and location, but clear business details and an itemized scope help customers process payment. Use the deposit field for money already received and the notes for concise completion or change information.'], bullets: ['Contractor and customer details', 'Project, jobsite or reference', 'Hours, services and materials', 'Tax, deposit and balance due', 'Payment instructions and terms'] },
@@ -133,7 +133,7 @@ export const generators: Record<string, GeneratorContent> = {
     description: 'Use a free editable invoice template with automatic totals, local saving, live preview and professional PDF download. No signup.',
     h1: 'Free Editable Invoice Template', eyebrow: 'A reusable template that does the math',
     intro: 'Fill in this professional invoice template online, calculate totals automatically, reuse saved details and download a clean PDF.',
-    reassurance: 'The template saves in your browser, not on our servers.',
+    reassurance: 'The template saves on this device. Invoice Workshop does not upload document contents.',
     sections: [
       { heading: 'An invoice template you can reuse', paragraphs: ['Unlike a static word-processing file, this browser template handles line calculations, totals and currency formatting while retaining your business details and common contacts locally. Create a new numbered document whenever you need one.'] },
       { heading: 'How to fill in the template', paragraphs: ['Add accurate seller and customer details, choose dates and currency, itemize what was supplied, then check discounts, taxes, shipping and the final amount. Finish with payment instructions and terms that match your agreement.'], bullets: ['Add your logo and business identity', 'Enter customer and invoice details', 'Itemize products or services', 'Review calculations and preview', 'Save, print or download PDF'] },

@@ -1,4 +1,4 @@
-import { defaultNumbering, emptyBusiness } from '../documents/factory';
+import { createDocument, emptyAddress, emptyBusiness } from '../documents/factory';
 import { normalizeNumbering } from '../documents/numbering';
 import type {
   BusinessProfile,
@@ -9,10 +9,157 @@ import type {
   WorkspaceSnapshot,
 } from '../documents/types';
 
-const DB_NAME = 'invoice-workshop';
-const DB_VERSION = 1;
+export const DB_NAME = 'invoice-workshop';
+export const DB_VERSION = 2;
 
 type StoreName = 'profiles' | 'clients' | 'catalog' | 'documents' | 'settings';
+
+const documentKinds = new Set(['invoice', 'proforma', 'quotation', 'estimate', 'workOrder', 'purchaseOrder', 'receipt']);
+const documentStatuses = new Set(['draft', 'completed', 'paid']);
+const record = (value: unknown): Record<string, unknown> | undefined =>
+  value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+const text = (value: unknown, fallback = '') => typeof value === 'string' ? value : fallback;
+const amount = (value: unknown, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : fallback;
+
+const normalizeAddress = (value: unknown) => {
+  const source = record(value);
+  const fallback = emptyAddress();
+  return {
+    line1: text(source?.line1, fallback.line1),
+    line2: text(source?.line2, fallback.line2),
+    city: text(source?.city, fallback.city),
+    region: text(source?.region, fallback.region),
+    postalCode: text(source?.postalCode, fallback.postalCode),
+    country: text(source?.country, fallback.country),
+  };
+};
+
+const normalizeBusiness = (value: unknown): BusinessProfile => {
+  const source = record(value);
+  const fallback = emptyBusiness();
+  return {
+    ...fallback,
+    id: text(source?.id, fallback.id),
+    name: text(source?.name),
+    email: text(source?.email),
+    phone: text(source?.phone),
+    website: text(source?.website),
+    taxId: text(source?.taxId),
+    address: normalizeAddress(source?.address),
+    logoDataUrl: typeof source?.logoDataUrl === 'string' && source.logoDataUrl.startsWith('data:image/')
+      ? source.logoDataUrl
+      : undefined,
+    paymentInstructions: text(source?.paymentInstructions),
+    defaultCurrency: text(source?.defaultCurrency, fallback.defaultCurrency),
+    defaultTaxBps: amount(source?.defaultTaxBps, fallback.defaultTaxBps),
+    defaultTerms: text(source?.defaultTerms, fallback.defaultTerms),
+  };
+};
+
+const normalizeClient = (value: unknown): Client | undefined => {
+  const source = record(value);
+  const id = text(source?.id);
+  if (!source || !id) return undefined;
+  const now = new Date().toISOString();
+  return {
+    id,
+    name: text(source.name),
+    email: text(source.email),
+    phone: text(source.phone),
+    taxId: text(source.taxId),
+    address: normalizeAddress(source.address),
+    createdAt: text(source.createdAt, now),
+    updatedAt: text(source.updatedAt, now),
+  };
+};
+
+const normalizeCatalogItem = (value: unknown): CatalogItem | undefined => {
+  const source = record(value);
+  const id = text(source?.id);
+  if (!source || !id) return undefined;
+  const now = new Date().toISOString();
+  return {
+    id,
+    name: text(source.name),
+    description: text(source.description),
+    unitPriceMinor: amount(source.unitPriceMinor),
+    taxBps: amount(source.taxBps),
+    unit: text(source.unit, 'item'),
+    createdAt: text(source.createdAt, now),
+    updatedAt: text(source.updatedAt, now),
+  };
+};
+
+const normalizeDocument = (value: unknown): DocumentRecord | undefined => {
+  const source = record(value);
+  const id = text(source?.id);
+  const kind = text(source?.kind);
+  if (!source || !id || !documentKinds.has(kind)) return undefined;
+  const fallback = createDocument(kind as DocumentRecord['kind']);
+  const lines = Array.isArray(source.lineItems)
+    ? source.lineItems.flatMap((entry) => {
+      const line = record(entry);
+      if (!line) return [];
+      return [{
+        id: text(line.id, crypto.randomUUID()),
+        description: text(line.description),
+        quantity: text(line.quantity, '1'),
+        unit: text(line.unit, 'item'),
+        unitPriceMinor: amount(line.unitPriceMinor),
+        taxBps: amount(line.taxBps),
+        discountBps: amount(line.discountBps),
+      }];
+    })
+    : [];
+  return {
+    ...fallback,
+    id,
+    kind: kind as DocumentRecord['kind'],
+    status: documentStatuses.has(text(source.status)) ? text(source.status) as DocumentRecord['status'] : fallback.status,
+    number: text(source.number, fallback.number),
+    issueDate: text(source.issueDate, fallback.issueDate),
+    dueDate: text(source.dueDate, fallback.dueDate),
+    currency: text(source.currency, fallback.currency),
+    business: normalizeBusiness(source.business),
+    client: normalizeClient(source.client) ?? fallback.client,
+    lineItems: lines.length ? lines : fallback.lineItems,
+    shippingMinor: amount(source.shippingMinor),
+    adjustmentMinor: amount(source.adjustmentMinor),
+    notes: text(source.notes),
+    paymentInstructions: text(source.paymentInstructions),
+    terms: text(source.terms, fallback.terms),
+    projectName: text(source.projectName),
+    jobsite: text(source.jobsite),
+    reference: text(source.reference),
+    depositMinor: amount(source.depositMinor),
+    progressBillingNote: text(source.progressBillingNote),
+    convertedFrom: record(source.convertedFrom) as DocumentRecord['convertedFrom'] | undefined,
+    createdAt: text(source.createdAt, fallback.createdAt),
+    updatedAt: text(source.updatedAt, fallback.updatedAt),
+  };
+};
+
+export const normalizeWorkspaceRecords = (input: {
+  profiles?: unknown[];
+  clients?: unknown[];
+  catalogItems?: unknown[];
+  documents?: unknown[];
+  settings?: unknown[];
+}): WorkspaceSnapshot => {
+  const clients = (input.clients ?? []).flatMap((value) => normalizeClient(value) ?? []);
+  const catalogItems = (input.catalogItems ?? []).flatMap((value) => normalizeCatalogItem(value) ?? []);
+  const documents = (input.documents ?? [])
+    .flatMap((value) => normalizeDocument(value) ?? [])
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const numbering = record((input.settings ?? []).find((value) => record(value)?.id === 'numbering'));
+  return {
+    profile: normalizeBusiness(input.profiles?.[0]),
+    clients,
+    catalogItems,
+    documents,
+    numbering: normalizeNumbering(numbering),
+  };
+};
 
 const openDatabase = (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
@@ -22,12 +169,24 @@ const openDatabase = (): Promise<IDBDatabase> =>
     }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
-      const database = request.result;
-      for (const name of ['profiles', 'clients', 'catalog', 'documents', 'settings'] as StoreName[]) {
-        if (!database.objectStoreNames.contains(name)) database.createObjectStore(name, { keyPath: 'id' });
+      try {
+        const database = request.result;
+        for (const name of ['profiles', 'clients', 'catalog', 'documents', 'settings'] as StoreName[]) {
+          if (!database.objectStoreNames.contains(name)) database.createObjectStore(name, { keyPath: 'id' });
+        }
+        request.transaction?.objectStore('settings').put({
+          id: 'schema',
+          version: DB_VERSION,
+          migratedAt: new Date().toISOString(),
+        });
+      } catch {
+        request.transaction?.abort();
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error ?? new Error('Could not open local document storage.'));
     request.onblocked = () => reject(new Error('Close other Invoice Workshop tabs and try again.'));
   });
@@ -60,18 +219,12 @@ export const loadWorkspace = async (): Promise<WorkspaceSnapshot> => {
   // Open the stores in sequence so a brand-new database completes its upgrade
   // before another connection is requested. Firefox is particularly strict
   // about concurrent opens while an IndexedDB schema is being created.
-  const profiles = await getAll<BusinessProfile>('profiles');
-  const clients = await getAll<Client>('clients');
-  const catalogItems = await getAll<CatalogItem>('catalog');
-  const documents = await getAll<DocumentRecord>('documents');
-  const settings = await getAll<NumberingSettings & { id: string }>('settings');
-  return {
-    profile: profiles[0] ?? emptyBusiness(),
-    clients,
-    catalogItems,
-    documents: documents.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-    numbering: normalizeNumbering(settings.find((setting) => setting.id === 'numbering') ?? defaultNumbering()),
-  };
+  const profiles = await getAll<unknown>('profiles');
+  const clients = await getAll<unknown>('clients');
+  const catalogItems = await getAll<unknown>('catalog');
+  const documents = await getAll<unknown>('documents');
+  const settings = await getAll<unknown>('settings');
+  return normalizeWorkspaceRecords({ profiles, clients, catalogItems, documents, settings });
 };
 
 export const saveBusinessProfile = (profile: BusinessProfile) => put('profiles', profile);

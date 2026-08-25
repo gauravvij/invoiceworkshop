@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -7,8 +9,10 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
-  use: { baseURL: 'http://127.0.0.1:4321', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
-  webServer: { command: 'npx serve dist -l 4321', url: 'http://127.0.0.1:4321', reuseExistingServer: !process.env.CI, timeout: 120_000 },
+  use: { baseURL: externalBaseUrl ?? 'http://127.0.0.1:4321', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  webServer: externalBaseUrl
+    ? undefined
+    : { command: 'npx serve dist -l 4321', url: 'http://127.0.0.1:4321', reuseExistingServer: !process.env.CI, timeout: 120_000 },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

@@ -16,7 +16,16 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
 
   if (document.business.logoDataUrl) {
     try {
-      pdf.addImage(document.business.logoDataUrl, 'PNG', margin, 38, 110, 46, undefined, 'FAST');
+      const image = pdf.getImageProperties(document.business.logoDataUrl);
+      const scale = Math.min(110 / image.width, 46 / image.height);
+      const width = image.width * scale;
+      const height = image.height * scale;
+      const format = document.business.logoDataUrl.startsWith('data:image/jpeg')
+        ? 'JPEG'
+        : document.business.logoDataUrl.startsWith('data:image/webp')
+          ? 'WEBP'
+          : 'PNG';
+      pdf.addImage(document.business.logoDataUrl, format, margin, 38, width, height, undefined, 'FAST');
     } catch {
       // A malformed local logo should never prevent a PDF download.
     }
@@ -30,18 +39,21 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
   pdf.text(`# ${document.number}`, pageWidth - margin, 75, { align: 'right' });
 
   pdf.setFontSize(14);
-  pdf.text(document.business.name || 'Your business', margin, 112);
+  const businessName = pdf.splitTextToSize(document.business.name || 'Your business', 245) as string[];
+  pdf.text(businessName, margin, 112);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(muted);
   pdf.setFontSize(9);
   const businessLines = [
     document.business.address.line1,
+    document.business.address.line2,
     [document.business.address.city, document.business.address.region, document.business.address.postalCode].filter(Boolean).join(', '),
+    document.business.address.country,
     document.business.email,
     document.business.phone,
     document.business.taxId ? `Tax ID: ${document.business.taxId}` : '',
   ].filter(Boolean);
-  pdf.text(businessLines, margin, 130);
+  pdf.text(businessLines, margin, 130 + Math.max(0, businessName.length - 1) * 14);
 
   pdf.setTextColor(navy);
   pdf.setFont('helvetica', 'bold');
@@ -53,8 +65,12 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
     [
       document.client.name || 'Customer',
       document.client.address.line1,
+      document.client.address.line2,
       [document.client.address.city, document.client.address.region, document.client.address.postalCode].filter(Boolean).join(', '),
+      document.client.address.country,
       document.client.email,
+      document.client.phone,
+      document.client.taxId ? `Tax ID: ${document.client.taxId}` : '',
     ].filter(Boolean),
     margin,
     220,
@@ -81,16 +97,11 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
       ];
     }),
     theme: 'grid',
+    rowPageBreak: 'avoid',
     headStyles: { fillColor: navy, textColor: '#ffffff', fontStyle: 'bold' },
     styles: { font: 'helvetica', fontSize: 8, cellPadding: 7, lineColor: '#dbe3ea', lineWidth: 0.5 },
     columnStyles: { 0: { cellWidth: 190 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
     showHead: 'everyPage',
-    didDrawPage: () => {
-      pdf.setTextColor(muted);
-      pdf.setFontSize(8);
-      pdf.text('Generated privately in your browser with InvoiceWorkshop.com', margin, pdf.internal.pageSize.getHeight() - 26);
-      pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin, pdf.internal.pageSize.getHeight() - 26, { align: 'right' });
-    },
   });
 
   const finalY = (pdf as typeof pdf & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 400;
@@ -124,14 +135,28 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
     document.terms ? `Terms: ${document.terms}` : '',
   ].filter(Boolean).join('\n\n');
   if (footerText) {
-    if (y > pdf.internal.pageSize.getHeight() - 150) {
-      pdf.addPage();
-      y = 60;
-    }
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(muted);
     pdf.setFontSize(8);
-    pdf.text(pdf.splitTextToSize(footerText, pageWidth - margin * 2), margin, y + 15);
+    const lines = pdf.splitTextToSize(footerText, pageWidth - margin * 2) as string[];
+    y += 15;
+    for (const line of lines) {
+      if (y > pdf.internal.pageSize.getHeight() - 48) {
+        pdf.addPage();
+        y = 60;
+      }
+      pdf.text(line, margin, y);
+      y += 11;
+    }
+  }
+
+  const pageCount = pdf.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    pdf.setPage(page);
+    pdf.setTextColor(muted);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pdf.internal.pageSize.getHeight() - 26, { align: 'right' });
   }
 
   pdf.save(`${document.kind}-${safeFilename(document.number || 'draft')}.pdf`);

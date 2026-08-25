@@ -55,6 +55,31 @@ jobs:
           path: lighthouse-reports/
           retention-days: 14
 
+  preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: [test, lighthouse]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: preview
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build preview site
+        run: npm run build
+        env:
+          GA4_MEASUREMENT_ID: ${{ vars.GA4_MEASUREMENT_ID }}
+      - name: Upload Cloudflare preview version
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: versions upload --preview-alias pr-${{ github.event.pull_request.number }}
+
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test, lighthouse]
