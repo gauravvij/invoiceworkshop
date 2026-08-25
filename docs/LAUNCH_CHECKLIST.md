@@ -9,7 +9,8 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] `www` redirects to the canonical apex.
 - [x] Production certificate is valid.
 - [x] Worker name and `wrangler.jsonc` name are both `invoiceworkshop`.
-- [x] GitHub deployment is connected and verified.
+- [x] GitHub Actions production deployment is connected and verified.
+- [ ] The duplicate Cloudflare-native Workers Builds repository connection must be disconnected under Worker Settings > Builds; its check fails independently while the GitHub Actions deploy succeeds.
 - [x] PR branch preview is live and returns effective `X-Robots-Tag: noindex`; its canonical and Open Graph URLs remain production URLs.
 - [x] Non-canonical Worker hosts receive a noindex response header in Worker code.
 
