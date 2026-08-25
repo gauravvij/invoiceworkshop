@@ -23,7 +23,7 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] Truthful WebSite, SoftwareApplication and Breadcrumb structured data are present.
 - [x] Branded 1200×630 social image and page-level Open Graph/Twitter metadata are present.
 - [x] Search Console DNS verification TXT record exists in Cloudflare.
-- [ ] Sitemap is submitted in Search Console.
+- [x] Sitemap is submitted in Search Console with zero warnings or errors.
 - [ ] Priority URLs are requested for initial indexing.
 
 ## Product
@@ -58,6 +58,6 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 ## Post deployment
 
 - [ ] Enable Cloudflare Web Analytics.
-- [ ] Verify GA4 page views and privacy-safe product events.
+- [x] Verify GA4 page views and privacy-safe product events.
 - [x] Record production launch timestamp and commit in `SEARCH_BASELINE.md`.
 - [ ] Record initial Search Console measurements when available.
