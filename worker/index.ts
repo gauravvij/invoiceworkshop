@@ -8,7 +8,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.hostname === `www.${canonicalHost}`) {
+    if (url.protocol !== 'https:' || url.hostname === `www.${canonicalHost}`) {
       url.protocol = 'https:';
       url.hostname = canonicalHost;
       return Response.redirect(url.toString(), 301);

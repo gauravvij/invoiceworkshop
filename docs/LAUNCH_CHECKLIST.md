@@ -4,10 +4,10 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 
 ## Domain and infrastructure
 
-- [ ] `https://invoiceworkshop.com/` serves the production build.
-- [ ] HTTP redirects to HTTPS.
-- [ ] `www` redirects to the canonical apex.
-- [ ] Production certificate is valid.
+- [x] `https://invoiceworkshop.com/` serves the production build.
+- [x] HTTP redirects to HTTPS.
+- [x] `www` redirects to the canonical apex.
+- [x] Production certificate is valid.
 - [x] Worker name and `wrangler.jsonc` name are both `invoiceworkshop`.
 - [ ] GitHub deployment is connected and verified.
 - [ ] Non-production branch previews are verified.
@@ -52,12 +52,12 @@ Status legend: `[x]` verified, `[ ]` incomplete or awaiting production verificat
 - [x] GA4 is environment-controlled and event properties are allowlisted.
 - [x] Security headers and CSP are configured in `_headers`.
 - [x] `.env` and local secrets are excluded from Git.
-- [ ] Production response headers are verified.
+- [x] Production response headers are verified.
 - [x] Dependency audit has no unresolved critical issues (production dependencies: zero known vulnerabilities).
 
 ## Post deployment
 
 - [ ] Enable Cloudflare Web Analytics.
 - [ ] Verify GA4 page views and privacy-safe product events.
-- [ ] Record production launch timestamp and commit in `SEARCH_BASELINE.md`.
+- [x] Record production launch timestamp and commit in `SEARCH_BASELINE.md`.
 - [ ] Record initial Search Console measurements when available.
