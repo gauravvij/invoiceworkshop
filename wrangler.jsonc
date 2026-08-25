@@ -3,6 +3,7 @@
   "name": "invoiceworkshop",
   "main": "worker/index.ts",
   "compatibility_date": "2026-08-25",
+  "preview_urls": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
