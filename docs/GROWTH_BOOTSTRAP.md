@@ -55,8 +55,9 @@ unknown to Google; that is an observed early-stage indexing state, not a collect
 
 ## Proposed runtime cadence
 
-- `invoiceworkshop-level0-daily`: once daily at 11:00 UTC; measure, verify, discover up to
-  10 qualified public prospects, update CRM, report anomalies. Hermes ID:
+- `invoiceworkshop-level0-daily`: once daily at 11:00 UTC; measure, verify, inspect at most
+  three unique public pages, add at most two qualified prospects, update CRM, and report
+  anomalies. Hermes ID:
   `a56bbe317393`.
 - `invoiceworkshop-level0-weekly`: Monday at 12:00 UTC; analyze seven-day evidence and write
   a recommendation under ignored `data/plans/`. Hermes ID: `0cf8f7ecec07`.

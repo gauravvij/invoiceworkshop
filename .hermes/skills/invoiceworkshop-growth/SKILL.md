@@ -42,7 +42,8 @@ recommendation and stop that branch of work.
 1. Start the durable execution record exactly as specified in the job prompt.
 2. Run `scripts/run_growth_daily.sh` exactly once. Never retry it during the same job.
 3. Treat its JSON as the only metric truth; never invent or infer missing numbers.
-4. Discover at most 10 new prospects. Read the actual public opportunity page.
+4. Inspect at most three unique public opportunity pages and add at most two new prospects.
+   Never fetch or search for the same failed URL twice in one run.
 5. Reject generic SEO directories, backlink sellers, pay-to-link sites, fake communities,
    irrelevant lists, and any opportunity whose main pitch is DA/DR or link volume.
 6. Add only evidence-supported rows through `growth_db.py add-prospect`; duplicates are
@@ -52,7 +53,7 @@ recommendation and stop that branch of work.
 
 ## Failure policy
 
-- Never retry a failed collector or agent step within the same execution. The next normal
+- Never retry a failed collector, URL, or agent step within the same execution. The next normal
   schedule is the only retry, so no rapid retry loop exists.
 - Every run must reach the `growth_job_log.py finish` step; report failure honestly.
 - Three consecutive Google auth/API failures trip the local `google_reads` circuit breaker.

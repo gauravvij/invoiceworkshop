@@ -128,8 +128,8 @@ This is Level-0 research allocation, not permission to submit or contact:
 
 | Job | Schedule | Skill | Workdir | State |
 |---|---|---|---|---|
-| `invoiceworkshop-level0-daily` (`a56bbe317393`) | `0 11 * * *` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Paused |
-| `invoiceworkshop-level0-weekly` (`0cf8f7ecec07`) | `0 12 * * 1` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Paused |
+| `invoiceworkshop-level0-daily` (`a56bbe317393`) | `0 11 * * *` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Paused pending final validation |
+| `invoiceworkshop-level0-weekly` (`0cf8f7ecec07`) | `0 12 * * 1` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Paused pending final validation |
 
 The exact versioned prompts are in `docs/growth-jobs/`. Jobs start fresh, have zero
 execution attempts, and do not use the quarantined session.
