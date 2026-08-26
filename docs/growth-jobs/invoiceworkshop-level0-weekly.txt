@@ -20,11 +20,17 @@ Git, open a PR, or deploy.
    already record as complete. Before writing, cross-check every repeated metric and
    denominator against the report; omit any number or threshold that is not directly
    supported, and do not let two passages describe the same metric inconsistently.
-4. Write one concise recommendation to `data/plans/YYYY-MM-DD.md`; this ignored directory
-   is the only permitted write. Include what changed, what to continue/stop/test, next
-   week's research allocation, and any genuine escalation. Recommend only—do not execute
-   product, SEO, distribution, outreach, or external changes.
-5. Finish the audit with `python3 scripts/growth_job_log.py finish --run-id RUN_ID
+4. Write one complete, concise recommendation to `data/plans/YYYY-MM-DD.md`; this ignored
+   directory is the only permitted write. Overwrite that file in one full-file write even
+   if it already exists: do not inspect, preserve, patch, or append to a prior same-day
+   plan. Manual/bootstrap runs can legitimately occur more than once on one date, so never
+   infer a scheduler problem from an existing plan or prior run. Include what changed,
+   what to continue/stop/test, next week's research allocation, and any genuine escalation.
+   Recommend only—do not execute product, SEO, distribution, outreach, or external changes.
+5. Read the completed plan once and verify that every repeated metric is internally
+   consistent. If it is not, finish as failure; do not patch, append, or retry.
+6. Finish the audit with `python3 scripts/growth_job_log.py finish --run-id RUN_ID
    --status success`. If any required step failed, use `--status failure --error 'concise
    factual error'` instead. Do not retry. Return a brief summary and the plan path. Hard
-   bounds: one report, one plan, at most 10 tool calls, no retries, and no recursive tasks.
+   bounds: one report, one full-file plan write, one final-plan read, at most 10 tool calls,
+   no retries, and no recursive tasks.
