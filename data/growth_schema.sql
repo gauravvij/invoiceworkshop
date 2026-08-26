@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '3')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '4')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -38,6 +38,72 @@ CREATE TABLE IF NOT EXISTS level0_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_level0_runs_job_started
   ON level0_runs(job_name, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS measurement_signals (
+  id                         INTEGER PRIMARY KEY AUTOINCREMENT,
+  collection_run_id          INTEGER NOT NULL UNIQUE REFERENCES collection_runs(id),
+  previous_collection_run_id INTEGER,
+  created_at                 TEXT NOT NULL,
+  meaningful                 INTEGER NOT NULL CHECK (meaningful IN (0, 1)),
+  signal_count               INTEGER NOT NULL DEFAULT 0,
+  signals_json               TEXT NOT NULL DEFAULT '[]',
+  context_json               TEXT NOT NULL DEFAULT '{}',
+  external_side_effects      TEXT NOT NULL DEFAULT 'none'
+    CHECK (external_side_effects = 'none')
+);
+CREATE INDEX IF NOT EXISTS idx_measurement_signals_created
+  ON measurement_signals(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS research_runs (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  hermes_job_id         TEXT NOT NULL,
+  started_at            TEXT NOT NULL,
+  finished_at           TEXT,
+  status                TEXT NOT NULL CHECK (status IN (
+                          'running', 'success', 'failure', 'budget_stopped'
+                        )),
+  soft_token_budget     INTEGER NOT NULL,
+  soft_tool_budget      INTEGER NOT NULL,
+  candidates_examined   INTEGER NOT NULL DEFAULT 0,
+  prospect_start_id     INTEGER NOT NULL DEFAULT 0,
+  prospects_retained    INTEGER NOT NULL DEFAULT 0,
+  duplicates_rejected   INTEGER NOT NULL DEFAULT 0,
+  tool_calls_reported   INTEGER,
+  errors_json           TEXT NOT NULL DEFAULT '[]',
+  external_side_effects TEXT NOT NULL DEFAULT 'none'
+    CHECK (external_side_effects = 'none')
+);
+CREATE INDEX IF NOT EXISTS idx_research_runs_started
+  ON research_runs(started_at DESC);
+
+CREATE TABLE IF NOT EXISTS agent_executions (
+  session_id             TEXT PRIMARY KEY,
+  hermes_execution_id    TEXT UNIQUE,
+  hermes_job_id          TEXT NOT NULL,
+  job_name               TEXT NOT NULL,
+  started_at             TEXT NOT NULL,
+  finished_at            TEXT,
+  status                 TEXT NOT NULL,
+  model                  TEXT,
+  input_tokens           INTEGER NOT NULL DEFAULT 0,
+  output_tokens          INTEGER NOT NULL DEFAULT 0,
+  cache_read_tokens      INTEGER NOT NULL DEFAULT 0,
+  cache_write_tokens     INTEGER NOT NULL DEFAULT 0,
+  reasoning_tokens       INTEGER NOT NULL DEFAULT 0,
+  total_tokens           INTEGER NOT NULL DEFAULT 0,
+  api_calls              INTEGER NOT NULL DEFAULT 0,
+  tool_calls             INTEGER NOT NULL DEFAULT 0,
+  execution_duration_ms  INTEGER,
+  candidates_examined    INTEGER,
+  prospects_retained     INTEGER,
+  duplicates_rejected    INTEGER,
+  errors_json            TEXT NOT NULL DEFAULT '[]',
+  external_side_effects  TEXT NOT NULL DEFAULT 'none'
+    CHECK (external_side_effects = 'none'),
+  synced_at              TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_agent_executions_job_started
+  ON agent_executions(hermes_job_id, started_at DESC);
 
 CREATE TABLE IF NOT EXISTS operation_state (
   operation      TEXT PRIMARY KEY,

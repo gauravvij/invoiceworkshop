@@ -31,3 +31,4 @@ data/snapshots/
 data/*.sqlite
 data/reports/
 data/plans/
+data/research-batches/
