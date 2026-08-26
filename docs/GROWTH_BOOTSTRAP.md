@@ -65,6 +65,11 @@ Both jobs start fresh and load the project skill. Neither inherits the quarantin
 session. Their exact prompts are versioned under `docs/growth-jobs/`. Both remain paused
 until the owner explicitly activates them.
 
+The repository is explicitly trusted by Hermes for project-skill loading. A profile-visible
+symlink named `invoiceworkshop-growth` points to the versioned project skill because Hermes
+assembles cron skill context before applying a job's workdir; this keeps unattended gateway
+runs on the reviewed repository copy instead of a duplicated global skill.
+
 Each execution is recorded in Hermes' native attempt/session ledgers and in `level0_runs`,
 including timestamps, outcome, available usage provenance, collected source rows, prospect
 changes, errors, and the invariant `external_side_effects=none`. A single failure waits for

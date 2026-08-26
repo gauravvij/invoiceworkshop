@@ -305,6 +305,14 @@ def main() -> None:
     connection = connect_db(database_path(args.db))
     apply_schema(connection)
     collected_at = utc_now()
+    connection.execute(
+        """UPDATE collection_runs SET finished_at=?, status='failed', errors_json=?
+            WHERE status='running'""",
+        (
+            collected_at,
+            json.dumps(["previous collector process ended without a terminal status"]),
+        ),
+    )
     run = connection.execute(
         "INSERT INTO collection_runs (started_at, status) VALUES (?, 'running')", (collected_at,)
     )
