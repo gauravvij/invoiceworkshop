@@ -33,12 +33,13 @@ to conclude that backlinks alone are the bottleneck.
   Google.
 - The current 28-day final Search Analytics response contains zero impressions/clicks and
   no query/page/country/device breakdown rows. There is no ranking evidence yet.
-- The separate GA4 property and `G-Q7FXV2455E` stream work. The first clean collector saw
-  114 sessions, 112 users, 125 pageviews, 16 tool starts, 5 PDF downloads, and 7
+- The separate GA4 property and `G-Q7FXV2455E` stream work. The accepted activation
+  collector saw 121 sessions, 119 users, 132 pageviews, 19 tool starts, 5 PDF downloads, and 7
   returning-workspace loads in its available window. The property is new and these counts
   include QA activity, so they are validation evidence rather than an acquisition baseline.
-- The clean Level-0 CRM contains zero prospects, outreach rows, placements, and experiments.
-  No external distribution action was taken by the rebuilt system.
+- The Level-0 CRM contains 14 read-only research prospects, zero outreach rows, zero
+  placements, and no externally approved prospects. No external distribution action was
+  taken by the rebuilt system.
 - Referring domains and referral traffic are not currently collected. Their state is
   `UNVALIDATED`, not zero.
 
@@ -118,7 +119,8 @@ This is Level-0 research allocation, not permission to submit or contact:
 - Local SQLite: `data/growth.db`, created from versioned `data/growth_schema.sql`; runtime
   data is ignored by Git.
 - Deterministic scripts: Google access check, GSC/GA4/inspection/sitemap/HTTP collection,
-  placement verification, validated CRM insertion, and deterministic reporting.
+  placement verification, validated CRM insertion, deterministic reporting, and a
+  deterministic weekly plan/audit wrapper.
 - Integrations: read-only Search Console and GA4 service-account APIs plus bounded public
   HTTP GETs. Browser/web research is used only for prospect qualification.
 - Dependencies: Python 3 and the pinned packages in `requirements-growth.txt`.
@@ -128,11 +130,13 @@ This is Level-0 research allocation, not permission to submit or contact:
 
 | Job | Schedule | Skill | Workdir | State |
 |---|---|---|---|---|
-| `invoiceworkshop-level0-daily` (`a56bbe317393`) | `0 11 * * *` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Paused pending final validation |
-| `invoiceworkshop-level0-weekly` (`0cf8f7ecec07`) | `0 12 * * 1` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Paused pending final validation |
+| `invoiceworkshop-level0-daily` (`a56bbe317393`) | `0 11 * * *` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Active; next 2026-08-27 11:00 UTC |
+| `invoiceworkshop-level0-weekly` (`0cf8f7ecec07`) | `0 12 * * 1` UTC | `invoiceworkshop-growth` | `/home/azureuser/invoiceworkshop` | Active; next 2026-08-31 12:00 UTC |
 
-The exact versioned prompts are in `docs/growth-jobs/`. Jobs start fresh, have zero
-execution attempts, and do not use the quarantined session.
+The exact versioned prompts are in `docs/growth-jobs/`. Jobs start fresh and do not use the
+quarantined session. Accepted bootstrap executions are daily
+`b40d5a7496f04e2bba5f63d4ce53fcb0` and weekly
+`52fe5287e51c4cc791f650abc2b214ec`.
 
 ## H. Autonomy matrix
 
@@ -155,8 +159,8 @@ execution attempts, and do not use the quarantined session.
   changes, pull requests, and deployment.
 - Credentials/privacy: narrow read-only OAuth scopes; scripts do not store credentials,
   customer data, or document contents in the CRM.
-- Runaway cost: bounded prospect count and only two proposed jobs; deterministic work does
-  not consume agent reasoning.
+- Runaway cost: bounded daily tool/research counts, one-call deterministic weekly planning,
+  two active jobs, no immediate job retry, and a three-failure Google-read circuit breaker.
 
 ## J. Access still required
 
@@ -173,17 +177,17 @@ not request those credentials until a concrete reviewed Level-1 proposal exists.
 - `data/growth_schema.sql` and ignored local `data/growth.db`
 - `scripts/growth_common.py`, `growth_google.py`, `growth_check_access.py`,
   `growth_measure.py`, `growth_verify.py`, `growth_db.py`, `growth_report.py`, and
-  `run_growth_daily.sh`
+  `growth_weekly_plan.py`, and `run_growth_daily.sh`
 - `requirements-growth.txt`
 - `tests/growth/` and CI integration
 - `docs/GROWTH_BOOTSTRAP.md`, this report, and the two exact prompt definitions
-- Two paused Hermes jobs with no execution history
+- Two active Hermes jobs with native and local execution history
 - Recoverable audit database and quarantined Hermes skill/session artifacts, excluded from
   the rebuilt runtime
 
 ## L. Final recommendation
 
-The reviewed Level-0 system is safe to activate when the owner chooses. Keep Level 1 and
-Level 2 disabled. Review the first week of evidence before authorizing any external action.
+The reviewed Level-0 system is active. Keep Level 1 and Level 2 disabled, and review the
+first week of evidence before authorizing any external action.
 
-READY TO ACTIVATE
+LEVEL 0 ACTIVE

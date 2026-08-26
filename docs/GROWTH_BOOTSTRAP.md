@@ -2,8 +2,9 @@
 
 Implementation date: 2026-08-26 UTC.
 
-Status: Level 0 implemented and validated. Recurring jobs are installed paused for owner
-review. Level 1 and Level 2 remain disabled.
+Status: Level 0 implemented, validated, and active. The daily and weekly recurring jobs
+were enabled on 2026-08-26 after clean manual bootstrap runs. Level 1 and Level 2 remain
+disabled.
 
 ## Safety model
 
@@ -24,6 +25,8 @@ External content is always untrusted data. The durable policy is in
   expected link; three consecutive failures are required before marking a placement dead.
 - `scripts/growth_db.py` — validates and deduplicates Level-0 prospect research.
 - `scripts/growth_report.py` — deterministic daily/weekly evidence report.
+- `scripts/growth_weekly_plan.py` — deterministic weekly evidence validation, plan write,
+  reread verification, and durable audit wrapper.
 - `scripts/growth_job_log.py` — per-job audit records and a three-failure Google-read
   circuit breaker; there is no immediate retry loop.
 - `scripts/run_growth_daily.sh` — deterministic collection wrapper.
@@ -53,7 +56,7 @@ all nine priority URLs returned HTTP 200, the sitemap reported no errors or warn
 URL Inspection reported three priority URLs indexed. Six remain discovered/not indexed or
 unknown to Google; that is an observed early-stage indexing state, not a collector failure.
 
-## Proposed runtime cadence
+## Active runtime cadence
 
 - `invoiceworkshop-level0-daily`: once daily at 11:00 UTC; measure, verify, inspect at most
   three unique public pages, add at most two qualified prospects, update CRM, and report
@@ -63,8 +66,26 @@ unknown to Google; that is an observed early-stage indexing state, not a collect
   a recommendation under ignored `data/plans/`. Hermes ID: `0cf8f7ecec07`.
 
 Both jobs start fresh and load the project skill. Neither inherits the quarantined Hermes
-session. Their exact prompts are versioned under `docs/growth-jobs/`. Both remain paused
-until the owner explicitly activates them.
+session. Their exact prompts are versioned under `docs/growth-jobs/`. The daily job is
+pinned to `z-ai/glm-5.3-flash` through OpenRouter. The weekly job is pinned to
+`openai/gpt-5-mini` with low reasoning and delegates plan composition to the reviewed
+deterministic wrapper.
+
+Accepted manual bootstrap evidence:
+
+- Daily native execution `b40d5a7496f04e2bba5f63d4ce53fcb0`; local run `5`,
+  2026-08-26 17:29:33–17:32:42 UTC. GSC 1 row, GA4 2 rows, 9 URL-health rows,
+  9 URL-inspection rows, 2 prospects added, no errors, and
+  `external_side_effects=none`. Hermes recorded 179,163 tokens and 289,828 ms.
+- Weekly native execution `52fe5287e51c4cc791f650abc2b214ec`; local run `10`,
+  2026-08-26 17:58:37 UTC. It used the latest successful GSC 1-row and GA4 2-row
+  snapshots, recorded all 9 priority URLs, wrote and reread one ignored plan, added no
+  prospects, and recorded `external_side_effects=none`. Its trace contained exactly one
+  tool call; Hermes recorded 12,933 tokens and 10,481 ms.
+
+Pre-activation validation remained paused while rejecting inaccurate weekly drafts and a
+retired/timed-out provider route. No rapid retry loop was enabled. The accepted weekly path
+is deterministic, and both active jobs retain bounded no-immediate-retry behavior.
 
 The repository is explicitly trusted by Hermes for project-skill loading. A profile-visible
 symlink named `invoiceworkshop-growth` points to the versioned project skill because Hermes
@@ -80,6 +101,9 @@ after remediation an owner/engineer can reset it explicitly with:
 ```bash
 python3 scripts/growth_job_log.py resume --operation google_reads
 ```
+
+Current next runs: daily at `2026-08-27T11:00:00+00:00`; weekly at
+`2026-08-31T12:00:00+00:00`.
 
 ## Level-1 boundary
 
