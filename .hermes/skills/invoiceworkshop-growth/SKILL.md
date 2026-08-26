@@ -64,10 +64,10 @@ recommendation and stop that branch of work.
 
 ## Weekly loop
 
-Use `growth_report.py --period 7`, repository product/SEO documentation, and stored evidence.
-Compare query/page/country/device signals, qualified prospects, index state, URL health, and
-product events. Write one concise plan under `data/plans/`. Recommend; do not implement
-product, SEO, or external-distribution changes.
+Use the reviewed `growth_weekly_plan.py` wrapper exactly once. It reads the repository
+product/SEO documentation, builds the seven-day report from stored evidence, verifies the
+latest successful GSC/GA4 snapshots, and atomically writes one deterministic plan under
+`data/plans/`. Recommend; do not implement product, SEO, or external-distribution changes.
 
 ## Frozen product and SEO rules
 

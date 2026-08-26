@@ -29,8 +29,8 @@ class ReportTests(unittest.TestCase):
         self.connection.execute(
             """INSERT INTO metrics_daily
                (date, gsc_impressions, gsc_clicks, ga_users, ga_pageviews,
-                ga_tool_starts, ga_pdf_downloads, ga_returning, collected_at)
-               VALUES (?, 12, 2, 4, 7, 3, 1, 1, ?)""",
+                ga_sessions, ga_tool_starts, ga_pdf_downloads, ga_returning, collected_at)
+               VALUES (?, 12, 2, 4, 7, 5, 3, 1, 1, ?)""",
             (today, now),
         )
         self.connection.execute(
@@ -49,6 +49,7 @@ class ReportTests(unittest.TestCase):
 
         report = build_report(self.connection, 7)
         self.assertEqual(report["totals"]["gsc_impressions"], 12)
+        self.assertEqual(report["totals"]["ga_sessions"], 5)
         self.assertEqual(report["totals"]["ga_pdf_downloads"], 1)
         self.assertEqual(
             {item["type"] for item in report["anomalies"]},
