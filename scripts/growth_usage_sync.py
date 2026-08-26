@@ -124,6 +124,11 @@ def synchronize(
             total = input_tokens + output_tokens + cache_read + cache_write
             error = execution.get("error") if execution else session["end_reason"]
             status = execution.get("status") if execution else ("completed" if session["ended_at"] else "running")
+            # The durable local audit is authoritative for semantic outcomes.
+            # Hermes can report a technically completed agent session even
+            # when the post-run budget/quality audit rejected its output.
+            if job_name == "research" and local_run:
+                status = str(local_run["status"])
             values = (
                 session["id"],
                 execution.get("id") if execution else None,

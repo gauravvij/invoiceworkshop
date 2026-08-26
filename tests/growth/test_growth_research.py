@@ -10,7 +10,12 @@ SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from growth_common import connect_db  # noqa: E402
-from growth_research import finish_research, import_batch, start_research  # noqa: E402
+from growth_research import (  # noqa: E402
+    finish_research,
+    import_batch,
+    reject_run_records,
+    start_research,
+)
 
 
 def candidate(domain: str) -> dict:
@@ -86,6 +91,30 @@ class ResearchTests(unittest.TestCase):
         )
         self.assertEqual(result["status"], "failure")
         self.assertIn("tool budget exceeded", result["errors"][0])
+
+    def test_budget_stop_preserves_completed_work(self):
+        context = start_research(self.db, "research-id", 40_000, 10)
+        result = finish_research(
+            self.db, context["research_run_id"], "budget_stopped", 0, 11, []
+        )
+        self.assertEqual(result["status"], "budget_stopped")
+        self.assertIn("tool budget exceeded", result["errors"][0])
+
+    def test_reject_run_quarantines_inserted_records(self):
+        context = start_research(self.db, "research-id", 40_000, 10)
+        run_id = context["research_run_id"]
+        import_batch(
+            self.db, run_id, str(self.write_batch("first.json", [candidate("one.example")])),
+            self.batches,
+        )
+        finish_research(self.db, run_id, "success", 1, 4, [])
+        result = reject_run_records(self.db, run_id, "activation audit rejected")
+        self.assertEqual(result["records_quarantined"], 1)
+        connection = connect_db(self.db)
+        row = connection.execute("SELECT status, rejection_reason FROM prospects").fetchone()
+        self.assertEqual(row["status"], "rejected")
+        self.assertEqual(row["rejection_reason"], "activation audit rejected")
+        connection.close()
 
 
 if __name__ == "__main__":

@@ -232,7 +232,9 @@ def finish_research(
         errors.append(
             f"tool budget exceeded: {tool_calls}>{int(run['soft_tool_budget'])}"
         )
-    final_status = "failure" if errors else status
+    # A budget stop is an expected safe terminal state: completed work is
+    # preserved and the run must not be misclassified as an agent failure.
+    final_status = "failure" if errors and status != "budget_stopped" else status
     connection.execute(
         """UPDATE research_runs
               SET finished_at=?, status=?, candidates_examined=?,
@@ -248,6 +250,50 @@ def finish_research(
     row = connection.execute("SELECT * FROM research_runs WHERE id=?", (run_id,)).fetchone()
     result = dict(row)
     result["errors"] = json.loads(result.pop("errors_json"))
+    connection.close()
+    return result
+
+
+def reject_run_records(db: str | None, run_id: int, reason: str) -> dict:
+    """Quarantine records imported by a research run that failed audit.
+
+    Rows are retained for an immutable audit trail but are no longer eligible
+    for later Level-0 planning as new or qualified prospects.
+    """
+    connection = initialize(db)
+    run = connection.execute(
+        "SELECT * FROM research_runs WHERE id=?", (run_id,)
+    ).fetchone()
+    if run is None:
+        raise ValueError("research run does not exist")
+    now = utc_now()
+    note = f"Activation audit quarantine for research run {run_id}."
+    cursor = connection.execute(
+        """UPDATE prospects
+              SET status='rejected', rejection_reason=?,
+                  notes=CASE WHEN notes='' THEN ? ELSE notes || ' ' || ? END,
+                  updated_at=?
+            WHERE id>? AND status IN ('new', 'qualified')""",
+        (reason, note, note, now, int(run["prospect_start_id"])),
+    )
+    prior_errors = json.loads(run["errors_json"] or "[]")
+    if reason not in prior_errors:
+        prior_errors.append(reason)
+    connection.execute(
+        """UPDATE research_runs
+              SET status='failure', finished_at=COALESCE(finished_at, ?),
+                  errors_json=?, external_side_effects='none'
+            WHERE id=?""",
+        (now, json.dumps(prior_errors), run_id),
+    )
+    connection.commit()
+    result = {
+        "run_id": run_id,
+        "records_quarantined": cursor.rowcount,
+        "status": "failure",
+        "reason": reason,
+        "external_side_effects": "none",
+    }
     connection.close()
     return result
 
@@ -275,6 +321,10 @@ def parser() -> argparse.ArgumentParser:
     finish.add_argument("--candidates-examined", required=True, type=int)
     finish.add_argument("--tool-calls", required=True, type=int)
     finish.add_argument("--error", action="append", default=[])
+
+    reject = commands.add_parser("reject-run")
+    reject.add_argument("--run-id", required=True, type=int)
+    reject.add_argument("--reason", required=True)
     return root
 
 
@@ -290,7 +340,7 @@ def main() -> None:
         )
     elif args.command == "import-batch":
         result = import_batch(args.db, args.run_id, args.batch, args.batch_dir)
-    else:
+    elif args.command == "finish":
         if args.candidates_examined < 0 or args.tool_calls < 0:
             raise SystemExit("candidate and tool counts cannot be negative")
         result = finish_research(
@@ -301,6 +351,8 @@ def main() -> None:
             args.tool_calls,
             args.error,
         )
+    else:
+        result = reject_run_records(args.db, args.run_id, args.reason.strip())
     print(json.dumps(result, indent=2, sort_keys=True))
     if result.get("status") == "failure":
         raise SystemExit(2)

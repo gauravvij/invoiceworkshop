@@ -12,7 +12,7 @@ tool. Never browse, inspect credentials, send, submit, post, create an account, 
 contact anyone, change production/SEO/Git, mutate an external service, open a PR, or deploy.
 
 If the current monitor JSON has `meaningful=false`, respond exactly `[SILENT]`. Otherwise,
-briefly interpret only its explicit signals, distinguish observation from cause, and state
-whether its recorded failure safeguard requires owner attention. Do not invent missing
-metrics or propose immediate product/SEO/external changes. End with
+use at most 180 words. State the trigger and exact current/previous facts, label the cause
+unverified, and state whether the recorded failure safeguard requires owner attention.
+Do not speculate, invent missing metrics, or recommend manual/external/product/SEO action. End with
 `external_side_effects=none`.
