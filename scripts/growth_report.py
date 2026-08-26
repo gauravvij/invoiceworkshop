@@ -75,7 +75,6 @@ def build_report(connection, period: int) -> dict:
     totals = {
         "gsc_clicks": sum(row["gsc_clicks"] or 0 for row in metrics),
         "gsc_impressions": sum(row["gsc_impressions"] or 0 for row in metrics),
-        "ga_sessions": sum(row["ga_sessions"] or 0 for row in metrics),
         "ga_users": sum(row["ga_users"] or 0 for row in metrics),
         "ga_pageviews": sum(row["ga_pageviews"] or 0 for row in metrics),
         "ga_tool_starts": sum(row["ga_tool_starts"] or 0 for row in metrics),

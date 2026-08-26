@@ -6,13 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
+import sys
 import tempfile
 from datetime import date
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from growth_common import ROOT, apply_schema, connect_db, database_path
-from growth_job_log import finish_run, start_run
 from growth_report import build_report
 
 REQUIRED_DOCS = (
@@ -22,6 +23,27 @@ REQUIRED_DOCS = (
     "docs/PRODUCT_PRINCIPLES.md",
 )
 SAFE_DOMAIN = re.compile(r"^[a-z0-9.-]+$")
+
+
+def _job_log(db: str | None, arguments: list[str], *, expected_codes: set[int]) -> dict:
+    command = [sys.executable, str(ROOT / "scripts" / "growth_job_log.py")]
+    if db:
+        command.extend(("--db", db))
+    command.extend(arguments)
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if completed.returncode not in expected_codes:
+        raise RuntimeError(f"growth job audit exited {completed.returncode}")
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("growth job audit returned invalid JSON") from error
 
 
 def _source(report: dict, name: str) -> dict:
@@ -87,6 +109,7 @@ def render_plan(report: dict, generated_on: str) -> str:
         1 for row in report["latest_sitemaps"]
         if not row["error"] and not row["errors"] and not row["warnings"]
     )
+    ga_sessions = sum(row["ga_sessions"] or 0 for row in report["daily_metrics"])
 
     return f"""# InvoiceWorkshop Level-0 weekly plan — {generated_on}
 
@@ -96,7 +119,7 @@ Latest persisted source evidence used: {source_line}.
 
 ## Observed evidence
 
-- GA4 stored-row totals: {totals['ga_sessions']} sessions, {totals['ga_users']} users, {totals['ga_pageviews']} pageviews, {totals['ga_tool_starts']} tool starts, {totals['ga_pdf_downloads']} PDF downloads, and {totals['ga_returning']} returning workspace loads.
+- GA4 stored-row totals: {ga_sessions} sessions, {totals['ga_users']} users, {totals['ga_pageviews']} pageviews, {totals['ga_tool_starts']} tool starts, {totals['ga_pdf_downloads']} PDF downloads, and {totals['ga_returning']} returning workspace loads.
 - GSC stored-row totals: {totals['gsc_clicks']} clicks and {totals['gsc_impressions']} impressions. Breakdown row counts: {breakdown_counts}. Empty search evidence is recorded without treating it as an indexation result or incident.
 - Priority URL inspection: {len(indexed)} of {len(report['latest_index_state'])} pass. Indexed: {indexed_routes}.
 - Other recorded index states: {pending_routes}. These states do not establish a technical cause.
@@ -154,7 +177,11 @@ def _write_verified(path: Path, content: str) -> None:
 def run_weekly(
     *, db: str | None, period: int, hermes_job_id: str, output_dir: Path
 ) -> dict:
-    started = start_run(db, "weekly", hermes_job_id)
+    started = _job_log(
+        db,
+        ["start", "--job", "weekly", "--hermes-job-id", hermes_job_id],
+        expected_codes={0},
+    )
     run_id = int(started["run_id"])
     try:
         documents = _read_required_docs()
@@ -165,7 +192,11 @@ def run_weekly(
         sources = validate_report(report)
         plan_path = output_dir / f"{date.today().isoformat()}.md"
         _write_verified(plan_path, render_plan(report, date.today().isoformat()))
-        finished = finish_run(db, run_id, "success")
+        finished = _job_log(
+            db,
+            ["finish", "--run-id", str(run_id), "--status", "success"],
+            expected_codes={0},
+        )
         result = {
             **finished,
             "plan_path": str(plan_path),
@@ -181,7 +212,14 @@ def run_weekly(
         return result
     except Exception as error:
         message = f"weekly_plan: {type(error).__name__}: {error}"[:1000]
-        finish_run(db, run_id, "failure", [message])
+        _job_log(
+            db,
+            [
+                "finish", "--run-id", str(run_id), "--status", "failure",
+                "--error", message,
+            ],
+            expected_codes={2},
+        )
         raise
 
 
