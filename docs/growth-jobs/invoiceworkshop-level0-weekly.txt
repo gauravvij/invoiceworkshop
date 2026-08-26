@@ -17,7 +17,9 @@ Git, open a PR, or deploy.
    query/page/country/device, product-event, index, health, prospect, and placement
    evidence. Clearly label absent evidence and assumptions. Do not infer a technical cause
    from an indexation state, and do not recommend a check or change that these documents
-   already record as complete.
+   already record as complete. Before writing, cross-check every repeated metric and
+   denominator against the report; omit any number or threshold that is not directly
+   supported, and do not let two passages describe the same metric inconsistently.
 4. Write one concise recommendation to `data/plans/YYYY-MM-DD.md`; this ignored directory
    is the only permitted write. Include what changed, what to continue/stop/test, next
    week's research allocation, and any genuine escalation. Recommend only—do not execute
@@ -25,4 +27,4 @@ Git, open a PR, or deploy.
 5. Finish the audit with `python3 scripts/growth_job_log.py finish --run-id RUN_ID
    --status success`. If any required step failed, use `--status failure --error 'concise
    factual error'` instead. Do not retry. Return a brief summary and the plan path. Hard
-   bounds: one report, one plan, and no recursive tasks.
+   bounds: one report, one plan, at most 10 tool calls, no retries, and no recursive tasks.
