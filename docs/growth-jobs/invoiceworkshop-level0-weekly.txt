@@ -10,9 +10,14 @@ Git, open a PR, or deploy.
    0cf8f7ecec07` exactly once and retain its `run_id`.
 2. Run `/home/azureuser/growth-venv/bin/python scripts/growth_report.py --period 7` exactly
    once. Never retry it in this execution.
-3. Read the owner-approved product/SEO documentation and Level-0 skill. Analyze only the
-   report's observed query/page/country/device, product-event, index, health, prospect, and
-   placement evidence. Clearly label absent evidence and assumptions.
+3. Read the contents (not merely the filenames) of `docs/SEO_STRATEGY.md`,
+   `docs/PRE_GROWTH_QA.md`, `docs/SEARCH_BASELINE.md`, and
+   `docs/PRODUCT_PRINCIPLES.md`, plus the attached Level-0 skill. Do not mark the run
+   successful until these files were actually read. Analyze only the report's observed
+   query/page/country/device, product-event, index, health, prospect, and placement
+   evidence. Clearly label absent evidence and assumptions. Do not infer a technical cause
+   from an indexation state, and do not recommend a check or change that these documents
+   already record as complete.
 4. Write one concise recommendation to `data/plans/YYYY-MM-DD.md`; this ignored directory
    is the only permitted write. Include what changed, what to continue/stop/test, next
    week's research allocation, and any genuine escalation. Recommend only—do not execute
