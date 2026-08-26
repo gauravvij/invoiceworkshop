@@ -14,7 +14,15 @@ export GSC_SITE="sc-domain:invoiceworkshop.com"
 "$PYTHON" scripts/growth_db.py init
 
 measure_status=0
-"$PYTHON" scripts/growth_measure.py || measure_status=$?
+if "$PYTHON" scripts/growth_job_log.py guard --operation google_reads; then
+  "$PYTHON" scripts/growth_measure.py || measure_status=$?
+else
+  guard_status=$?
+  if [[ "$guard_status" -ne 75 ]]; then
+    exit "$guard_status"
+  fi
+  "$PYTHON" scripts/growth_measure.py --public-only || measure_status=$?
+fi
 "$PYTHON" scripts/growth_verify.py
 "$PYTHON" scripts/growth_report.py --period 14
 

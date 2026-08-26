@@ -297,6 +297,7 @@ def main() -> None:
     parser.add_argument("--lookback-days", type=int, default=int(os.environ.get("GROWTH_LOOKBACK_DAYS", "28")))
     parser.add_argument("--site", default=os.environ.get("GSC_SITE", DEFAULT_SITE))
     parser.add_argument("--property-id", default=os.environ.get("GA4_PROPERTY_ID", DEFAULT_PROPERTY))
+    parser.add_argument("--public-only", action="store_true", help="Skip paused Google operations but retain public URL health")
     args = parser.parse_args()
     if not 7 <= args.lookback_days <= 90:
         parser.error("--lookback-days must be between 7 and 90")
@@ -321,11 +322,15 @@ def main() -> None:
         errors.append(f"health: {error}")
         connection.commit()
 
-    try:
-        client = GoogleReadClient()
-    except Exception as error:
+    if args.public_only:
         client = None
-        errors.append(f"google_auth: {error}")
+        errors.append("google_reads: paused by bounded failure safeguard")
+    else:
+        try:
+            client = GoogleReadClient()
+        except Exception as error:
+            client = None
+            errors.append(f"google_auth: {error}")
 
     if client:
         for name, collector in (

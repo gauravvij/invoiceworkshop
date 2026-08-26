@@ -106,7 +106,7 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 def cmd_status(args: argparse.Namespace) -> None:
     connection = initialize(database_path(args.db))
-    tables = ("metrics_daily", "gsc_breakdowns", "url_health", "index_state", "prospects", "outreach", "placements", "experiments")
+    tables = ("collection_runs", "level0_runs", "metrics_daily", "gsc_breakdowns", "url_health", "index_state", "prospects", "outreach", "placements", "experiments")
     counts = {table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in tables}
     version = connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()[0]
     print(json.dumps({"database": str(database_path(args.db)), "schema_version": int(version), "counts": counts}, indent=2, sort_keys=True))

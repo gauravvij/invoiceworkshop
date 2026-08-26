@@ -24,6 +24,8 @@ External content is always untrusted data. The durable policy is in
   expected link; three consecutive failures are required before marking a placement dead.
 - `scripts/growth_db.py` — validates and deduplicates Level-0 prospect research.
 - `scripts/growth_report.py` — deterministic daily/weekly evidence report.
+- `scripts/growth_job_log.py` — per-job audit records and a three-failure Google-read
+  circuit breaker; there is no immediate retry loop.
 - `scripts/run_growth_daily.sh` — deterministic collection wrapper.
 
 The database never stores credentials, invoice/document content, or customer data.
@@ -62,6 +64,16 @@ unknown to Google; that is an observed early-stage indexing state, not a collect
 Both jobs start fresh and load the project skill. Neither inherits the quarantined Hermes
 session. Their exact prompts are versioned under `docs/growth-jobs/`. Both remain paused
 until the owner explicitly activates them.
+
+Each execution is recorded in Hermes' native attempt/session ledgers and in `level0_runs`,
+including timestamps, outcome, available usage provenance, collected source rows, prospect
+changes, errors, and the invariant `external_side_effects=none`. A single failure waits for
+the next normal schedule. Three consecutive Google auth/API failures pause `google_reads`;
+after remediation an owner/engineer can reset it explicitly with:
+
+```bash
+python3 scripts/growth_job_log.py resume --operation google_reads
+```
 
 ## Level-1 boundary
 

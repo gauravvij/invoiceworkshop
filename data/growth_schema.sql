@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '2')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '3')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -18,6 +18,37 @@ CREATE TABLE IF NOT EXISTS collection_runs (
   status      TEXT NOT NULL CHECK (status IN ('running', 'ok', 'partial', 'failed')),
   errors_json TEXT NOT NULL DEFAULT '[]'
 );
+
+CREATE TABLE IF NOT EXISTS level0_runs (
+  id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_name                 TEXT NOT NULL CHECK (job_name IN ('daily', 'weekly')),
+  hermes_job_id            TEXT NOT NULL,
+  started_at               TEXT NOT NULL,
+  finished_at              TEXT,
+  status                   TEXT NOT NULL CHECK (status IN ('running', 'success', 'failure')),
+  model_api_usage_json     TEXT NOT NULL DEFAULT '{"availability":"Hermes session metadata"}',
+  gsc_rows_collected       INTEGER NOT NULL DEFAULT 0,
+  ga4_rows_collected       INTEGER NOT NULL DEFAULT 0,
+  prospects_discovered     INTEGER NOT NULL DEFAULT 0,
+  prospects_updated        INTEGER NOT NULL DEFAULT 0,
+  errors_json              TEXT NOT NULL DEFAULT '[]',
+  external_side_effects    TEXT NOT NULL DEFAULT 'none' CHECK (external_side_effects = 'none'),
+  collection_run_start_id  INTEGER NOT NULL DEFAULT 0,
+  prospect_start_id        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_level0_runs_job_started
+  ON level0_runs(job_name, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS operation_state (
+  operation      TEXT PRIMARY KEY,
+  state          TEXT NOT NULL CHECK (state IN ('active', 'paused')),
+  failure_streak INTEGER NOT NULL DEFAULT 0,
+  last_error     TEXT,
+  updated_at     TEXT NOT NULL
+);
+INSERT INTO operation_state (operation, state, failure_streak, updated_at)
+VALUES ('google_reads', 'active', 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+ON CONFLICT(operation) DO NOTHING;
 
 -- Actual per-calendar-day metrics. A collector refreshes recent dates to account
 -- for reporting lag; values are not rolling-window totals.
