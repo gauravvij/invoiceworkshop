@@ -144,6 +144,19 @@ def detect_signals(
             "status": collection_status,
             "errors": collection_errors[:5],
         })
+    previous_source_failures = [
+        name for name, source in before["sources"].items()
+        if source.get("status") not in {"ok", "empty"} or source.get("error")
+    ]
+    current_source_failures = [
+        name for name, source in after["sources"].items()
+        if source.get("status") not in {"ok", "empty"} or source.get("error")
+    ]
+    if previous_source_failures and not current_source_failures and collection_status == "ok":
+        signals.append({
+            "type": "measurement_recovered",
+            "previous_failed_sources": sorted(previous_source_failures),
+        })
 
     old_gsc = before["sources"].get("gsc", {}).get("totals", {})
     new_gsc = after["sources"].get("gsc", {}).get("totals", {})
@@ -315,19 +328,6 @@ def run_daily_monitor(
         ga_absolute=ga_absolute,
         ga_percent=ga_percent,
     )
-    context = _compact_context(connection, collection, signals)
-    connection.execute(
-        """INSERT INTO measurement_signals
-           (collection_run_id, previous_collection_run_id, created_at,
-            meaningful, signal_count, signals_json, context_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (
-            int(collection["id"]), before["collection_run_id"] or None, utc_now(),
-            int(bool(signals)), len(signals), json.dumps(signals, sort_keys=True),
-            json.dumps(context, sort_keys=True),
-        ),
-    )
-    connection.commit()
     connection.close()
 
     if measurement.returncode == 0 and collection["status"] == "ok":
@@ -341,12 +341,23 @@ def run_daily_monitor(
             ["finish", "--run-id", str(run_id), "--status", "failure", "--error", error],
             {2},
         )
-    context["audit"] = {
-        "run_id": run_id,
-        "status": finished["status"],
-        "errors": finished["errors"],
-    }
     connection = connect_db(database_path(db))
+    apply_schema(connection)
+    collection = connection.execute(
+        "SELECT * FROM collection_runs WHERE id=?", (int(collection["id"]),)
+    ).fetchone()
+    context = _compact_context(connection, collection, signals)
+    connection.execute(
+        """INSERT INTO measurement_signals
+           (collection_run_id, previous_collection_run_id, created_at,
+            meaningful, signal_count, signals_json, context_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (
+            int(collection["id"]), before["collection_run_id"] or None, utc_now(),
+            int(bool(signals)), len(signals), json.dumps(signals, sort_keys=True),
+            json.dumps(context, sort_keys=True),
+        ),
+    )
     connection.execute(
         """UPDATE level0_runs
               SET model_api_usage_json=? WHERE id=?""",
@@ -359,8 +370,21 @@ def run_daily_monitor(
         ),
     )
     connection.commit()
+    if signals:
+        monitor_output = context
+    else:
+        previous_meaningful = connection.execute(
+            """SELECT context_json FROM measurement_signals
+                WHERE meaningful=1 AND collection_run_id<>?
+                ORDER BY id DESC LIMIT 1""",
+            (int(collection["id"]),),
+        ).fetchone()
+        monitor_output = (
+            json.loads(previous_meaningful["context_json"])
+            if previous_meaningful else NO_CHANGE_OUTPUT
+        )
     connection.close()
-    return context
+    return monitor_output
 
 
 def main() -> None:
@@ -378,8 +402,7 @@ def main() -> None:
         ga_absolute=args.ga_absolute,
         ga_percent=args.ga_percent,
     )
-    output = context if context.get("meaningful") else NO_CHANGE_OUTPUT
-    print(json.dumps(output, separators=(",", ":"), sort_keys=True))
+    print(json.dumps(context, separators=(",", ":"), sort_keys=True))
 
 
 if __name__ == "__main__":
