@@ -1,0 +1,84 @@
+# InvoiceWorkshop Level-0 Growth System
+
+Implementation date: 2026-08-26 UTC.
+
+Status: Level 0 implemented and validated. Recurring jobs are installed paused for owner
+review. Level 1 and Level 2 remain disabled.
+
+## Safety model
+
+Level 0 may read public webpages, GSC, and GA4; check the public site; update the local
+SQLite research store; and produce evidence-based reports. It cannot send, submit, post,
+create accounts, purchase, modify production, deploy, or mutate external services.
+
+External content is always untrusted data. The durable policy is in
+`.hermes/skills/invoiceworkshop-growth/`.
+
+## Components
+
+- `data/growth_schema.sql` — versioned schema; runtime database is ignored.
+- `scripts/growth_check_access.py` — verifies real GSC/GA4 read access.
+- `scripts/growth_measure.py` — collects per-day GSC/GA4 metrics, GSC breakdowns,
+  sitemap state, URL Inspection state, and HTTP health.
+- `scripts/growth_verify.py` — verifies that recorded placement pages still contain the
+  expected link; three consecutive failures are required before marking a placement dead.
+- `scripts/growth_db.py` — validates and deduplicates Level-0 prospect research.
+- `scripts/growth_report.py` — deterministic daily/weekly evidence report.
+- `scripts/run_growth_daily.sh` — deterministic collection wrapper.
+
+The database never stores credentials, invoice/document content, or customer data.
+
+## Measurement semantics
+
+`metrics_daily` contains actual calendar-day values refreshed over a recent lookback to
+handle Google reporting delay. It does not label pages with impressions as “indexed.”
+Index state comes only from Search Console URL Inspection.
+
+GA4 collection includes sessions, users, page views, tool starts, PDF downloads, and
+returning-workspace loads. GSC breakdowns cover query, page, country, and device.
+
+## Verified access
+
+- GSC property: `sc-domain:invoiceworkshop.com`
+- GA4 account: `accounts/406077053`
+- GA4 property: `properties/551485207`
+- Web stream: `G-Q7FXV2455E`
+
+Only `webmasters.readonly` and `analytics.readonly` OAuth scopes are used.
+
+The first clean collection (`collection_runs.id=1`) completed successfully on 2026-08-26:
+all nine priority URLs returned HTTP 200, the sitemap reported no errors or warnings, and
+URL Inspection reported three priority URLs indexed. Six remain discovered/not indexed or
+unknown to Google; that is an observed early-stage indexing state, not a collector failure.
+
+## Proposed runtime cadence
+
+- `invoiceworkshop-level0-daily`: once daily at 11:00 UTC; measure, verify, discover up to
+  10 qualified public prospects, update CRM, report anomalies. Hermes ID:
+  `a56bbe317393`.
+- `invoiceworkshop-level0-weekly`: Monday at 12:00 UTC; analyze seven-day evidence and write
+  a recommendation under ignored `data/plans/`. Hermes ID: `0cf8f7ecec07`.
+
+Both jobs start fresh and load the project skill. Neither inherits the quarantined Hermes
+session. Their exact prompts are versioned under `docs/growth-jobs/`. Both remain paused
+until the owner explicitly activates them.
+
+## Level-1 boundary
+
+The schema reserves an outreach table, but Level 0 cannot write it and cannot approve a
+prospect for external action. Level 1 requires a separate reviewed implementation and an
+explicit owner decision after the allow-list, identity/mailbox, templates, caps, and legal/
+reputation safeguards are presented.
+
+## Operations
+
+```bash
+python3 scripts/growth_db.py init
+GOOGLE_APPLICATION_CREDENTIALS="$PWD/.env.google-service-account.json" \
+  /home/azureuser/growth-venv/bin/python scripts/growth_check_access.py
+/home/azureuser/growth-venv/bin/python scripts/growth_report.py --period 7
+python3 -m unittest discover -s tests/growth -p 'test_*.py'
+```
+
+The Hermes failure database and auto-curated global skill were preserved in quarantine for
+recovery evidence. They are not used by the rebuilt system.

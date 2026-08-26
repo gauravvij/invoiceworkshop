@@ -19,3 +19,15 @@ lighthouse-reports/
 *.log
 .idea/
 .vscode/
+__pycache__/
+*.py[cod]
+
+# Growth operating data (local, never commit)
+data/*.db
+data/*.db-*
+data/**/*.db
+data/**/*.db-*
+data/snapshots/
+data/*.sqlite
+data/reports/
+data/plans/
