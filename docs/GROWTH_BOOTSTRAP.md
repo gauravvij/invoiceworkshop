@@ -79,9 +79,10 @@ unknown to Google; that is an observed early-stage indexing state, not a collect
   a recommendation under ignored `data/plans/`. Hermes ID: `0cf8f7ecec07`.
 
 The jobs do not inherit the quarantined Hermes session. Exact analyst prompts are versioned
-under `docs/growth-jobs/`. Daily conditional interpretation and bounded research use
-`openai/gpt-5-mini`; weekly remains pinned to `openai/gpt-5-mini` with low reasoning and
-delegates plan composition to the reviewed deterministic wrapper.
+under `docs/growth-jobs/`. All conditional Level-0 inference is pinned through OpenRouter
+to `deepseek/deepseek-v4-flash-0731` with reasoning disabled; deterministic measurement and
+local validation remain model-free. Weekly still delegates plan composition to the reviewed
+deterministic wrapper.
 
 Accepted manual bootstrap evidence:
 
@@ -112,6 +113,10 @@ Optimized acceptance evidence:
 
 Activation-audit research runs that exceeded a budget or failed qualification were marked
 failed and their imported rows were quarantined as rejected. No audit record was deleted.
+
+On 2026-08-27, a bounded Hermes canary verified the active DeepSeek model slug, one public
+web-search tool call, valid JSON output, and no external side effects before the Level-0
+model pins were migrated from `openai/gpt-5-mini`.
 
 Pre-activation validation remained paused while rejecting inaccurate weekly drafts and a
 retired/timed-out provider route. No rapid retry loop was enabled. The accepted weekly path

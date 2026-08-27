@@ -9,6 +9,8 @@ sys.path.insert(0, str(SCRIPTS))
 
 from growth_research_job import (  # noqa: E402
     MAX_TURNS,
+    MODEL,
+    REASONING,
     TOKEN_BUDGET,
     WALL_BUDGET_SECONDS,
     _extract_payload,
@@ -36,6 +38,8 @@ def prospect(domain: str = "example.org") -> dict:
 
 class ResearchJobTests(unittest.TestCase):
     def test_default_bounds_reserve_a_final_response_turn(self):
+        self.assertEqual(MODEL, "deepseek/deepseek-v4-flash-0731")
+        self.assertEqual(REASONING, "none")
         self.assertEqual(MAX_TURNS, 5)
         self.assertEqual(TOKEN_BUDGET, 60_000)
         self.assertEqual(WALL_BUDGET_SECONDS, 150)
