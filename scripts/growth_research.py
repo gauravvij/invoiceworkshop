@@ -178,7 +178,7 @@ def import_batch(db: str | None, run_id: int, path_value: str, batch_dir: Path) 
                     why_fit, audience, contact_method, requires_account,
                     requires_payment, link_type, source_url, status,
                     discovered_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'qualified', ?, ?)""",
                 values,
             )
             retained += 1
@@ -285,6 +285,15 @@ def reject_run_records(db: str | None, run_id: int, reason: str) -> dict:
                   errors_json=?, external_side_effects='none'
             WHERE id=?""",
         (now, json.dumps(prior_errors), run_id),
+    )
+    connection.execute(
+        """UPDATE agent_executions
+              SET status='failure', errors_json=?, synced_at=?
+            WHERE hermes_job_id=? AND started_at>=? AND started_at<=COALESCE(?, ?)""",
+        (
+            json.dumps(prior_errors), now, run["hermes_job_id"],
+            run["started_at"], run["finished_at"], now,
+        ),
     )
     connection.commit()
     result = {

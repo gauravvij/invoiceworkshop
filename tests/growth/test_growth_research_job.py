@@ -36,7 +36,7 @@ def prospect(domain: str = "example.org") -> dict:
 class ResearchJobTests(unittest.TestCase):
     def test_default_bounds_reserve_a_final_response_turn(self):
         self.assertEqual(MAX_TURNS, 4)
-        self.assertEqual(TOKEN_BUDGET, 40_000)
+        self.assertEqual(TOKEN_BUDGET, 60_000)
         self.assertEqual(WALL_BUDGET_SECONDS, 150)
 
     def test_extracts_only_marked_payload(self):
@@ -56,6 +56,17 @@ class ResearchJobTests(unittest.TestCase):
         self.assertEqual(len(retained), 1)
         self.assertEqual(rejected, 2)
         self.assertNotIn("direct_competitor", retained[0])
+
+    def test_rejects_homepage_and_privacy_contact_evidence(self):
+        homepage = prospect("home.example")
+        homepage["contact_method"] = "https://home.example/"
+        privacy = prospect("privacy.example")
+        privacy["contact_method"] = "https://privacy.example/privacy-policy"
+        retained, rejected = _validated_batch(
+            {"candidates_examined": 2, "prospects": [homepage, privacy]}
+        )
+        self.assertEqual(retained, [])
+        self.assertEqual(rejected, 2)
 
 
 if __name__ == "__main__":

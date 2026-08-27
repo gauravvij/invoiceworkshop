@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from growth_common import ROOT, apply_schema, canonical_domain, connect_db, normalize_public_url, utc_now
 from growth_research import DEFAULT_BATCH_DIR, finish_research, import_batch, start_research
@@ -22,16 +23,19 @@ JOB_NAME = "invoiceworkshop-level0-research"
 PROMPT_PATH = ROOT / "docs" / "growth-jobs" / "invoiceworkshop-level0-research.txt"
 MODEL = os.environ.get("GROWTH_RESEARCH_MODEL", "openai/gpt-5-mini")
 PROVIDER = os.environ.get("GROWTH_RESEARCH_PROVIDER", "openrouter")
-TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "40000"))
+REASONING = os.environ.get("GROWTH_RESEARCH_REASONING", "minimal")
+TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "60000"))
 TOOL_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOOL_BUDGET", "10"))
 MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "4"))
 WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "150"))
 MAX_PROSPECTS = 10
 COMPETITOR_DOMAINS = {
     "abill.io", "bill.com", "freshbooks.com", "invoiceninja.com", "invoicey.io",
-    "paypal.com", "quickbooks.intuit.com", "stripe.com", "waveapps.com", "xero.com",
-    "zoho.com",
+    "paypal.com", "paymoapp.com", "quickbooks.intuit.com", "stripe.com",
+    "waveapps.com", "xero.com", "zoho.com",
 }
+PROSPECT_TYPES = {"resource", "editorial", "directory", "community", "discovery", "broken", "gap", "other"}
+CONTACT_ROUTE = re.compile(r"(?:contact|write[-_/ ]?for[-_/ ]?us|contribut|editorial|submit|advertis|guest|pitch)", re.I)
 
 
 def resolve_job_id() -> str:
@@ -75,11 +79,42 @@ def _validated_batch(payload: dict) -> tuple[list[dict], int]:
                 domain.endswith("." + blocked) for blocked in COMPETITOR_DOMAINS
             ):
                 raise ValueError("known direct competitor")
+            if raw.get("prospect_type") not in PROSPECT_TYPES:
+                raise ValueError("invalid prospect type")
             score = raw.get("opportunity_score")
             if isinstance(score, bool) or not isinstance(score, int) or score < 65:
                 raise ValueError("qualification score below 65")
+            if raw.get("risk") not in {"low", "medium"}:
+                raise ValueError("unacceptable risk")
+            if not isinstance(raw.get("requires_account"), bool):
+                raise ValueError("requires_account is not boolean")
             if raw.get("requires_payment") is not False:
                 raise ValueError("paid opportunity")
+            if len(str(raw.get("why_fit", "")).strip()) < 20 or len(
+                str(raw.get("audience", "")).strip()
+            ) < 20:
+                raise ValueError("insufficient factual evidence")
+            page_path = urlsplit(page_url).path.rstrip("/")
+            source_path = urlsplit(source_url).path.rstrip("/")
+            contact_path = urlsplit(contact_url).path.rstrip("/")
+            if not page_path or not source_path:
+                raise ValueError("homepage is not qualification evidence")
+            if not contact_path or not CONTACT_ROUTE.search(contact_path):
+                raise ValueError("contact URL is not an explicit editorial/contact route")
+            contact_domain = canonical_domain(contact_url)
+            source_domain = canonical_domain(source_url)
+            if not (
+                domain == contact_domain
+                or domain.endswith("." + contact_domain)
+                or contact_domain.endswith("." + domain)
+            ):
+                raise ValueError("contact route is not on the candidate site")
+            if not (
+                domain == source_domain
+                or domain.endswith("." + source_domain)
+                or source_domain.endswith("." + domain)
+            ):
+                raise ValueError("source evidence is not on the candidate site")
             key = (domain, page_url)
             if key in seen:
                 raise ValueError("duplicate in model batch")
@@ -214,7 +249,7 @@ def run() -> dict:
         env["HERMES_IGNORE_RULES"] = "1"
         command = [
             HERMES, "-z", prompt, "--usage-file", str(usage_path), "--model", MODEL,
-            "--provider", PROVIDER, "--reasoning", "low", "--toolsets", "web,no_mcp",
+            "--provider", PROVIDER, "--reasoning", REASONING, "--toolsets", "web,no_mcp",
             "--ignore-user-config", "--ignore-rules", "--in", str(ROOT),
         ]
         try:

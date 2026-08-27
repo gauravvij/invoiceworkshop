@@ -16,14 +16,17 @@ You have read-only web tools only. You cannot write files, run commands, or acce
 repository/database. Never retry a failed or blocked page. Make exactly two focused searches,
 then at most one extraction call covering no more than five URLs with `char_limit` no greater
 than 3000. After that extraction, immediately return the JSON envelope. Inspect at most 15
-unique public pages total.
+unique public pages total. Use the first search to find relevant editorial/resource roundups.
+Use the second to verify explicit contact, contributor, submission, or editorial-guidelines
+pages on the strongest candidate sites.
 
 Target 8–15 examined candidates and retain 5–10 strong prospects, but retain fewer rather
 than padding. Reject backlink sellers, generic SEO directories, pay-to-link pages, fake
 communities, irrelevant lists, and all direct invoice/invoicing software competitors.
 Deduplicate against `existing_crm`. A retained prospect must have a specific public
 editorial/resource page, factual audience evidence, and a verified public contact or
-editorial-guidelines URL. Never use that route. `prospect_type` must be exactly one of
+editorial-guidelines URL on the same site. A homepage, privacy/terms page, or inferred email
+does not qualify as contact evidence. Never use that route. `prospect_type` must be exactly one of
 `resource`, `editorial`, `directory`, `community`, `discovery`, `broken`, `gap`, `other`.
 
 Return no prose. Return exactly this envelope, with valid JSON between the markers:
