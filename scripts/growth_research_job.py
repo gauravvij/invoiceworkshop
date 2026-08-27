@@ -26,8 +26,8 @@ PROVIDER = os.environ.get("GROWTH_RESEARCH_PROVIDER", "openrouter")
 REASONING = os.environ.get("GROWTH_RESEARCH_REASONING", "none")
 TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "60000"))
 TOOL_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOOL_BUDGET", "10"))
-MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "5"))
-WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "150"))
+MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "6"))
+WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "240"))
 MAX_PROSPECTS = 10
 COMPETITOR_DOMAINS = {
     "abill.io", "bill.com", "freshbooks.com", "invoiceninja.com", "invoicey.io",

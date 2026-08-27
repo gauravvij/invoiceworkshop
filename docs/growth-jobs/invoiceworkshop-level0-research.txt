@@ -13,13 +13,14 @@ account, post/comment, purchase, mutate an external service, change production/S
 open a PR, or deploy. Do not expose secrets or private data. Level 1 is disabled.
 
 You have read-only web tools only. You cannot write files, run commands, or access the
-repository/database. Never retry a failed or blocked page. Make exactly three focused searches,
+repository/database. Never retry a failed or blocked page. Make at most four focused searches,
 then at most one extraction call covering no more than eight URLs with `char_limit` no greater
 than 2500. After that extraction, immediately return the JSON envelope. Inspect 8–15
 unique public pages total. Use the first search to find relevant editorial/resource roundups.
 Use the second to verify explicit contact, contributor, submission, or editorial-guidelines
 pages on the strongest candidate sites. Use the third to diversify into credible small-business
-resource/editorial sites not already present in `existing_crm`.
+resource/editorial sites not already present in `existing_crm`. Use a fourth search only when
+needed to verify an explicit same-site contact/editorial route; never use it to pad the batch.
 
 Target 8–15 examined candidates and retain 5–10 strong prospects, but retain fewer rather
 than padding. Reject backlink sellers, generic SEO directories, pay-to-link pages, fake

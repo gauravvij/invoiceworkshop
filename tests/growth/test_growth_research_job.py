@@ -40,9 +40,9 @@ class ResearchJobTests(unittest.TestCase):
     def test_default_bounds_reserve_a_final_response_turn(self):
         self.assertEqual(MODEL, "deepseek/deepseek-v4-flash-0731")
         self.assertEqual(REASONING, "none")
-        self.assertEqual(MAX_TURNS, 5)
+        self.assertEqual(MAX_TURNS, 6)
         self.assertEqual(TOKEN_BUDGET, 60_000)
-        self.assertEqual(WALL_BUDGET_SECONDS, 150)
+        self.assertEqual(WALL_BUDGET_SECONDS, 240)
 
     def test_success_threshold_requires_larger_qualified_batch(self):
         self.assertTrue(_quality_target_incomplete(5, 2))
