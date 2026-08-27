@@ -13,8 +13,10 @@ account, post/comment, purchase, mutate an external service, change production/S
 open a PR, or deploy. Do not expose secrets or private data. Level 1 is disabled.
 
 You have read-only web tools only. You cannot write files, run commands, or access the
-repository/database. Never retry a failed or blocked page. Use no more than three searches
-and two extraction calls, inspect at most 15 unique public pages, then stop.
+repository/database. Never retry a failed or blocked page. Make exactly two focused searches,
+then at most one extraction call covering no more than five URLs with `char_limit` no greater
+than 3000. After that extraction, immediately return the JSON envelope. Inspect at most 15
+unique public pages total.
 
 Target 8–15 examined candidates and retain 5–10 strong prospects, but retain fewer rather
 than padding. Reject backlink sellers, generic SEO directories, pay-to-link pages, fake

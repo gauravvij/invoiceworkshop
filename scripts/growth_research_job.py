@@ -22,10 +22,10 @@ JOB_NAME = "invoiceworkshop-level0-research"
 PROMPT_PATH = ROOT / "docs" / "growth-jobs" / "invoiceworkshop-level0-research.txt"
 MODEL = os.environ.get("GROWTH_RESEARCH_MODEL", "openai/gpt-5-mini")
 PROVIDER = os.environ.get("GROWTH_RESEARCH_PROVIDER", "openrouter")
-TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "50000"))
+TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "40000"))
 TOOL_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOOL_BUDGET", "10"))
-MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "5"))
-WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "180"))
+MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "4"))
+WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "150"))
 MAX_PROSPECTS = 10
 COMPETITOR_DOMAINS = {
     "abill.io", "bill.com", "freshbooks.com", "invoiceninja.com", "invoicey.io",
@@ -95,19 +95,32 @@ def _validated_batch(payload: dict) -> tuple[list[dict], int]:
     return retained, rejected
 
 
-def _session_usage(usage: dict) -> dict:
+def _session_usage(usage: dict, run_id: int) -> dict:
     session_id = str(usage.get("session_id") or "").strip()
-    if not session_id or not HERMES_STATE.is_file():
+    if not HERMES_STATE.is_file():
         return {}
     connection = sqlite3.connect(f"file:{HERMES_STATE.resolve()}?mode=ro", uri=True)
     connection.row_factory = sqlite3.Row
-    row = connection.execute(
-        """SELECT id, model, started_at, ended_at, end_reason, tool_call_count,
-                  input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
-                  reasoning_tokens, api_call_count
-             FROM sessions WHERE id=?""",
-        (session_id,),
-    ).fetchone()
+    columns = """s.id, s.model, s.started_at, s.ended_at, s.end_reason,
+                 s.tool_call_count, s.input_tokens, s.output_tokens,
+                 s.cache_read_tokens, s.cache_write_tokens,
+                 s.reasoning_tokens, s.api_call_count"""
+    if session_id:
+        row = connection.execute(
+            f"SELECT {columns} FROM sessions s WHERE s.id=?", (session_id,)
+        ).fetchone()
+    else:
+        # A hard wall-time kill occurs before --usage-file is finalized. The
+        # unique run ID in the user prompt lets us recover exact session usage
+        # without guessing from timestamps or another concurrent CLI session.
+        marker = f'%"research_run_id":{run_id}%'
+        row = connection.execute(
+            f"""SELECT {columns}
+                  FROM sessions s JOIN messages m ON m.session_id=s.id
+                 WHERE m.role='user' AND m.content LIKE ?
+                 ORDER BY s.started_at DESC LIMIT 1""",
+            (marker,),
+        ).fetchone()
     connection.close()
     return dict(row) if row else {}
 
@@ -221,11 +234,13 @@ def run() -> dict:
         except (OSError, ValueError, json.JSONDecodeError) as error:
             errors.append(str(error))
 
-    session = _session_usage(usage)
+    session = _session_usage(usage, run_id)
     tool_calls = int(session.get("tool_call_count") or 0)
     total_tokens = int(usage.get("total_tokens") or (
-        int(usage.get("input_tokens") or 0) + int(usage.get("output_tokens") or 0)
-        + int(usage.get("cache_read_tokens") or 0) + int(usage.get("cache_write_tokens") or 0)
+        int(usage.get("input_tokens") or session.get("input_tokens") or 0)
+        + int(usage.get("output_tokens") or session.get("output_tokens") or 0)
+        + int(usage.get("cache_read_tokens") or session.get("cache_read_tokens") or 0)
+        + int(usage.get("cache_write_tokens") or session.get("cache_write_tokens") or 0)
     ))
     budget_stopped = total_tokens > TOKEN_BUDGET or tool_calls > TOOL_BUDGET
     if total_tokens > TOKEN_BUDGET:

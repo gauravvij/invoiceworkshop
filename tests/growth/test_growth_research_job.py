@@ -7,7 +7,13 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from growth_research_job import _extract_payload, _validated_batch  # noqa: E402
+from growth_research_job import (  # noqa: E402
+    MAX_TURNS,
+    TOKEN_BUDGET,
+    WALL_BUDGET_SECONDS,
+    _extract_payload,
+    _validated_batch,
+)
 
 
 def prospect(domain: str = "example.org") -> dict:
@@ -28,6 +34,11 @@ def prospect(domain: str = "example.org") -> dict:
 
 
 class ResearchJobTests(unittest.TestCase):
+    def test_default_bounds_reserve_a_final_response_turn(self):
+        self.assertEqual(MAX_TURNS, 4)
+        self.assertEqual(TOKEN_BUDGET, 40_000)
+        self.assertEqual(WALL_BUDGET_SECONDS, 150)
+
     def test_extracts_only_marked_payload(self):
         payload = _extract_payload(
             'RESEARCH_BATCH_JSON_START\n{"candidates_examined":8,"prospects":[]}\n'
