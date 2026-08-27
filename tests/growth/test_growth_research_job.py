@@ -38,11 +38,11 @@ def prospect(domain: str = "example.org") -> dict:
 
 class ResearchJobTests(unittest.TestCase):
     def test_default_bounds_reserve_a_final_response_turn(self):
-        self.assertEqual(MODEL, "deepseek/deepseek-v4-flash-0731")
+        self.assertEqual(MODEL, "openai/gpt-5.6-luna")
         self.assertEqual(REASONING, "none")
         self.assertEqual(MAX_TURNS, 6)
         self.assertEqual(TOKEN_BUDGET, 60_000)
-        self.assertEqual(WALL_BUDGET_SECONDS, 240)
+        self.assertEqual(WALL_BUDGET_SECONDS, 180)
 
     def test_success_threshold_requires_larger_qualified_batch(self):
         self.assertTrue(_quality_target_incomplete(5, 2))

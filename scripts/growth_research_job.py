@@ -21,13 +21,13 @@ HERMES_STATE = Path("/home/azureuser/.hermes/state.db")
 HERMES_JOBS = Path("/home/azureuser/.hermes/cron/jobs.json")
 JOB_NAME = "invoiceworkshop-level0-research"
 PROMPT_PATH = ROOT / "docs" / "growth-jobs" / "invoiceworkshop-level0-research.txt"
-MODEL = os.environ.get("GROWTH_RESEARCH_MODEL", "deepseek/deepseek-v4-flash-0731")
+MODEL = os.environ.get("GROWTH_RESEARCH_MODEL", "openai/gpt-5.6-luna")
 PROVIDER = os.environ.get("GROWTH_RESEARCH_PROVIDER", "openrouter")
 REASONING = os.environ.get("GROWTH_RESEARCH_REASONING", "none")
 TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "60000"))
 TOOL_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOOL_BUDGET", "10"))
 MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "6"))
-WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "240"))
+WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "180"))
 MAX_PROSPECTS = 10
 COMPETITOR_DOMAINS = {
     "abill.io", "bill.com", "freshbooks.com", "invoiceninja.com", "invoicey.io",

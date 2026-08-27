@@ -72,17 +72,18 @@ unknown to Google; that is an observed early-stage indexing state, not a collect
 - `invoiceworkshop-level0-research`: Monday, Wednesday, and Friday at 13:00 UTC. A bounded
   wrapper exposes only public-web read tools to the model, validates evidence locally,
   deduplicates against the CRM, and persists qualified work. Default soft budget: 60,000
-  total tokens and 10 tools; hard bounds: six turns and 240 seconds. Incomplete quality
+  total tokens and 10 tools; hard bounds: six turns and 180 seconds. Incomplete quality
   batches are persisted as `budget_stopped` and continue on the next normal schedule with
   no immediate retry. Hermes ID: `a4bf3bdace36`.
 - `invoiceworkshop-level0-weekly`: Monday at 12:00 UTC; analyze seven-day evidence and write
   a recommendation under ignored `data/plans/`. Hermes ID: `0cf8f7ecec07`.
 
 The jobs do not inherit the quarantined Hermes session. Exact analyst prompts are versioned
-under `docs/growth-jobs/`. All conditional Level-0 inference is pinned through OpenRouter
-to `deepseek/deepseek-v4-flash-0731` with reasoning disabled; deterministic measurement and
-local validation remain model-free. Weekly still delegates plan composition to the reviewed
-deterministic wrapper.
+under `docs/growth-jobs/`. Daily conditional interpretation and weekly strategy are pinned
+through OpenRouter to `deepseek/deepseek-v4-flash-0731` with reasoning disabled. Research is
+pinned to `openai/gpt-5.6-luna` because the DeepSeek canary did not obey the bounded search
+count or finish reliably. Deterministic measurement and local validation remain model-free.
+Weekly still delegates plan composition to the reviewed deterministic wrapper.
 
 Accepted manual bootstrap evidence:
 
@@ -117,10 +118,10 @@ failed and their imported rows were quarantined as rejected. No audit record was
 On 2026-08-27, a bounded Hermes canary verified the active DeepSeek model slug, one public
 web-search tool call, valid JSON output, and no external side effects before the Level-0
 model pins were migrated from `openai/gpt-5-mini`. The weekly path then passed its exact
-single-tool contract. A full research canary completed four searches plus one extraction
-for an estimated $0.00117 but reached the prior five-turn/150-second output boundary; the
-failure was durably recorded, research was paused, and the reviewed bounds above reserve a
-sixth output turn before reactivation.
+single-tool contract. Two full DeepSeek research canaries were rejected: they completed
+public reads for only about $0.00117 and $0.00327, but exceeded the instructed search count
+and failed to emit a valid batch within 150 and 240 seconds. Both failures were durably
+recorded and research was paused before switching only that path to GPT-5.6 Luna.
 
 Pre-activation validation remained paused while rejecting inaccurate weekly drafts and a
 retired/timed-out provider route. No rapid retry loop was enabled. The accepted weekly path
