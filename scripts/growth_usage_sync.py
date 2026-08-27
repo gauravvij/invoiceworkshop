@@ -59,6 +59,19 @@ def _overlapping_local_run(connection, job_id: str, start: float, end: float) ->
     ).fetchone()
     if level0:
         return str(level0["job_name"]), dict(level0)
+    # Monitor-gated daily collection finishes before Hermes starts the
+    # conditional interpretation session. Associate that session with the
+    # immediately preceding durable run instead of leaving its job unknown.
+    grace_start_iso = _epoch_iso(start - 300)
+    level0 = connection.execute(
+        """SELECT * FROM level0_runs
+            WHERE hermes_job_id=? AND finished_at IS NOT NULL
+              AND finished_at>=? AND finished_at<=?
+            ORDER BY finished_at DESC LIMIT 1""",
+        (job_id, grace_start_iso, start_iso),
+    ).fetchone()
+    if level0:
+        return str(level0["job_name"]), dict(level0)
     return "unknown", None
 
 

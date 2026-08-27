@@ -12,7 +12,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from growth_common import connect_db  # noqa: E402
 from growth_research import finish_research, start_research  # noqa: E402
-from growth_usage_sync import synchronize  # noqa: E402
+from growth_usage_sync import _overlapping_local_run, synchronize  # noqa: E402
 
 
 class UsageSyncTests(unittest.TestCase):
@@ -78,6 +78,22 @@ class UsageSyncTests(unittest.TestCase):
         self.assertEqual(row["candidates_examined"], 9)
         self.assertEqual(row["prospects_retained"], 0)
         self.assertEqual(row["external_side_effects"], "none")
+        connection.close()
+
+    def test_monitor_session_maps_to_recent_completed_daily_run(self):
+        connection = connect_db(self.db)
+        connection.execute(
+            """INSERT INTO level0_runs
+               (job_name, hermes_job_id, started_at, finished_at, status)
+               VALUES ('daily', 'daily-id',
+                       '2026-08-26T12:00:00+00:00',
+                       '2026-08-26T12:01:00+00:00', 'success')"""
+        )
+        connection.commit()
+        start = datetime.fromisoformat('2026-08-26T12:01:03+00:00').timestamp()
+        name, run = _overlapping_local_run(connection, 'daily-id', start, start + 10)
+        self.assertEqual(name, 'daily')
+        self.assertIsNotNone(run)
         connection.close()
 
 
