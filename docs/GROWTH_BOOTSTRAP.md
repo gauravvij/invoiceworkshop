@@ -122,6 +122,10 @@ single-tool contract. Two full DeepSeek research canaries were rejected: they co
 public reads for only about $0.00117 and $0.00327, but exceeded the instructed search count
 and failed to emit a valid batch within 150 and 240 seconds. Both failures were durably
 recorded and research was paused before switching only that path to GPT-5.6 Luna.
+The Luna research canary then completed in 48,757 ms with 15 candidates examined, five
+read-only tool calls, valid JSON, and an estimated cost of $0.00629. It retained zero rows
+because no candidate cleared the deterministic evidence gate and correctly finished
+`budget_stopped`; the research operation returned to active with a zero failure streak.
 
 Pre-activation validation remained paused while rejecting inaccurate weekly drafts and a
 retired/timed-out provider route. No rapid retry loop was enabled. The accepted weekly path
