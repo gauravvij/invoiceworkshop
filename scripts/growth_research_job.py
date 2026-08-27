@@ -26,7 +26,7 @@ PROVIDER = os.environ.get("GROWTH_RESEARCH_PROVIDER", "openrouter")
 REASONING = os.environ.get("GROWTH_RESEARCH_REASONING", "minimal")
 TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "60000"))
 TOOL_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOOL_BUDGET", "10"))
-MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "4"))
+MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "5"))
 WALL_BUDGET_SECONDS = int(os.environ.get("GROWTH_RESEARCH_WALL_BUDGET_SECONDS", "150"))
 MAX_PROSPECTS = 10
 COMPETITOR_DOMAINS = {
@@ -128,6 +128,10 @@ def _validated_batch(payload: dict) -> tuple[list[dict], int]:
         except (TypeError, ValueError):
             rejected += 1
     return retained, rejected
+
+
+def _quality_target_incomplete(candidates_examined: int, retained: int) -> bool:
+    return candidates_examined < 8 or retained < 5
 
 
 def _session_usage(usage: dict, run_id: int) -> dict:
@@ -298,6 +302,14 @@ def run() -> dict:
         except (OSError, ValueError, json.JSONDecodeError) as error:
             errors.append(f"deterministic batch validation/import failed: {error}")
 
+    incomplete_target = not errors and _quality_target_incomplete(
+        int(payload.get("candidates_examined") or 0), retained_count
+    )
+    if incomplete_target:
+        errors.append(
+            "quality batch incomplete; completed qualified work was persisted for the next scheduled run"
+        )
+        budget_stopped = True
     requested_status = "budget_stopped" if budget_stopped else ("failure" if errors else "success")
     result = finish_research(
         None, run_id, requested_status, int(payload.get("candidates_examined") or 0),

@@ -12,6 +12,7 @@ from growth_research_job import (  # noqa: E402
     TOKEN_BUDGET,
     WALL_BUDGET_SECONDS,
     _extract_payload,
+    _quality_target_incomplete,
     _validated_batch,
 )
 
@@ -35,9 +36,14 @@ def prospect(domain: str = "example.org") -> dict:
 
 class ResearchJobTests(unittest.TestCase):
     def test_default_bounds_reserve_a_final_response_turn(self):
-        self.assertEqual(MAX_TURNS, 4)
+        self.assertEqual(MAX_TURNS, 5)
         self.assertEqual(TOKEN_BUDGET, 60_000)
         self.assertEqual(WALL_BUDGET_SECONDS, 150)
+
+    def test_success_threshold_requires_larger_qualified_batch(self):
+        self.assertTrue(_quality_target_incomplete(5, 2))
+        self.assertTrue(_quality_target_incomplete(10, 4))
+        self.assertFalse(_quality_target_incomplete(8, 5))
 
     def test_extracts_only_marked_payload(self):
         payload = _extract_payload(
