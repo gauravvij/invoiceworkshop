@@ -52,6 +52,52 @@ def connect_db(path: str | Path | None = None, *, read_only: bool = False) -> sq
 
 def apply_schema(connection: sqlite3.Connection) -> None:
     connection.executescript(SCHEMA.read_text(encoding="utf-8"))
+    # CREATE TABLE IF NOT EXISTS cannot add columns to an existing local growth
+    # store. Keep the small Level-1A migration explicit and idempotent.
+    level1a_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(level1a_actions)")
+    }
+    if level1a_columns and "approved_message_hashes_json" not in level1a_columns:
+        connection.execute(
+            "ALTER TABLE level1a_actions ADD COLUMN approved_message_hashes_json TEXT NOT NULL DEFAULT '[]'"
+        )
+    audit_sql_row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='level1a_action_audit'"
+    ).fetchone()
+    audit_sql = audit_sql_row[0] if audit_sql_row else ""
+    if audit_sql and "'unknown'" not in audit_sql.split("external_side_effects", 1)[-1]:
+        connection.executescript(
+            """
+            ALTER TABLE level1a_action_audit RENAME TO level1a_action_audit_v5;
+            CREATE TABLE level1a_action_audit (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              action_id INTEGER NOT NULL REFERENCES level1a_actions(id),
+              message_id TEXT NOT NULL UNIQUE,
+              attempt_number INTEGER NOT NULL CHECK (attempt_number BETWEEN 0 AND 2),
+              mode TEXT NOT NULL CHECK (mode IN ('dry_run', 'live')),
+              started_at TEXT NOT NULL,
+              finished_at TEXT NOT NULL,
+              subject TEXT NOT NULL,
+              body TEXT NOT NULL,
+              recipient_or_route TEXT NOT NULL,
+              source_page TEXT NOT NULL,
+              target_url TEXT NOT NULL,
+              message_hash TEXT NOT NULL,
+              validation_result TEXT NOT NULL CHECK (validation_result IN ('review_ready', 'passed', 'rejected')),
+              rejection_reason TEXT,
+              provider_response_id TEXT,
+              delivery_state TEXT NOT NULL CHECK (delivery_state IN ('none', 'submitted', 'delivered', 'bounced', 'unknown')),
+              reply_state TEXT,
+              suppression_state TEXT NOT NULL,
+              external_side_effects TEXT NOT NULL CHECK (external_side_effects IN ('none', 'email_sent', 'form_submitted', 'unknown'))
+            );
+            INSERT INTO level1a_action_audit
+            SELECT * FROM level1a_action_audit_v5;
+            DROP TABLE level1a_action_audit_v5;
+            CREATE INDEX IF NOT EXISTS idx_level1a_audit_action
+              ON level1a_action_audit(action_id, started_at DESC);
+            """
+        )
     connection.commit()
 
 

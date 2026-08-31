@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '5')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '6')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -326,6 +326,159 @@ CREATE TABLE IF NOT EXISTS outreach (
   body_hash   TEXT NOT NULL,
   response    TEXT,
   notes       TEXT NOT NULL DEFAULT ''
+);
+
+-- Level-1A is a separately controlled, disabled-by-default execution layer.
+-- Level-0 tools never update these approval or activation records.
+CREATE TABLE IF NOT EXISTS level1a_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+INSERT INTO level1a_settings (key, value, updated_at)
+VALUES ('outbound_enabled', 'false', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+ON CONFLICT(key) DO NOTHING;
+INSERT INTO level1a_settings (key, value, updated_at)
+VALUES ('daily_new_cap', '3', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+ON CONFLICT(key) DO NOTHING;
+INSERT INTO level1a_settings (key, value, updated_at)
+VALUES ('daily_total_cap', '5', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+ON CONFLICT(key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS level1a_claims (
+  claim_key      TEXT NOT NULL,
+  version        INTEGER NOT NULL CHECK (version > 0),
+  canonical_text TEXT NOT NULL,
+  evidence_ref   TEXT NOT NULL,
+  active         INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+  created_at     TEXT NOT NULL,
+  PRIMARY KEY (claim_key, version)
+);
+
+CREATE TABLE IF NOT EXISTS level1a_templates (
+  template_id           TEXT NOT NULL,
+  version               INTEGER NOT NULL CHECK (version > 0),
+  action_type           TEXT NOT NULL CHECK (action_type IN (
+                          'resource_suggestion', 'directory_submission',
+                          'broken_resource_replacement', 'roundup_suggestion'
+                        )),
+  subject_template      TEXT NOT NULL,
+  opening_template      TEXT NOT NULL,
+  fit_template          TEXT NOT NULL,
+  close_template        TEXT NOT NULL,
+  max_body_characters   INTEGER NOT NULL CHECK (max_body_characters BETWEEN 200 AND 1500),
+  active                INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+  created_at            TEXT NOT NULL,
+  PRIMARY KEY (template_id, version)
+);
+
+CREATE TABLE IF NOT EXISTS level1a_actions (
+  id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+  prospect_id               INTEGER NOT NULL REFERENCES prospects(id),
+  organization              TEXT NOT NULL,
+  external_page_url         TEXT NOT NULL,
+  verified_contact_route    TEXT NOT NULL,
+  contact_kind              TEXT NOT NULL CHECK (contact_kind IN ('email', 'form')),
+  recipient                 TEXT,
+  form_handler              TEXT,
+  action_type               TEXT NOT NULL CHECK (action_type IN (
+                              'resource_suggestion', 'directory_submission',
+                              'broken_resource_replacement', 'roundup_suggestion'
+                            )),
+  target_url                TEXT NOT NULL,
+  allowed_intent            TEXT NOT NULL,
+  allowed_claim_keys_json   TEXT NOT NULL,
+  forbidden_claims_json     TEXT NOT NULL,
+  relevance_terms_json      TEXT NOT NULL,
+  template_id               TEXT NOT NULL,
+  template_version          INTEGER NOT NULL,
+  subject_value             TEXT NOT NULL,
+  opening_value             TEXT NOT NULL,
+  fit_value                 TEXT NOT NULL,
+  close_value               TEXT NOT NULL,
+  max_followups             INTEGER NOT NULL DEFAULT 2 CHECK (max_followups BETWEEN 0 AND 2),
+  attachments_allowed       INTEGER NOT NULL DEFAULT 0 CHECK (attachments_allowed = 0),
+  payment_allowed           INTEGER NOT NULL DEFAULT 0 CHECK (payment_allowed = 0),
+  external_action_approved  INTEGER NOT NULL DEFAULT 0 CHECK (external_action_approved IN (0, 1)),
+  message_approved          INTEGER NOT NULL DEFAULT 0 CHECK (message_approved IN (0, 1)),
+  approved_message_hash     TEXT,
+  approved_message_hashes_json TEXT NOT NULL DEFAULT '[]',
+  approved_by               TEXT,
+  approved_at               TEXT,
+  suppression_state         TEXT NOT NULL DEFAULT 'active' CHECK (suppression_state IN (
+                              'active', 'declined', 'unsubscribed', 'bounced',
+                              'placed', 'suppressed'
+                            )),
+  last_verified_at          TEXT,
+  verification_expires_at   TEXT,
+  page_title                TEXT NOT NULL,
+  page_excerpt              TEXT NOT NULL,
+  created_at                TEXT NOT NULL,
+  updated_at                TEXT NOT NULL,
+  FOREIGN KEY (template_id, template_version)
+    REFERENCES level1a_templates(template_id, version),
+  UNIQUE (prospect_id, action_type, verified_contact_route)
+);
+CREATE INDEX IF NOT EXISTS idx_level1a_actions_org
+  ON level1a_actions(organization, suppression_state);
+
+CREATE TABLE IF NOT EXISTS level1a_action_audit (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  action_id             INTEGER NOT NULL REFERENCES level1a_actions(id),
+  message_id            TEXT NOT NULL UNIQUE,
+  attempt_number        INTEGER NOT NULL CHECK (attempt_number BETWEEN 0 AND 2),
+  mode                  TEXT NOT NULL CHECK (mode IN ('dry_run', 'live')),
+  started_at            TEXT NOT NULL,
+  finished_at           TEXT NOT NULL,
+  subject               TEXT NOT NULL,
+  body                  TEXT NOT NULL,
+  recipient_or_route    TEXT NOT NULL,
+  source_page           TEXT NOT NULL,
+  target_url            TEXT NOT NULL,
+  message_hash          TEXT NOT NULL,
+  validation_result     TEXT NOT NULL CHECK (validation_result IN (
+                          'review_ready', 'passed', 'rejected'
+                        )),
+  rejection_reason      TEXT,
+  provider_response_id  TEXT,
+  delivery_state        TEXT NOT NULL CHECK (delivery_state IN (
+                          'none', 'submitted', 'delivered', 'bounced', 'unknown'
+                        )),
+  reply_state           TEXT,
+  suppression_state     TEXT NOT NULL,
+  external_side_effects TEXT NOT NULL CHECK (external_side_effects IN (
+                          'none', 'email_sent', 'form_submitted', 'unknown'
+                        ))
+);
+CREATE INDEX IF NOT EXISTS idx_level1a_audit_action
+  ON level1a_action_audit(action_id, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS level1a_suppressions (
+  suppression_key TEXT PRIMARY KEY,
+  organization    TEXT NOT NULL,
+  recipient       TEXT,
+  state           TEXT NOT NULL CHECK (state IN (
+                    'declined', 'unsubscribed', 'bounced', 'placed', 'suppressed'
+                  )),
+  reason          TEXT NOT NULL,
+  permanent       INTEGER NOT NULL DEFAULT 1 CHECK (permanent IN (0, 1)),
+  created_at      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS level1a_replies (
+  id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+  action_id               INTEGER NOT NULL REFERENCES level1a_actions(id),
+  provider_message_id     TEXT NOT NULL UNIQUE,
+  received_at             TEXT NOT NULL,
+  classification          TEXT NOT NULL CHECK (classification IN (
+                            'positive', 'information_requested', 'decline',
+                            'unsubscribe', 'bounce', 'payment_requested',
+                            'editorial_author_required', 'partnership',
+                            'legal_compliance', 'ambiguous'
+                          )),
+  requires_escalation     INTEGER NOT NULL CHECK (requires_escalation IN (0, 1)),
+  automated_action        TEXT NOT NULL,
+  content_hash            TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS placements (
