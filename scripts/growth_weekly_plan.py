@@ -15,6 +15,13 @@ from urllib.parse import urlsplit
 
 from growth_common import ROOT, apply_schema, connect_db, database_path
 from growth_report import build_report
+from growth_research_policy import (
+    QUALIFIED_TARGET_MAX,
+    QUALIFIED_TARGET_MIN,
+    SEARCHES_PER_SCHEDULED_RUN,
+    SHORTLIST_MAX,
+    SHORTLIST_MIN,
+)
 
 REQUIRED_DOCS = (
     "docs/SEO_STRATEGY.md",
@@ -110,6 +117,32 @@ def render_plan(report: dict, generated_on: str) -> str:
         if not row["error"] and not row["errors"] and not row["warnings"]
     )
     ga_sessions = sum(row["ga_sessions"] or 0 for row in report["daily_metrics"])
+    statuses = report["crm_status_counts"]
+    research_runs = report["research_runs"]
+    research_statuses = {}
+    for row in research_runs:
+        research_statuses[row["status"]] = research_statuses.get(row["status"], 0) + 1
+    research_status_line = ", ".join(
+        f"{name}={count}" for name, count in sorted(research_statuses.items())
+    ) or "none"
+    research_usage = report["research_usage"]
+    qualified = int(statuses.get("qualified", 0))
+    tokens_per_qualified = (
+        round(int(research_usage["total_tokens"]) / qualified)
+        if qualified and int(research_usage["total_tokens"])
+        else None
+    )
+    efficiency = (
+        f"{int(research_usage['total_tokens'])} tokens, "
+        f"{int(research_usage['tool_calls'])} tool calls"
+        + (f", approximately {tokens_per_qualified} tokens per current qualified prospect" if tokens_per_qualified else "")
+    )
+    required_channels = {
+        "competitor_gap", "freelancer", "small_business", "accounting",
+        "contractor", "directory", "editorial", "community", "linkable_asset",
+    }
+    missing_channels = sorted(required_channels - set(report["channel_coverage"]))
+    missing_channel_line = ", ".join(missing_channels) or "none"
 
     return f"""# InvoiceWorkshop Level-0 weekly plan — {generated_on}
 
@@ -124,7 +157,9 @@ Latest persisted source evidence used: {source_line}.
 - Priority URL inspection: {len(indexed)} of {len(report['latest_index_state'])} pass. Indexed: {indexed_routes}.
 - Other recorded index states: {pending_routes}. These states do not establish a technical cause.
 - URL health: {len(healthy)} of {len(report['latest_health'])} checks are healthy. Sitemap rows without reported errors or warnings: {sitemap_ok} of {len(report['latest_sitemaps'])}.
-- Research CRM: {report['prospect_count']} prospects; current top three evidence scores: {prospects}. Placements: {report['placement_count']}; outreach: {report['outreach_count']}.
+- Research CRM: {report['prospect_count']} total; qualified={int(statuses.get('qualified', 0))}, new/unreviewed={int(statuses.get('new', 0))}, rejected={int(statuses.get('rejected', 0))}, retired={int(statuses.get('retired', 0))}. Top qualified prospects only: {prospects}.
+- Research executions in-period: {len(research_runs)} ({research_status_line}). Efficiency: {efficiency}.
+- Missing qualified-channel coverage: {missing_channel_line}. Placements: {report['placement_count']}; outreach: {report['outreach_count']}.
 
 ## Continue
 
@@ -140,8 +175,9 @@ Latest persisted source evidence used: {source_line}.
 
 ## Next research allocation
 
-- Favor public resource pages that explicitly accept relevant tool suggestions and reject backlink sellers, generic SEO directories, pay-to-link pages, and competitors without a credible editorial path.
-- Preserve the daily bounds: at most two searches, one extraction call, three unique public pages, and two prospect additions.
+- Use the deterministic candidate queue before model qualification; avoid repeatedly rejected domains and generic write-for-us pages without a compelling editorial fit.
+- Current research bounds: at most {SEARCHES_PER_SCHEDULED_RUN} cheap discovery queries, shortlist {SHORTLIST_MIN}–{SHORTLIST_MAX} candidates, and retain {QUALIFIED_TARGET_MIN}–{QUALIFIED_TARGET_MAX} only when evidence passes second review.
+- Explicitly treat `budget_stopped` and failed research runs as efficiency evidence, not successful prospect production.
 - Reassess only when later stored evidence changes; recommendations remain Level-0 and read-only.
 
 ## Escalation

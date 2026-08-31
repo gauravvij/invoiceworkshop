@@ -10,6 +10,7 @@ from pathlib import Path
 
 from growth_common import (
     PRIORITY_PATHS,
+    PRIORITY_URLS,
     ROOT,
     apply_schema,
     canonical_domain,
@@ -182,7 +183,43 @@ def import_batch(db: str | None, run_id: int, path_value: str, batch_dir: Path) 
                 values,
             )
             retained += 1
-            added.append({"id": cursor.lastrowid, "domain": domain, "page_url": page_url})
+            prospect_id = int(cursor.lastrowid)
+            channel = _bounded_text(item, "channel", maximum=64)
+            page_evidence = _bounded_text(item, "page_evidence", maximum=4000)
+            outbound = item.get("outbound_resources", "")
+            if isinstance(outbound, list):
+                outbound = json.dumps(outbound, ensure_ascii=True)
+            outbound = str(outbound).strip()
+            if len(outbound) > 4000:
+                raise ValueError("outbound_resources exceeds 4000 characters")
+            target_url = normalize_public_url(_bounded_text(item, "target_url", maximum=2000))
+            if target_url not in PRIORITY_URLS:
+                raise ValueError("target_url must be a frozen priority URL")
+            proposed_action = _bounded_text(item, "proposed_action", maximum=1000)
+            confidence = _bounded_text(item, "confidence", maximum=16)
+            if confidence not in {"high", "medium", "low"}:
+                raise ValueError("invalid confidence")
+            if item.get("second_pass_pass") is not True:
+                raise ValueError("second-pass quality review did not pass")
+            review_reason = _bounded_text(item, "second_pass_reason", maximum=2000)
+            connection.execute(
+                """INSERT INTO prospect_qualification
+                   (prospect_id, channel, page_evidence, outbound_resources,
+                    target_url, proposed_action, confidence, second_pass_pass,
+                    review_reason, reviewed_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)""",
+                (
+                    prospect_id, channel, page_evidence, outbound, target_url,
+                    proposed_action, confidence, review_reason, now,
+                ),
+            )
+            connection.execute(
+                """UPDATE research_candidates SET state='qualified', rejection_reason=NULL,
+                          updated_at=?
+                   WHERE domain=? AND page_url=?""",
+                (now, domain, page_url),
+            )
+            added.append({"id": prospect_id, "domain": domain, "page_url": page_url})
         except sqlite3.IntegrityError as error:
             if "UNIQUE constraint failed" not in str(error):
                 raise

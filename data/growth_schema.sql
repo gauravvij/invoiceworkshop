@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '4')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '5')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -159,6 +159,54 @@ CREATE TABLE IF NOT EXISTS gsc_breakdowns (
   PRIMARY KEY (snapshot_date, dimension, value)
 );
 
+-- Combined Search Console facts. Unlike gsc_breakdowns, every row preserves
+-- the query/page/country/device/date relationship returned by Google. Older
+-- aggregate rows remain untouched and are never backfilled by inference.
+CREATE TABLE IF NOT EXISTS gsc_query_facts (
+  snapshot_date TEXT NOT NULL,
+  date          TEXT NOT NULL,
+  query         TEXT NOT NULL,
+  page          TEXT NOT NULL,
+  country       TEXT NOT NULL,
+  device        TEXT NOT NULL,
+  clicks        INTEGER NOT NULL DEFAULT 0,
+  impressions   INTEGER NOT NULL DEFAULT 0,
+  ctr           REAL,
+  position      REAL,
+  window_start  TEXT NOT NULL,
+  window_end    TEXT NOT NULL,
+  PRIMARY KEY (snapshot_date, date, query, page, country, device)
+);
+CREATE INDEX IF NOT EXISTS idx_gsc_query_facts_date
+  ON gsc_query_facts(date DESC, impressions DESC);
+
+-- GA4 acquisition facts. traffic_class remains unknown unless an explicit
+-- configured rule identifies a row; historical traffic is never relabeled.
+CREATE TABLE IF NOT EXISTS ga4_acquisition (
+  snapshot_date          TEXT NOT NULL,
+  date                   TEXT NOT NULL,
+  source                 TEXT NOT NULL,
+  medium                 TEXT NOT NULL,
+  source_medium          TEXT NOT NULL,
+  default_channel_group  TEXT NOT NULL,
+  users                  INTEGER NOT NULL DEFAULT 0,
+  sessions               INTEGER NOT NULL DEFAULT 0,
+  pageviews              INTEGER NOT NULL DEFAULT 0,
+  tool_starts            INTEGER NOT NULL DEFAULT 0,
+  pdf_downloads          INTEGER NOT NULL DEFAULT 0,
+  returning_loads        INTEGER NOT NULL DEFAULT 0,
+  traffic_class          TEXT NOT NULL DEFAULT 'unknown'
+    CHECK (traffic_class IN ('unknown', 'internal', 'external')),
+  classification_reason  TEXT,
+  window_start           TEXT NOT NULL,
+  window_end             TEXT NOT NULL,
+  PRIMARY KEY (
+    snapshot_date, date, source, medium, default_channel_group, traffic_class
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_ga4_acquisition_date
+  ON ga4_acquisition(date DESC, sessions DESC);
+
 CREATE TABLE IF NOT EXISTS url_health (
   date         TEXT NOT NULL,
   url          TEXT NOT NULL,
@@ -230,6 +278,42 @@ CREATE TABLE IF NOT EXISTS prospects (
 );
 CREATE INDEX IF NOT EXISTS idx_prospects_score ON prospects(opportunity_score DESC);
 CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects(status);
+
+-- Evidence and second-pass review fields are separate so the original CRM
+-- rows and history remain unchanged while stricter qualifications evolve.
+CREATE TABLE IF NOT EXISTS prospect_qualification (
+  prospect_id          INTEGER PRIMARY KEY REFERENCES prospects(id),
+  channel              TEXT NOT NULL,
+  page_evidence        TEXT NOT NULL,
+  outbound_resources   TEXT NOT NULL DEFAULT '',
+  target_url           TEXT NOT NULL,
+  proposed_action      TEXT NOT NULL,
+  confidence           TEXT NOT NULL CHECK (confidence IN ('high', 'medium', 'low')),
+  second_pass_pass     INTEGER NOT NULL CHECK (second_pass_pass IN (0, 1)),
+  review_reason        TEXT NOT NULL,
+  reviewed_at          TEXT NOT NULL
+);
+
+-- Cheap discovery results enter this queue before any model sees them.
+CREATE TABLE IF NOT EXISTS research_candidates (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  domain             TEXT NOT NULL,
+  page_url           TEXT NOT NULL,
+  channel            TEXT NOT NULL,
+  query_theme        TEXT NOT NULL,
+  title              TEXT NOT NULL DEFAULT '',
+  snippet            TEXT NOT NULL DEFAULT '',
+  contact_url        TEXT,
+  heuristic_score    INTEGER NOT NULL DEFAULT 0,
+  state              TEXT NOT NULL DEFAULT 'queued'
+    CHECK (state IN ('queued', 'shortlisted', 'qualified', 'rejected', 'deferred')),
+  rejection_reason   TEXT,
+  discovered_at      TEXT NOT NULL,
+  updated_at         TEXT NOT NULL,
+  UNIQUE(domain, page_url)
+);
+CREATE INDEX IF NOT EXISTS idx_research_candidates_state_score
+  ON research_candidates(state, heuristic_score DESC, id);
 
 -- Reserved for a separately approved Level-1 implementation. Level 0 never
 -- inserts rows here.

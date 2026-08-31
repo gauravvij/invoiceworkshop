@@ -32,6 +32,14 @@ def candidate(domain: str) -> dict:
         "requires_account": False,
         "requires_payment": False,
         "link_type": "editorial",
+        "channel": "freelancer",
+        "page_evidence": "The page explicitly curates operational tools for freelancers.",
+        "outbound_resources": [],
+        "target_url": "https://invoiceworkshop.com/",
+        "proposed_action": "Suggest inclusion in the resource list.",
+        "confidence": "high",
+        "second_pass_pass": True,
+        "second_pass_reason": "The audience would benefit from a free invoicing workspace without any SEO consideration.",
     }
 
 
@@ -81,6 +89,10 @@ class ResearchTests(unittest.TestCase):
                 "SELECT COUNT(*) FROM prospects WHERE external_action_approved=1"
             ).fetchone()[0],
             0,
+        )
+        self.assertEqual(
+            connection.execute("SELECT COUNT(*) FROM prospect_qualification").fetchone()[0],
+            2,
         )
         connection.close()
 

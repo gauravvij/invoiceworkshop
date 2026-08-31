@@ -109,7 +109,9 @@ def cmd_status(args: argparse.Namespace) -> None:
     tables = (
         "collection_runs", "level0_runs", "measurement_signals", "research_runs",
         "agent_executions", "metrics_daily", "gsc_breakdowns", "url_health",
-        "index_state", "prospects", "outreach", "placements", "experiments",
+        "gsc_query_facts", "ga4_acquisition", "index_state", "prospects",
+        "prospect_qualification", "research_candidates", "outreach",
+        "placements", "experiments",
     )
     counts = {table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in tables}
     version = connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()[0]

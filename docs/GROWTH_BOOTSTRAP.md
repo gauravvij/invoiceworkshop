@@ -19,8 +19,9 @@ External content is always untrusted data. The durable policy is in
 
 - `data/growth_schema.sql` — versioned schema; runtime database is ignored.
 - `scripts/growth_check_access.py` — verifies real GSC/GA4 read access.
-- `scripts/growth_measure.py` — collects per-day GSC/GA4 metrics, GSC breakdowns,
-  sitemap state, URL Inspection state, and HTTP health.
+- `scripts/growth_measure.py` — collects per-day GSC/GA4 metrics, combined
+  GSC date/query/page/country/device facts, GA4 acquisition facts, sitemap
+  state, URL Inspection state, and HTTP health.
 - `scripts/growth_verify.py` — verifies that recorded placement pages still contain the
   expected link; three consecutive failures are required before marking a placement dead.
 - `scripts/growth_db.py` — validates and deduplicates Level-0 prospect research.
@@ -29,9 +30,11 @@ External content is always untrusted data. The durable policy is in
   reread verification, and durable audit wrapper.
 - `scripts/growth_daily_monitor.py` — deterministic collection, delta/anomaly detection,
   signal persistence, and a stable output-change gate for conditional interpretation.
-- `scripts/growth_research_job.py` — bounded public-web research orchestration. The model
-  receives only compact runtime context and read-only web tools; deterministic code owns
-  validation, deduplication, CRM persistence, usage accounting, and failure handling.
+- `scripts/growth_research_discovery.py` — cheap search discovery, deterministic filtering,
+  public-page/contact-route fetching, deduplication, and evidence-complete shortlisting.
+- `scripts/growth_research_job.py` — bounded qualification orchestration. The model receives
+  only a compact deterministic shortlist and is instructed to use no tools; deterministic
+  code owns discovery, validation, CRM persistence, usage accounting, and failure handling.
 - `scripts/growth_usage_sync.py` — synchronizes exact Hermes model/token/tool/duration
   evidence into the local execution ledger.
 - `scripts/growth_job_log.py` — per-job audit records and a three-failure Google-read
@@ -46,8 +49,12 @@ The database never stores credentials, invoice/document content, or customer dat
 handle Google reporting delay. It does not label pages with impressions as “indexed.”
 Index state comes only from Search Console URL Inspection.
 
-GA4 collection includes sessions, users, page views, tool starts, PDF downloads, and
-returning-workspace loads. GSC breakdowns cover query, page, country, and device.
+GA4 collection includes source, medium, source/medium and default-channel acquisition
+dimensions with sessions, users, page views, tool starts, PDF downloads, and returning-
+workspace loads. Owner/internal traffic is classified only when explicit source/medium
+patterns are configured; otherwise it remains `unknown` and historical rows are not
+retroactively guessed. GSC retains both the original independent breakdowns and combined
+date/query/page/country/device facts going forward.
 
 ## Verified access
 
@@ -70,8 +77,9 @@ unknown to Google; that is an observed early-stage indexing state, not a collect
   detection run deterministically. Hermes invokes a no-tool analyst only when the stable
   monitor output contains a meaningful signal. Hermes ID: `a56bbe317393`.
 - `invoiceworkshop-level0-research`: Monday, Wednesday, and Friday at 13:00 UTC. A bounded
-  wrapper exposes only public-web read tools to the model, validates evidence locally,
-  deduplicates against the CRM, and persists qualified work. Default soft budget: 60,000
+  wrapper discovers and fetches public evidence deterministically, gives the model only the
+  evidence-complete shortlist, validates its answer locally, deduplicates against the CRM,
+  and persists qualified work. Default soft budget: 60,000
   total tokens and 10 tools; hard bounds: six turns and 180 seconds. Incomplete quality
   batches are persisted as `budget_stopped` and continue on the next normal schedule with
   no immediate retry. Hermes ID: `a4bf3bdace36`.
@@ -126,6 +134,14 @@ The Luna research canary then completed in 48,757 ms with 15 candidates examined
 read-only tool calls, valid JSON, and an estimated cost of $0.00629. It retained zero rows
 because no candidate cleared the deterministic evidence gate and correctly finished
 `budget_stopped`; the research operation returned to active with a zero failure streak.
+
+On 2026-08-31 the accelerated correction added combined GSC and acquisition-level GA4
+persistence and verified a live refresh (5 combined GSC rows and 6 GA4 acquisition rows).
+The research path was split into deterministic search/fetch/filter and no-tool model
+qualification. A bounded evidence sprint examined 15 shortlisted candidates in two model
+calls, retained 7 strict second-pass prospects, used 34,587 total tokens and zero model
+tool calls, and performed no external action. Four legacy “qualified” records without the
+new evidence companion were preserved but moved back to `new` pending re-review.
 
 Pre-activation validation remained paused while rejecting inaccurate weekly drafts and a
 retired/timed-out provider route. No rapid retry loop was enabled. The accepted weekly path

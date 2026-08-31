@@ -15,6 +15,8 @@ from urllib.parse import urlsplit
 
 from growth_common import ROOT, apply_schema, canonical_domain, connect_db, normalize_public_url, utc_now
 from growth_research import DEFAULT_BATCH_DIR, finish_research, import_batch, start_research
+from growth_research_discovery import discover, prepare_shortlist, scheduled_channels
+from growth_research_policy import QUALIFIED_TARGET_MIN, SHORTLIST_MIN
 
 HERMES = "/home/azureuser/.local/bin/hermes"
 HERMES_STATE = Path("/home/azureuser/.hermes/state.db")
@@ -24,6 +26,7 @@ PROMPT_PATH = ROOT / "docs" / "growth-jobs" / "invoiceworkshop-level0-research.t
 MODEL = os.environ.get("GROWTH_RESEARCH_MODEL", "openai/gpt-5.6-luna")
 PROVIDER = os.environ.get("GROWTH_RESEARCH_PROVIDER", "openrouter")
 REASONING = os.environ.get("GROWTH_RESEARCH_REASONING", "none")
+TOOLSETS = os.environ.get("GROWTH_RESEARCH_TOOLSETS", "clarify")
 TOKEN_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOKEN_BUDGET", "60000"))
 TOOL_BUDGET = int(os.environ.get("GROWTH_RESEARCH_TOOL_BUDGET", "10"))
 MAX_TURNS = int(os.environ.get("GROWTH_RESEARCH_MAX_TURNS", "6"))
@@ -32,7 +35,8 @@ MAX_PROSPECTS = 10
 COMPETITOR_DOMAINS = {
     "abill.io", "bill.com", "freshbooks.com", "invoiceninja.com", "invoicey.io",
     "paypal.com", "paymoapp.com", "quickbooks.intuit.com", "stripe.com",
-    "waveapps.com", "xero.com", "zoho.com",
+    "waveapps.com", "xero.com", "zoho.com", "buildern.com", "flowlu.com",
+    "joist.com", "support.construction", "tallysolutions.com",
 }
 PROSPECT_TYPES = {"resource", "editorial", "directory", "community", "discovery", "broken", "gap", "other"}
 CONTACT_ROUTE = re.compile(r"(?:contact|write[-_/ ]?for[-_/ ]?us|contribut|editorial|submit|advertis|guest|pitch)", re.I)
@@ -63,12 +67,19 @@ def _extract_payload(response: str) -> dict:
     return payload
 
 
-def _validated_batch(payload: dict) -> tuple[list[dict], int]:
+def _validated_batch(
+    payload: dict, allowed_candidates: list[dict] | None = None
+) -> tuple[list[dict], int]:
     retained: list[dict] = []
     rejected = 0
     seen: set[tuple[str, str]] = set()
+    allowed = {
+        (item["page_url"], item["contact_url"]): item
+        for item in (allowed_candidates or [])
+    }
     for raw in payload["prospects"][:MAX_PROSPECTS]:
         try:
+            supplied = None
             if not isinstance(raw, dict) or raw.get("direct_competitor") is not False:
                 raise ValueError("direct competitor or invalid object")
             page_url = normalize_public_url(str(raw.get("page_url", "")))
@@ -90,16 +101,36 @@ def _validated_batch(payload: dict) -> tuple[list[dict], int]:
                 raise ValueError("requires_account is not boolean")
             if raw.get("requires_payment") is not False:
                 raise ValueError("paid opportunity")
+            if allowed_candidates is not None:
+                supplied = allowed.get((page_url, contact_url))
+                if supplied is None:
+                    raise ValueError("candidate or contact route was not in deterministic shortlist")
+                if raw.get("channel") != supplied["channel"]:
+                    raise ValueError("candidate channel differs from deterministic shortlist")
             if len(str(raw.get("why_fit", "")).strip()) < 20 or len(
                 str(raw.get("audience", "")).strip()
             ) < 20:
                 raise ValueError("insufficient factual evidence")
+            if len(str(raw.get("page_evidence", "")).strip()) < 40:
+                raise ValueError("page evidence is not specific enough")
+            if raw.get("confidence") not in {"high", "medium"}:
+                raise ValueError("qualification confidence is too low")
+            if raw.get("second_pass_pass") is not True or len(
+                str(raw.get("second_pass_reason", "")).strip()
+            ) < 30:
+                raise ValueError("second-pass quality review did not pass")
+            target_url = normalize_public_url(str(raw.get("target_url", "")))
+            if not target_url.startswith("https://invoiceworkshop.com/"):
+                raise ValueError("invalid target URL")
+            if len(str(raw.get("proposed_action", "")).strip()) < 15:
+                raise ValueError("proposed action is missing")
             page_path = urlsplit(page_url).path.rstrip("/")
             source_path = urlsplit(source_url).path.rstrip("/")
             contact_path = urlsplit(contact_url).path.rstrip("/")
             if not page_path or not source_path:
                 raise ValueError("homepage is not qualification evidence")
-            if not contact_path or not CONTACT_ROUTE.search(contact_path):
+            route_verified = bool(supplied and supplied.get("contact_route_verified"))
+            if (not contact_path or not CONTACT_ROUTE.search(contact_path)) and not route_verified:
                 raise ValueError("contact URL is not an explicit editorial/contact route")
             contact_domain = canonical_domain(contact_url)
             source_domain = canonical_domain(source_url)
@@ -131,7 +162,38 @@ def _validated_batch(payload: dict) -> tuple[list[dict], int]:
 
 
 def _quality_target_incomplete(candidates_examined: int, retained: int) -> bool:
-    return candidates_examined < 8 or retained < 5
+    return candidates_examined < SHORTLIST_MIN or retained < QUALIFIED_TARGET_MIN
+
+
+def _mark_unqualified(shortlist: list[dict], retained: list[dict]) -> None:
+    retained_urls = {item["page_url"] for item in retained}
+    connection = connect_db()
+    apply_schema(connection)
+    for item in shortlist:
+        if item["page_url"] in retained_urls:
+            continue
+        connection.execute(
+            """UPDATE research_candidates SET state='rejected',
+                      rejection_reason='LLM second-pass qualification did not retain candidate',
+                      updated_at=? WHERE id=? AND state='shortlisted'""",
+            (utc_now(), item["candidate_id"]),
+        )
+    connection.commit()
+    connection.close()
+
+
+def _release_shortlist(shortlist: list[dict], reason: str) -> None:
+    """Return an unprocessed deterministic shortlist to the queue after agent failure."""
+    connection = connect_db()
+    apply_schema(connection)
+    for item in shortlist:
+        connection.execute(
+            """UPDATE research_candidates SET state='queued', rejection_reason=?, updated_at=?
+                      WHERE id=? AND state='shortlisted'""",
+            (f"qualification deferred: {reason}"[:1000], utc_now(), item["candidate_id"]),
+        )
+    connection.commit()
+    connection.close()
 
 
 def _session_usage(usage: dict, run_id: int) -> dict:
@@ -241,6 +303,53 @@ def run() -> dict:
     usage: dict = {}
     payload = {"candidates_examined": 0, "prospects": []}
     response = ""
+    connection = None
+    try:
+        connection = connect_db()
+        apply_schema(connection)
+        channels = scheduled_channels(connection, run_id)
+        discovery = discover(connection, channels, searches_per_channel=1)
+        prepared = prepare_shortlist(connection, SHORTLIST_MIN)
+        connection.close()
+        connection = None
+    except Exception as error:
+        if connection is not None:
+            connection.close()
+        errors.append(f"deterministic research preparation failed: {type(error).__name__}: {error}")
+        result = finish_research(None, run_id, "failure", 0, 0, errors)
+        finished_at = utc_now()
+        duration_ms = round((time.monotonic() - started) * 1000)
+        result.update({
+            "model": "none", "input_tokens": 0, "output_tokens": 0,
+            "total_tokens": 0, "tool_calls": 0, "validation_rejected": 0,
+            "duration_ms": duration_ms, "external_side_effects": "none",
+        })
+        _record_usage(job_id, run_id, {}, {}, result, started_at, finished_at, duration_ms, errors)
+        streak, pause_required = _set_operation_state(False, errors[0])
+        result["failure_streak"] = streak
+        result["pause_required"] = pause_required
+        if pause_required:
+            subprocess.run([HERMES, "cron", "pause", job_id], cwd=ROOT, timeout=30,
+                           check=False, text=True, capture_output=True)
+        return result
+    shortlist = prepared["shortlist"]
+    context["discovery"] = discovery
+    context["candidate_shortlist"] = shortlist
+    if not shortlist:
+        errors.append("deterministic candidate pool produced no evidence-complete shortlist")
+        result = finish_research(None, run_id, "budget_stopped", 0, 0, errors)
+        finished_at = utc_now()
+        duration_ms = round((time.monotonic() - started) * 1000)
+        result.update({
+            "model": "none", "input_tokens": 0, "output_tokens": 0,
+            "total_tokens": 0, "tool_calls": 0, "validation_rejected": 0,
+            "duration_ms": duration_ms, "external_side_effects": "none",
+        })
+        _record_usage(job_id, run_id, {}, {}, result, started_at, finished_at, duration_ms, errors)
+        streak, pause_required = _set_operation_state(True, errors[0])
+        result["failure_streak"] = streak
+        result["pause_required"] = pause_required
+        return result
     with tempfile.TemporaryDirectory(prefix="invoiceworkshop-research-") as temp_name:
         temp = Path(temp_name)
         usage_path = temp / "usage.json"
@@ -253,7 +362,7 @@ def run() -> dict:
         env["HERMES_IGNORE_RULES"] = "1"
         command = [
             HERMES, "-z", prompt, "--usage-file", str(usage_path), "--model", MODEL,
-            "--provider", PROVIDER, "--reasoning", REASONING, "--toolsets", "web,no_mcp",
+            "--provider", PROVIDER, "--reasoning", REASONING, "--toolsets", TOOLSETS,
             "--ignore-user-config", "--ignore-rules", "--in", str(ROOT),
         ]
         try:
@@ -265,7 +374,11 @@ def run() -> dict:
             if usage_path.is_file():
                 usage = json.loads(usage_path.read_text(encoding="utf-8"))
             if completed.returncode != 0:
-                errors.append(f"bounded research agent exited {completed.returncode}")
+                detail = " ".join(completed.stderr.strip().split())[-600:]
+                errors.append(
+                    f"bounded research agent exited {completed.returncode}"
+                    + (f": {detail}" if detail else "")
+                )
             else:
                 payload = _extract_payload(response)
         except subprocess.TimeoutExpired:
@@ -290,17 +403,22 @@ def run() -> dict:
     retained_count = 0
     duplicates = 0
     validation_rejected = 0
+    shortlist_finalized = False
     if not errors or budget_stopped:
         try:
-            batch, validation_rejected = _validated_batch(payload)
+            batch, validation_rejected = _validated_batch(payload, shortlist)
             DEFAULT_BATCH_DIR.mkdir(parents=True, exist_ok=True)
             batch_path = DEFAULT_BATCH_DIR / f"run-{run_id}.json"
             batch_path.write_text(json.dumps(batch, indent=2) + "\n", encoding="utf-8")
             imported = import_batch(None, run_id, str(batch_path), DEFAULT_BATCH_DIR)
             retained_count = int(imported["prospects_retained"])
             duplicates = int(imported["duplicates_rejected"])
+            _mark_unqualified(shortlist, batch)
+            shortlist_finalized = True
         except (OSError, ValueError, json.JSONDecodeError) as error:
             errors.append(f"deterministic batch validation/import failed: {error}")
+    if not shortlist_finalized:
+        _release_shortlist(shortlist, errors[0] if errors else "qualification did not finish")
 
     incomplete_target = not errors and _quality_target_incomplete(
         int(payload.get("candidates_examined") or 0), retained_count

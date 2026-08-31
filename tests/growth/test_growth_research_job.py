@@ -11,6 +11,7 @@ from growth_research_job import (  # noqa: E402
     MAX_TURNS,
     MODEL,
     REASONING,
+    TOOLSETS,
     TOKEN_BUDGET,
     WALL_BUDGET_SECONDS,
     _extract_payload,
@@ -32,6 +33,14 @@ def prospect(domain: str = "example.org") -> dict:
         "requires_account": False,
         "requires_payment": False,
         "link_type": "editorial",
+        "channel": "freelancer",
+        "page_evidence": "The page explicitly curates operational tools for freelancers.",
+        "outbound_resources": [],
+        "target_url": "https://invoiceworkshop.com/",
+        "proposed_action": "Suggest inclusion in the resource list.",
+        "confidence": "high",
+        "second_pass_pass": True,
+        "second_pass_reason": "The audience would benefit from a free invoicing workspace without any SEO consideration.",
         "direct_competitor": False,
     }
 
@@ -40,6 +49,7 @@ class ResearchJobTests(unittest.TestCase):
     def test_default_bounds_reserve_a_final_response_turn(self):
         self.assertEqual(MODEL, "openai/gpt-5.6-luna")
         self.assertEqual(REASONING, "none")
+        self.assertEqual(TOOLSETS, "clarify")
         self.assertEqual(MAX_TURNS, 6)
         self.assertEqual(TOKEN_BUDGET, 60_000)
         self.assertEqual(WALL_BUDGET_SECONDS, 180)
@@ -77,6 +87,21 @@ class ResearchJobTests(unittest.TestCase):
         )
         self.assertEqual(retained, [])
         self.assertEqual(rejected, 2)
+
+    def test_allows_verified_inline_submission_form_from_shortlist(self):
+        item = prospect("inline.example")
+        item["contact_method"] = item["page_url"]
+        allowed = [{
+            "page_url": item["page_url"],
+            "contact_url": item["contact_method"],
+            "channel": item["channel"],
+            "contact_route_verified": True,
+        }]
+        retained, rejected = _validated_batch(
+            {"candidates_examined": 1, "prospects": [item]}, allowed
+        )
+        self.assertEqual(len(retained), 1)
+        self.assertEqual(rejected, 0)
 
 
 if __name__ == "__main__":

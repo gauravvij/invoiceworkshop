@@ -42,8 +42,38 @@ def build_report(connection, period: int) -> dict:
                   why_fit, audience, contact_method, requires_account,
                   requires_payment, link_type, source_url, status,
                   external_action_approved, discovered_at
-             FROM prospects ORDER BY opportunity_score DESC, id LIMIT 25"""
+             FROM prospects p JOIN prospect_qualification q ON q.prospect_id=p.id
+            WHERE p.status='qualified' AND q.second_pass_pass=1
+             ORDER BY opportunity_score DESC, id LIMIT 25"""
     ).fetchall())
+    crm_status_counts = {
+        row["status"]: int(row["count"])
+        for row in connection.execute(
+            "SELECT status, COUNT(*) count FROM prospects GROUP BY status"
+        ).fetchall()
+    }
+    research_runs = rows_as_dicts(connection.execute(
+        """SELECT id, started_at, finished_at, status, candidates_examined,
+                  prospects_retained, duplicates_rejected, tool_calls_reported,
+                  errors_json
+             FROM research_runs WHERE started_at>=? ORDER BY started_at""",
+        (start,),
+    ).fetchall())
+    research_usage = dict(connection.execute(
+        """SELECT COUNT(*) executions, COALESCE(SUM(total_tokens), 0) total_tokens,
+                  COALESCE(SUM(tool_calls), 0) tool_calls,
+                  COALESCE(MAX(total_tokens), 0) max_tokens
+             FROM agent_executions
+            WHERE job_name='research' AND started_at>=?""",
+        (start,),
+    ).fetchone())
+    channel_rows = connection.execute(
+        """SELECT COALESCE(q.channel, p.prospect_type) channel, COUNT(*) count
+             FROM prospects p LEFT JOIN prospect_qualification q ON q.prospect_id=p.id
+            WHERE p.status='qualified' AND q.second_pass_pass=1
+            GROUP BY COALESCE(q.channel, p.prospect_type)"""
+    ).fetchall()
+    channel_coverage = {row["channel"]: int(row["count"]) for row in channel_rows}
     breakdowns = {}
     for dimension in ("query", "page", "country", "device"):
         breakdowns[dimension] = rows_as_dicts(connection.execute(
@@ -92,6 +122,10 @@ def build_report(connection, period: int) -> dict:
         "gsc_breakdowns": breakdowns,
         "prospect_count": connection.execute("SELECT COUNT(*) FROM prospects").fetchone()[0],
         "top_prospects": prospects,
+        "crm_status_counts": crm_status_counts,
+        "research_runs": research_runs,
+        "research_usage": research_usage,
+        "channel_coverage": channel_coverage,
         "placement_count": connection.execute("SELECT COUNT(*) FROM placements").fetchone()[0],
         "outreach_count": outreach_count,
         "anomalies": anomalies,

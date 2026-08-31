@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 from collections import defaultdict
@@ -27,6 +28,25 @@ EVENT_COLUMNS = {
     "pdf_downloaded": "ga_pdf_downloads",
     "returning_workspace_loaded": "ga_returning",
 }
+
+
+def _internal_patterns() -> list[str]:
+    return [
+        item.strip().lower()
+        for item in os.environ.get("GA4_INTERNAL_SOURCE_MEDIUM_PATTERNS", "").split(",")
+        if item.strip()
+    ]
+
+
+def classify_traffic(source_medium: str, patterns: list[str]) -> tuple[str, str | None]:
+    """Classify only when explicit owner-configured rules are available."""
+    if not patterns:
+        return "unknown", None
+    normalized = source_medium.lower()
+    for pattern in patterns:
+        if fnmatch.fnmatchcase(normalized, pattern):
+            return "internal", f"matched configured source/medium pattern: {pattern}"
+    return "external", "did not match configured internal source/medium patterns"
 
 
 def ga_date(value: str) -> str:
@@ -105,6 +125,28 @@ def collect_gsc(client: GoogleReadClient, connection, site: str, start: str,
                 ),
             )
         breakdown_counts[dimension] = len(rows)
+    combined = client.query_gsc(site, {
+        "startDate": start, "endDate": end,
+        "dimensions": ["date", "query", "page", "country", "device"],
+        "rowLimit": 25_000, "type": "web", "dataState": "final",
+    }).get("rows", [])
+    connection.execute("DELETE FROM gsc_query_facts WHERE snapshot_date=?", (snapshot_date,))
+    for row in combined:
+        keys = list(row.get("keys", []))
+        if len(keys) != 5:
+            continue
+        connection.execute(
+            """INSERT INTO gsc_query_facts
+               (snapshot_date, date, query, page, country, device, clicks,
+                impressions, ctr, position, window_start, window_end)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                snapshot_date, keys[0], keys[1], keys[2], keys[3], keys[4],
+                int(row.get("clicks", 0)), int(row.get("impressions", 0)),
+                row.get("ctr"), row.get("position"), start, end,
+            ),
+        )
+    breakdown_counts["combined"] = len(combined)
     totals["breakdowns"] = breakdown_counts
     record_snapshot(
         connection, collected_at, "gsc", start, end,
@@ -135,6 +177,31 @@ def collect_ga4(client: GoogleReadClient, connection, property_id: str,
         },
         "limit": 500,
     }).get("rows", [])
+    acquisition_dimensions = [
+        {"name": "date"}, {"name": "sessionSource"},
+        {"name": "sessionMedium"}, {"name": "sessionDefaultChannelGroup"},
+    ]
+    acquisition_rows = client.run_ga_report(property_id, {
+        "dateRanges": [{"startDate": start, "endDate": end}],
+        "dimensions": acquisition_dimensions,
+        "metrics": [
+            {"name": "totalUsers"}, {"name": "sessions"},
+            {"name": "screenPageViews"},
+        ],
+        "limit": 10_000,
+    }).get("rows", [])
+    acquisition_events = client.run_ga_report(property_id, {
+        "dateRanges": [{"startDate": start, "endDate": end}],
+        "dimensions": [*acquisition_dimensions, {"name": "eventName"}],
+        "metrics": [{"name": "eventCount"}],
+        "dimensionFilter": {
+            "filter": {
+                "fieldName": "eventName",
+                "inListFilter": {"values": list(EVENT_COLUMNS), "caseSensitive": True},
+            }
+        },
+        "limit": 25_000,
+    }).get("rows", [])
 
     by_date: dict[str, dict] = defaultdict(dict)
     totals = {"sessions": 0, "users": 0, "pageviews": 0, **{name: 0 for name in EVENT_COLUMNS}}
@@ -162,9 +229,57 @@ def collect_ga4(client: GoogleReadClient, connection, property_id: str,
             fields.setdefault(column, 0)
         upsert_metric(connection, day, fields, collected_at)
 
+    snapshot_date = date.today().isoformat()
+    acquisition: dict[tuple[str, str, str, str], dict[str, int]] = defaultdict(dict)
+    for row in acquisition_rows:
+        dimensions = [item.get("value", "") for item in row.get("dimensionValues", [])]
+        if len(dimensions) != 4:
+            continue
+        key = (ga_date(dimensions[0]), dimensions[1], dimensions[2], dimensions[3])
+        values = [int(item.get("value", 0)) for item in row.get("metricValues", [])]
+        acquisition[key].update({
+            "users": values[0] if len(values) > 0 else 0,
+            "sessions": values[1] if len(values) > 1 else 0,
+            "pageviews": values[2] if len(values) > 2 else 0,
+        })
+    event_metric_names = {
+        "tool_started": "tool_starts",
+        "pdf_downloaded": "pdf_downloads",
+        "returning_workspace_loaded": "returning_loads",
+    }
+    for row in acquisition_events:
+        dimensions = [item.get("value", "") for item in row.get("dimensionValues", [])]
+        if len(dimensions) != 5 or dimensions[4] not in event_metric_names:
+            continue
+        key = (ga_date(dimensions[0]), dimensions[1], dimensions[2], dimensions[3])
+        acquisition[key][event_metric_names[dimensions[4]]] = int(
+            row.get("metricValues", [{}])[0].get("value", 0)
+        )
+    patterns = _internal_patterns()
+    connection.execute("DELETE FROM ga4_acquisition WHERE snapshot_date=?", (snapshot_date,))
+    for (day, source, medium, channel), fields in acquisition.items():
+        source_medium = f"{source} / {medium}"
+        traffic_class, reason = classify_traffic(source_medium, patterns)
+        connection.execute(
+            """INSERT INTO ga4_acquisition
+               (snapshot_date, date, source, medium, source_medium,
+                default_channel_group, users, sessions, pageviews, tool_starts,
+                pdf_downloads, returning_loads, traffic_class,
+                classification_reason, window_start, window_end)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                snapshot_date, day, source, medium, source_medium, channel,
+                int(fields.get("users", 0)), int(fields.get("sessions", 0)),
+                int(fields.get("pageviews", 0)), int(fields.get("tool_starts", 0)),
+                int(fields.get("pdf_downloads", 0)), int(fields.get("returning_loads", 0)),
+                traffic_class, reason, start, end,
+            ),
+        )
+
     record_snapshot(
         connection, collected_at, "ga4", start, end,
-        "ok" if daily else "empty", len(daily), totals,
+        "ok" if daily else "empty", len(daily),
+        {**totals, "acquisition_rows": len(acquisition)},
     )
     return totals
 

@@ -107,6 +107,63 @@ class WeeklyPlanTests(unittest.TestCase):
         self.assertEqual(row["external_side_effects"], "none")
         connection.close()
 
+    def test_plan_ranks_only_qualified_and_surfaces_research_statuses(self):
+        connection = connect_db(self.db)
+        now = utc_now()
+        common = (
+            "resource", 80, "low", "Relevant resource for independent businesses.",
+            "Freelancers and small businesses use this resource.",
+            "https://example.org/contact", 0, 0, "editorial", now, now,
+        )
+        qualified_cursor = connection.execute(
+            """INSERT INTO prospects
+               (domain,page_url,prospect_type,opportunity_score,risk,why_fit,audience,
+                contact_method,requires_account,requires_payment,link_type,source_url,
+                status,discovered_at,updated_at)
+               VALUES ('qualified.example','https://qualified.example/resources',?,?,?,?,?,?,?,?,?,
+                       'https://qualified.example/resources','qualified',?,?)""",
+            common,
+        )
+        connection.execute(
+            """INSERT INTO prospect_qualification
+               (prospect_id,channel,page_evidence,outbound_resources,target_url,
+                proposed_action,confidence,second_pass_pass,review_reason,reviewed_at)
+               VALUES (?,'freelancer','Explicit useful-resource evidence.','[]',
+                       'https://invoiceworkshop.com/','Suggest the useful resource.','high',1,
+                       'This resource remains useful without considering SEO value.',?)""",
+            (qualified_cursor.lastrowid, now),
+        )
+        rejected = list(common)
+        rejected[1] = 99
+        connection.execute(
+            """INSERT INTO prospects
+               (domain,page_url,prospect_type,opportunity_score,risk,why_fit,audience,
+                contact_method,requires_account,requires_payment,link_type,source_url,
+                status,rejection_reason,discovered_at,updated_at)
+               VALUES ('rejected.example','https://rejected.example/resources',?,?,?,?,?,?,?,?,?,
+                       'https://rejected.example/resources','rejected','insufficient evidence',?,?)""",
+            rejected,
+        )
+        connection.execute(
+            """INSERT INTO research_runs
+               (hermes_job_id,started_at,finished_at,status,soft_token_budget,
+                soft_tool_budget,candidates_examined,prospects_retained)
+               VALUES ('research-test',?,?, 'budget_stopped',60000,10,8,1)""",
+            (now, now),
+        )
+        connection.commit()
+        connection.close()
+
+        result = run_weekly(
+            db=str(self.db), period=7, hermes_job_id="weekly-test", output_dir=self.output
+        )
+        content = Path(result["plan_path"]).read_text(encoding="utf-8")
+        self.assertIn("qualified.example (score 80)", content)
+        self.assertNotIn("rejected.example (score 99)", content)
+        self.assertIn("budget_stopped=1", content)
+        self.assertIn("qualified=1", content)
+        self.assertIn("new/unreviewed=0", content)
+        self.assertIn("Current research bounds: at most 3 cheap discovery queries", content)
 
 if __name__ == "__main__":
     unittest.main()
