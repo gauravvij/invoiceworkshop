@@ -888,7 +888,7 @@ def run_approved(connection: sqlite3.Connection) -> dict[str, object]:
     new_cap = int(connection.execute(
         "SELECT value FROM level1a_settings WHERE key='daily_new_cap'").fetchone()[0])
     rows = connection.execute(
-        """SELECT id FROM level1a_actions
+        """SELECT id, organization FROM level1a_actions
             WHERE execution_class='level1a_email' AND suppression_state='active'
               AND external_action_approved=1 AND message_approved=1
             ORDER BY id"""
@@ -897,6 +897,7 @@ def run_approved(connection: sqlite3.Connection) -> dict[str, object]:
     sent = 0
     for row in rows:
         action_id = int(row["id"])
+        organization = str(row["organization"])
         counts = connection.execute(
             """SELECT
                  SUM(CASE WHEN substr(started_at,1,10)=? THEN 1 ELSE 0 END),
@@ -907,8 +908,8 @@ def run_approved(connection: sqlite3.Connection) -> dict[str, object]:
         ).fetchone()
         used_total, used_new = int(counts[0] or 0), int(counts[1] or 0)
         if used_total >= total_cap:
-            results.append({"action_id": action_id, "status": "deferred",
-                            "reason": "daily total cap reached"})
+            results.append({"action_id": action_id, "organization": organization,
+                            "status": "deferred", "reason": "daily total cap reached"})
             continue
         action = load_action(connection, action_id)
         previous = connection.execute(
@@ -918,12 +919,12 @@ def run_approved(connection: sqlite3.Connection) -> dict[str, object]:
         ).fetchone()[0]
         attempt = 0 if previous is None else int(previous) + 1
         if attempt > int(action["max_followups"]):
-            results.append({"action_id": action_id, "status": "complete",
-                            "reason": "approved sequence finished"})
+            results.append({"action_id": action_id, "organization": organization,
+                            "status": "complete", "reason": "approved sequence finished"})
             continue
         if attempt == 0 and used_new >= new_cap:
-            results.append({"action_id": action_id, "status": "deferred",
-                            "reason": "daily new-contact cap reached"})
+            results.append({"action_id": action_id, "organization": organization,
+                            "status": "deferred", "reason": "daily new-contact cap reached"})
             continue
         if attempt:
             # Check the cadence before calling the executor so a daily run does
