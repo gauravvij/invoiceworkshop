@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '12')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '13')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -680,6 +680,10 @@ CREATE TABLE IF NOT EXISTS backlink_opportunities (
   extracted_at        TEXT,
   fetch_attempts      INTEGER NOT NULL DEFAULT 0,
   vendor_content      INTEGER NOT NULL DEFAULT 0 CHECK (vendor_content IN (0, 1)),
+  -- Outbound linking behaviour. A page that already sends readers to third-party
+  -- tools is far likelier to add another than one that links nowhere.
+  external_link_count INTEGER NOT NULL DEFAULT -1,
+  tool_link_count     INTEGER NOT NULL DEFAULT -1,
   promoted_prospect_id INTEGER REFERENCES prospects(id),
   discovered_at       TEXT NOT NULL,
   updated_at          TEXT NOT NULL,

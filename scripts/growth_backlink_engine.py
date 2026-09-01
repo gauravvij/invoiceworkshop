@@ -419,6 +419,39 @@ def fetch(url: str) -> tuple[int, str]:
     return response.status_code, response.text if response.ok else ""
 
 
+SOCIAL_DOMAINS = {
+    "facebook.com", "twitter.com", "x.com", "linkedin.com", "instagram.com",
+    "youtube.com", "pinterest.com", "tiktok.com", "reddit.com", "apps.apple.com",
+    "play.google.com", "google.com", "gstatic.com", "googletagmanager.com",
+    "w3.org", "schema.org", "wa.me",
+}
+
+
+def outbound_profile(page_url: str, parser: PageParser) -> tuple[int, int]:
+    """How much does this page send readers elsewhere, and to tools specifically?
+
+    A resource page that already links to third-party tools has demonstrated the
+    behaviour we need from it. One that links nowhere almost certainly will not
+    start for us, however well it scores on topic.
+    """
+    host = canonical_domain(page_url)
+    external: set[str] = set()
+    for href, _ in parser.links:
+        if not href or not href.startswith("http"):
+            continue
+        domain = canonical_domain(urljoin(page_url, href))
+        if not domain or domain == host or domain.endswith("." + host):
+            continue
+        if domain in SOCIAL_DOMAINS or any(domain.endswith("." + s) for s in SOCIAL_DOMAINS):
+            continue
+        external.add(domain)
+    tools = {
+        domain for domain in external
+        if any(domain == item or domain.endswith("." + item) for item in COMPETITORS)
+    }
+    return len(external), len(tools)
+
+
 def find_contact_route(page_url: str, parser: PageParser) -> tuple[str | None, str, str | None]:
     """Return (contact_url, contact_kind, recipient) using same-site evidence only."""
     host = urlsplit(page_url).netloc
@@ -499,7 +532,8 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
             """UPDATE backlink_opportunities
                   SET title=?, page_evidence=?, contact_route=?, contact_kind=?,
                       recipient=?, target_url=?, requires_account=?, requires_payment=?,
-                      vendor_content=?, extracted_at=?, updated_at=?
+                      vendor_content=?, external_link_count=?, tool_link_count=?,
+                      extracted_at=?, updated_at=?
                 WHERE id=?""",
             (
                 (parser.title.strip() or row["title"])[:400],
@@ -511,6 +545,7 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
                 # Judged on the full page: vendor CTAs usually sit well past the
                 # 1,500 characters kept as evidence.
                 1 if _is_vendor_content(text, parser.title) else 0,
+                *outbound_profile(row["page_url"], parser),
                 now, now, row["id"],
             ),
         )
@@ -562,6 +597,26 @@ def _is_vendor_content(text: str, title: str = "") -> bool:
     return ctas >= VENDOR_CTA_THRESHOLD or bool(VENDOR_PRODUCT_RE.search(text))
 
 
+def _count(row, field: str) -> int:
+    """Read an optional integer column from a Row or a plain dict.
+
+    -1 means "not measured", which scores neutrally: a page we have not looked
+    at must not be penalised as though we had found nothing.
+    """
+    try:
+        keys = row.keys()
+    except AttributeError:
+        keys = row
+    if field not in keys:
+        return -1
+    value = row[field]
+    return int(value) if value is not None else -1
+
+
+def tools_linked(row) -> int:
+    return _count(row, "tool_link_count")
+
+
 def score_opportunity(row: sqlite3.Row) -> dict[str, int]:
     text = f"{row['title']} {row['page_evidence']}".lower()
     url = str(row["page_url"]).lower()
@@ -601,14 +656,26 @@ def score_opportunity(row: sqlite3.Row) -> dict[str, int]:
         resource_fit += 5
     if row["opportunity_type"] in {"broken_replacement", "unlinked_mention"}:
         resource_fit += 3
+    if tools_linked(row) >= 1:
+        resource_fit += 3   # it genuinely curates third-party tools
     resource_fit = min(resource_fit, SCORE_CEILINGS["resource_fit"])
 
-    # Likelihood of placement (10).
+    # Likelihood of placement (10). Dominated by demonstrated behaviour: a page
+    # that already links out to tools is the one most likely to add another.
+    external = _count(row, "external_link_count")
+    tools = _count(row, "tool_link_count")
     likelihood = 0
-    likelihood += 4 if row["contact_kind"] == "email" else 2 if row["contact_kind"] != "unknown" else 0
-    likelihood += 3 if not row["requires_account"] else 0
-    likelihood += 3 if row["opportunity_type"] in {"broken_replacement", "unlinked_mention"} else 0
-    likelihood = min(likelihood, SCORE_CEILINGS["likelihood"])
+    likelihood += 2 if row["contact_kind"] == "email" else 1 if row["contact_kind"] != "unknown" else 0
+    likelihood += 1 if not row["requires_account"] else 0
+    if tools >= 3:
+        likelihood += 6
+    elif tools >= 1:
+        likelihood += 4
+    elif external >= 5:
+        likelihood += 2   # links out, just not to tools
+    elif external == 0:
+        likelihood -= 2   # measured and links nowhere at all
+    likelihood = max(0, min(likelihood, SCORE_CEILINGS["likelihood"]))
 
     # Referral traffic potential (10): would a real person click through?
     referral = 0
@@ -682,7 +749,10 @@ def qualify(connection: sqlite3.Connection) -> dict:
         parts = score_opportunity(row)
         passed, why = second_pass(row, parts)
         subject = f"{row['title']} {row['page_evidence']} {row['page_url']}"
-        on_subject = bool(INVOICE_HINT.search(subject))
+        # What a page links to is evidence of what it is about. "Free Accounting
+        # Tools for Small Business" never says "invoice", yet links to five
+        # invoicing products; judging it on its own wording alone misses that.
+        on_subject = bool(INVOICE_HINT.search(subject)) or tools_linked(row) >= 2
         if not passed or parts["total"] < TIER_C_MIN:
             tier = "reject"
         elif str(row["domain"]) in claimed_domains:

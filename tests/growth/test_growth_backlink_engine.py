@@ -220,6 +220,8 @@ class ScoringTests(unittest.TestCase):
             "requires_account": 0,
             "requires_payment": 0,
             "opportunity_type": "resource",
+            "external_link_count": 8,
+            "tool_link_count": 3,
         }
         values.update(overrides)
         return values
@@ -237,6 +239,29 @@ class ScoringTests(unittest.TestCase):
             page_url="https://example.org/news/2026/q1/", contact_kind="unknown",
         ))
         self.assertGreater(strong["total"], weak["total"])
+
+    def test_a_page_that_links_nowhere_scores_below_one_that_curates_tools(self):
+        """The defect this fixes: pages that never link out outranked curators."""
+        curator = engine.score_opportunity(self._row(external_link_count=15, tool_link_count=9))
+        silo = engine.score_opportunity(self._row(external_link_count=0, tool_link_count=0))
+        self.assertGreater(curator["likelihood"], silo["likelihood"])
+        self.assertGreater(curator["total"], silo["total"])
+
+    def test_unmeasured_pages_are_not_penalised(self):
+        unmeasured = engine.score_opportunity(self._row(external_link_count=-1, tool_link_count=-1))
+        silo = engine.score_opportunity(self._row(external_link_count=0, tool_link_count=0))
+        self.assertGreaterEqual(unmeasured["likelihood"], silo["likelihood"])
+
+    def test_outbound_profile_ignores_self_and_social_links(self):
+        parser = engine.PageParser()
+        parser.feed(
+            '<a href="https://example.org/other/">self</a>'
+            '<a href="https://www.facebook.com/x">social</a>'
+            '<a href="https://xero.com/">tool</a>'
+            '<a href="https://gov.uk/">gov</a>'
+        )
+        external, tools = engine.outbound_profile("https://example.org/resources/", parser)
+        self.assertEqual((external, tools), (2, 1))
 
     def test_second_pass_rejects_an_unreachable_page(self):
         passed, reason = engine.second_pass(
@@ -345,6 +370,26 @@ class PipelineTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(row["tier"], "C")
         self.assertIn("already represented", row["second_pass_reason"])
+
+    def test_a_page_is_on_subject_if_it_links_to_invoicing_tools(self):
+        """Judging a page only by its own wording misses what it curates."""
+        self._insert(
+            domain="chamber.example",
+            page_url="https://chamber.example/finance/free-accounting-tools/",
+            title="Free Accounting Tools for Small Business",
+            page_evidence="A roundup of free accounting software for small business owners.",
+        )
+        self.connection.execute(
+            "UPDATE backlink_opportunities SET external_link_count=15, tool_link_count=5 "
+            "WHERE domain='chamber.example'"
+        )
+        self.connection.commit()
+        engine.qualify(self.connection)
+        row = self.connection.execute(
+            "SELECT tier, second_pass_reason FROM backlink_opportunities WHERE domain='chamber.example'"
+        ).fetchone()
+        self.assertIn(row["tier"], ("A", "B"))
+        self.assertNotIn("does not itself cover", row["second_pass_reason"])
 
     def test_channel_plan_rotates_queries_between_runs(self):
         first = engine.channel_plan(self.connection, ["resource_pages"], 2)

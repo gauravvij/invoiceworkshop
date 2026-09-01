@@ -105,6 +105,11 @@ def apply_schema(connection: sqlite3.Connection) -> None:
         connection.execute(
             "ALTER TABLE backlink_opportunities ADD COLUMN vendor_content INTEGER NOT NULL DEFAULT 0"
         )
+    for column in ("external_link_count", "tool_link_count"):
+        if opportunity_columns and column not in opportunity_columns:
+            connection.execute(
+                f"ALTER TABLE backlink_opportunities ADD COLUMN {column} INTEGER NOT NULL DEFAULT -1"
+            )
     if opportunity_columns and "fetch_attempts" not in opportunity_columns:
         connection.execute(
             "ALTER TABLE backlink_opportunities ADD COLUMN fetch_attempts INTEGER NOT NULL DEFAULT 0"
