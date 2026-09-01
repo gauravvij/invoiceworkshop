@@ -10,7 +10,13 @@ export interface GeneratorContent {
   intro: string;
   eyebrow: string;
   reassurance: string;
-  sections: Array<{ heading: string; paragraphs: string[]; bullets?: string[] }>;
+  sections: Array<{
+    heading: string;
+    paragraphs: string[];
+    bullets?: string[];
+    terms?: Array<{ term: string; definition: string }>;
+    table?: { caption: string; columns: string[]; rows: string[][]; total: Array<[string, string]>; note?: string };
+  }>;
   related: Array<{ href: string; label: string; text: string }>;
 }
 
@@ -104,16 +110,112 @@ export const generators: Record<string, GeneratorContent> = {
   },
   construction: {
     path: '/construction-invoice-template/', kind: 'invoice', vertical: 'construction', title: 'Free Construction Invoice Template & Generator | Invoice Workshop',
-    description: 'Create construction invoices with jobsite, labor, materials, deposits, progress notes and PDF download. Free and saved locally.',
+    description: 'Create construction invoices with jobsite, labor, materials, deposits, progress draws, retainage and change orders. Free, no signup, saved locally.',
     h1: 'Construction Invoice Template & Generator', eyebrow: 'Built for projects, labor and materials',
     intro: 'Create a genuine construction invoice with project and jobsite details, labor, materials, deposits, change-order references and progress notes.',
     reassurance: 'Project and customer details stay in this browser.',
     sections: [
-      { heading: 'Invoice construction work clearly', paragraphs: ['Construction billing benefits from visible project context. Record the jobsite and project, separate labor, materials and equipment into useful line items, and reference the estimate, contract or change order that supports the charge.'] },
-      { heading: 'Construction-specific fields', paragraphs: ['Use the project fields above for site and progress information. Deposits reduce the displayed balance without changing the original invoice total. For progress billing, describe the stage or period being billed and keep supporting records with your project files.'], bullets: ['Project name and jobsite', 'Labor, materials and equipment', 'Deposit paid and balance due', 'Progress-billing note', 'Contract or change-order reference'] },
-      { heading: 'Review before sending', paragraphs: ['Confirm that quantities reflect actual work, the tax treatment fits your circumstances, and deposits or prior payments are represented correctly. Invoice Workshop performs arithmetic and formatting but does not determine contract, lien, tax or legal requirements.'] },
+      {
+        heading: 'Invoice construction work clearly',
+        paragraphs: [
+          'Construction billing fails for boring reasons. The invoice arrives without a jobsite on it, the labor and materials are collapsed into one line, or the change order everybody agreed to verbally never appears in writing. Each of those gives the person approving payment a reason to put your invoice aside and ask a question instead.',
+          'The editor above is set up for project work: record the project and jobsite, itemize labor, materials and equipment separately, enter any deposit already received, and note the draw or change order the charge belongs to. The totals, tax and balance are calculated as you type, and the PDF is generated in your browser.',
+        ],
+      },
+      {
+        heading: 'What a construction invoice should include',
+        paragraphs: [
+          'Beyond the usual business and customer details, project billing carries information a general invoice does not need. The list below covers what most general contractors, subcontractors and trades are asked for. Your contract governs what is actually required.',
+        ],
+        bullets: [
+          'Contractor and customer details',
+          'Project name and jobsite address',
+          'Invoice number, issue date and due date',
+          'Contract, purchase-order or draw reference',
+          'Labor separated from materials',
+          'Equipment, disposal and mobilization',
+          'Approved change orders, referenced by number',
+          'Deposit or prior draws already received',
+          'Retainage withheld, if the contract provides for it',
+          'Tax treatment appropriate to the work',
+          'Payment instructions and terms',
+        ],
+      },
+      {
+        heading: 'A worked progress draw',
+        paragraphs: [
+          'Here is how a mid-project draw usually looks once labor, materials, equipment and an approved change order are separated. Notice the change order carries its own line and its own reference number rather than being folded into labor — that single habit prevents most billing disputes.',
+        ],
+        table: {
+          caption: 'Draw 2 of 4 — bathroom remodel, 14 Alder Street',
+          columns: ['Description', 'Qty', 'Rate', 'Amount'],
+          rows: [
+            ['Labor — framing and rough-in', '64 hrs', '$68.00', '$4,352.00'],
+            ['Materials — lumber, fasteners, blocking', '1 lot', '$1,845.50', '$1,845.50'],
+            ['Equipment — dumpster rental', '2 wks', '$260.00', '$520.00'],
+            ['Change order CO-002 — relocate waste line', '1 ea', '$780.00', '$780.00'],
+          ],
+          total: [['Subtotal', '$7,497.50'], ['Tax at 8%', '$599.80'], ['Total', '$8,097.30'], ['Deposit paid', '−$2,500.00'], ['Balance due', '$5,597.30']],
+          note: 'A deposit reduces the balance due without changing the invoice total, so the original amount billed stays visible on the document.',
+        },
+      },
+      {
+        heading: 'Separating labor, materials and equipment',
+        paragraphs: [
+          'Collapsing everything into one figure invites the customer to negotiate the whole number. Separate lines let them query one item and approve the rest, which is usually faster for both sides. It also gives you a record you can compare against the estimate when a project runs long.',
+        ],
+        terms: [
+          { term: 'Labor', definition: 'Hours worked, at the agreed rate. Splitting by crew, trade or phase makes a long draw easier to check against a schedule of values.' },
+          { term: 'Materials', definition: 'Goods supplied and installed. Bill these as a lot per phase or as individual items, depending on how much detail the contract asks for.' },
+          { term: 'Equipment', definition: 'Rental, delivery, disposal and mobilization. These are frequently forgotten and then absorbed as a loss, so give them their own lines.' },
+          { term: 'Subcontracted work', definition: 'Work performed by another trade under your contract. Reference the subcontractor invoice so the charge can be traced.' },
+        ],
+      },
+      {
+        heading: 'Deposits, progress draws and retainage',
+        paragraphs: [
+          'Three different mechanisms reduce what a customer pays today, and mixing them up is a common source of confusion on a construction invoice.',
+          'A deposit is money already received. Enter it in the deposit field and the document shows the full total and then the reduced balance due, so the amount originally billed remains on the record. Progress draws bill a defined portion of a larger contract; describe which draw and which period or stage it covers in the progress note, and keep your schedule of values with the project file. Retainage is a percentage the customer withholds until completion — if your contract provides for it, record it as a negative adjustment or its own negative line so the withheld amount is stated explicitly rather than quietly missing.',
+          'Whether retainage applies, how much may be held and when it must be released are contract and jurisdiction questions. Check your contract and, where the amounts matter, take professional advice.',
+        ],
+      },
+      {
+        heading: 'Handling change orders',
+        paragraphs: [
+          'Change orders cause more unpaid construction invoices than bad workmanship does. The pattern is familiar: work is added on site, nobody writes it down, and the extra appears for the first time on a bill weeks later, where it reads like padding.',
+          'Give every change its own number, get the approval in writing before the work happens where you can, and bill it as a separate line that names the reference. If the change alters the schedule as well as the price, say so in the progress note.',
+        ],
+        bullets: [
+          'Number each change order and keep the sequence',
+          'Record who approved it and when',
+          'Bill it on its own line, not inside labor',
+          'Reference the number on the invoice',
+          'Note any schedule impact alongside the cost',
+        ],
+      },
+      {
+        heading: 'Payment terms that actually get paid',
+        paragraphs: [
+          'Terms are only useful if they are specific and visible. Net 30 written nowhere on the document is not a term. State the due date, the accepted payment methods and anything the customer must do before releasing funds, such as a lien waiver, and put them where they will be read rather than in small print.',
+          'For longer projects, agreeing the draw schedule before work starts is worth more than any collection tactic afterwards. Both parties then know what triggers each invoice.',
+        ],
+        bullets: [
+          'A concrete due date, not just a term name',
+          'Accepted payment methods and details',
+          'Any documentation required before release',
+          'Who to contact about a query',
+          'What happens if payment is late',
+        ],
+      },
+      {
+        heading: 'Review before sending',
+        paragraphs: [
+          'Confirm that quantities reflect work actually performed, that every change order on the invoice was approved, that deposits and prior draws are represented correctly, and that the tax treatment fits your circumstances.',
+          'Invoice Workshop performs the arithmetic and formatting and creates the PDF in your browser. It does not determine contract, lien, retainage, tax or other legal requirements, which vary by jurisdiction and by agreement. Treat the guidance on this page as a practical starting point rather than professional advice.',
+        ],
+      },
     ],
-    related: [{ href: '/', label: 'Invoice Generator', text: 'Use the general-purpose invoice workflow.' }, { href: '/estimate-generator/', label: 'Estimate Generator', text: 'Price expected construction work first.' }, { href: '/work-order-generator/', label: 'Work Order Generator', text: 'Record authorized work at the jobsite.' }],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'Use the general-purpose invoice workflow.' }, { href: '/estimate-generator/', label: 'Estimate Generator', text: 'Price expected construction work first.' }, { href: '/work-order-generator/', label: 'Work Order Generator', text: 'Record authorized work at the jobsite.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Bill independent contract work.' }, { href: '/purchase-order-generator/', label: 'Purchase Order Generator', text: 'Order materials from a supplier.' }, { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Quote a defined scope before starting.' }],
   },
   contractor: {
     path: '/contractor-invoice-template/', kind: 'invoice', vertical: 'contractor', title: 'Free Contractor Invoice Template & Generator | Invoice Workshop',
