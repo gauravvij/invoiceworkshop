@@ -127,26 +127,51 @@ class Level1ATests(unittest.TestCase):
             self.assertNotIn(forbidden, parameters)
 
     def test_email_and_form_execution_classes_are_separate(self):
+        from growth_level1a import PILOT
+
         counts = dict(self.connection.execute(
             "SELECT execution_class,COUNT(*) FROM level1a_actions GROUP BY execution_class"
         ).fetchall())
-        self.assertEqual(counts, {"level1a_email": 4, "level1a_form": 2})
+        # Derived from the reviewed allowlist so adding a batch does not require
+        # editing the test, while still proving the two classes stay separate.
+        expected = {}
+        for item in PILOT:
+            expected[item["execution_class"]] = expected.get(item["execution_class"], 0) + 1
+        self.assertEqual(counts, expected)
+        self.assertGreater(expected["level1a_form"], 0)
+
         recipients = {
             row["organization"]: row["recipient"]
             for row in self.connection.execute(
                 "SELECT organization,recipient FROM level1a_actions WHERE execution_class='level1a_email'"
             )
         }
-        self.assertEqual(recipients, {
+        # The four live pilot routes must not drift as batches are added.
+        for organization, recipient in {
             "LedgerCo": "info@ledgerco.ca",
             "Coalesco": "info@coalesco.co.uk",
             "Umbrex": "inquiry@umbrex.com",
             "Freelancers Union": "community@freelancersunion.org",
-        })
+        }.items():
+            self.assertEqual(recipients[organization], recipient, organization)
+
         settings = dict(self.connection.execute(
             "SELECT key,value FROM level1a_settings WHERE key IN ('email_outbound_enabled','form_outbound_enabled')"
         ).fetchall())
         self.assertEqual(settings, {"email_outbound_enabled": "false", "form_outbound_enabled": "false"})
+
+    def test_every_allowlisted_email_action_has_a_plausible_recipient(self):
+        from growth_level1a import PILOT, _valid_email
+
+        for item in PILOT:
+            if item["execution_class"] != "level1a_email":
+                continue
+            self.assertTrue(_valid_email(item["recipient"]), item["organization"])
+            self.assertIn("@", item["recipient"])
+        # A form action must never carry an email recipient.
+        for item in PILOT:
+            if item["execution_class"] == "level1a_form":
+                self.assertIsNone(item["recipient"], item["organization"])
 
     def test_form_live_path_is_rejected_without_handler(self):
         action = load_action(self.connection, self.action_ids[0])
