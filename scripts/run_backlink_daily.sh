@@ -15,6 +15,16 @@
 # processing and, under `set -e`, a discovery failure would skip it entirely.
 set -euo pipefail
 
+# Growth jobs share one SQLite file and discovery holds a long write
+# transaction, so two of them running at once can fail on a lock rather than
+# simply waiting. Serialise them: a later job queues behind an earlier one
+# instead of crashing. -E 0 means a wait timeout exits cleanly, not as a failure.
+LOCKFILE="/home/azureuser/.config/invoiceworkshop/growth.lock"
+if [[ -z "${GROWTH_LOCK_HELD:-}" ]]; then
+  export GROWTH_LOCK_HELD=1
+  exec flock -w 2400 -E 0 "$LOCKFILE" "$0" "$@"
+fi
+
 REPO="/home/azureuser/invoiceworkshop"
 PYTHON="/home/azureuser/growth-venv/bin/python"
 cd "$REPO"

@@ -68,6 +68,22 @@ class DailyOrderTests(unittest.TestCase):
             self.assertNotIn('source "$REPO/.env"', source, name)
             self.assertNotIn("source .env", source, name)
 
+    def test_growth_jobs_serialise_on_a_lock(self):
+        """Two jobs sharing the SQLite file must queue, not collide."""
+        for name in ("run_backlink_daily.sh", "run_backlink_deep.sh", "run_backlink_weekly.sh"):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            self.assertIn("flock", source, name)
+            self.assertIn("GROWTH_LOCK_HELD", source, name)
+            # -E 0 so a wait timeout exits cleanly rather than failing the job.
+            self.assertIn("-E 0", source, name)
+
+    def test_lock_is_taken_before_any_work_runs(self):
+        source = self.source
+        body = "\n".join(
+            line for line in source.splitlines() if not line.lstrip().startswith("#")
+        )
+        self.assertLess(body.index("flock"), body.index("growth_level1a_mailbox.py poll"))
+
     def test_deployed_copy_matches_the_repository(self):
         deployed = Path.home() / ".hermes/scripts/invoiceworkshop-backlink-daily.sh"
         if not deployed.is_file():
