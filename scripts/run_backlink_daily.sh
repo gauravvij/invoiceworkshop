@@ -16,9 +16,19 @@ export PYTHONPATH="$REPO/scripts"
 # Inbound reply processing is read-only and matches only previously sent actions.
 "$PYTHON" scripts/growth_level1a_mailbox.py poll || true
 
-# Level-1 execution: inert until the owner activates. Nothing here can open a gate.
+# Level-1 execution. The environment kill switch lives in an owner-controlled
+# file outside the repository, so outbound can be stopped without a commit or a
+# database change. Absent file means disabled.
+LEVEL1_ENV_FILE="/home/azureuser/.config/invoiceworkshop/level1.env"
+if [[ -r "$LEVEL1_ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  set -a; source "$LEVEL1_ENV_FILE"; set +a
+fi
+
 if [[ "${LEVEL1_OUTBOUND_ENABLED:-false}" == "true" ]]; then
-  echo '{"level1_execution":"gate open; run the approved action explicitly"}'
+  # Sends only the next eligible attempt for actions the owner already approved.
+  # Accepts no recipient, subject or body and cannot reach an unapproved action.
+  "$PYTHON" scripts/growth_level1a.py run-approved
 else
   echo '{"level1_execution":"skipped: LEVEL1_OUTBOUND_ENABLED is false"}'
 fi

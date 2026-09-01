@@ -109,6 +109,23 @@ class Level1ATests(unittest.TestCase):
         self.assertNotIn("Umbrex", {item["organization"] for item in after["actions"]})
         self.assertEqual(len(after["actions"]), len(before["actions"]) - 1)
 
+    def test_scheduled_executor_ignores_unapproved_actions(self):
+        from growth_level1a import run_approved
+
+        result = run_approved(self.connection)
+        self.assertEqual(result["sent"], 0)
+        # Nothing is approved in the fixture, so nothing may be attempted.
+        self.assertEqual(result["results"], [])
+
+    def test_scheduled_executor_takes_no_message_arguments(self):
+        import inspect
+        from growth_level1a import run_approved
+
+        parameters = list(inspect.signature(run_approved).parameters)
+        self.assertEqual(parameters, ["connection"])
+        for forbidden in ("recipient", "subject", "body", "to"):
+            self.assertNotIn(forbidden, parameters)
+
     def test_email_and_form_execution_classes_are_separate(self):
         counts = dict(self.connection.execute(
             "SELECT execution_class,COUNT(*) FROM level1a_actions GROUP BY execution_class"

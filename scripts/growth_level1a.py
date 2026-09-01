@@ -874,6 +874,91 @@ def execute_action(connection: sqlite3.Connection, action_id: int, attempt_numbe
     }
 
 
+def run_approved(connection: sqlite3.Connection) -> dict[str, object]:
+    """Send the next eligible attempt for already-approved actions only.
+
+    This is the scheduled executor. It iterates approved action rows and calls
+    the same validated execute path a human would; it accepts no recipient,
+    subject or body, and it can never reach an unapproved action.
+    """
+    now = utc_now()
+    today = now[:10]
+    total_cap = int(connection.execute(
+        "SELECT value FROM level1a_settings WHERE key='daily_total_cap'").fetchone()[0])
+    new_cap = int(connection.execute(
+        "SELECT value FROM level1a_settings WHERE key='daily_new_cap'").fetchone()[0])
+    rows = connection.execute(
+        """SELECT id FROM level1a_actions
+            WHERE execution_class='level1a_email' AND suppression_state='active'
+              AND external_action_approved=1 AND message_approved=1
+            ORDER BY id"""
+    ).fetchall()
+    results: list[dict[str, object]] = []
+    sent = 0
+    for row in rows:
+        action_id = int(row["id"])
+        counts = connection.execute(
+            """SELECT
+                 SUM(CASE WHEN substr(started_at,1,10)=? THEN 1 ELSE 0 END),
+                 SUM(CASE WHEN substr(started_at,1,10)=? AND attempt_number=0 THEN 1 ELSE 0 END)
+               FROM level1a_action_audit
+               WHERE mode='live' AND validation_result='passed'""",
+            (today, today),
+        ).fetchone()
+        used_total, used_new = int(counts[0] or 0), int(counts[1] or 0)
+        if used_total >= total_cap:
+            results.append({"action_id": action_id, "status": "deferred",
+                            "reason": "daily total cap reached"})
+            continue
+        action = load_action(connection, action_id)
+        previous = connection.execute(
+            """SELECT MAX(attempt_number) FROM level1a_action_audit
+                WHERE action_id=? AND mode='live' AND validation_result='passed'""",
+            (action_id,),
+        ).fetchone()[0]
+        attempt = 0 if previous is None else int(previous) + 1
+        if attempt > int(action["max_followups"]):
+            results.append({"action_id": action_id, "status": "complete",
+                            "reason": "approved sequence finished"})
+            continue
+        if attempt == 0 and used_new >= new_cap:
+            results.append({"action_id": action_id, "status": "deferred",
+                            "reason": "daily new-contact cap reached"})
+            continue
+        if attempt:
+            # Check the cadence before calling the executor so a daily run does
+            # not write a rejected audit row for every pending follow-up.
+            earlier = connection.execute(
+                """SELECT started_at FROM level1a_action_audit
+                    WHERE action_id=? AND mode='live' AND validation_result='passed'
+                      AND attempt_number=? LIMIT 1""",
+                (action_id, attempt - 1),
+            ).fetchone()
+            if earlier:
+                sent_at = datetime.fromisoformat(str(earlier["started_at"]).replace("Z", "+00:00"))
+                waited = _business_days_between(sent_at, datetime.now(timezone.utc))
+                if waited < FOLLOWUP_WAIT_BUSINESS_DAYS:
+                    results.append({
+                        "action_id": action_id, "organization": action["organization"],
+                        "status": "waiting", "attempt": attempt,
+                        "reason": f"{waited}/{FOLLOWUP_WAIT_BUSINESS_DAYS} business days elapsed",
+                    })
+                    continue
+        try:
+            outcome = execute_action(connection, action_id, attempt)
+            outcome["organization"] = action["organization"]
+            results.append(outcome)
+            sent += 1
+        except ValidationError as error:
+            results.append({"action_id": action_id, "organization": action["organization"],
+                            "status": "skipped", "attempt": attempt, "reason": str(error)})
+        except Exception as error:
+            results.append({"action_id": action_id, "organization": action["organization"],
+                            "status": "failed", "reason": f"{type(error).__name__}: {error}"})
+    return {"date": today, "sent": sent, "results": results,
+            "daily_new_cap": new_cap, "daily_total_cap": total_cap}
+
+
 def classify_reply(text: str, *, bounced: bool = False) -> tuple[str, bool, str]:
     normalized = re.sub(r"\s+", " ", text).lower()
     if bounced:
@@ -1003,6 +1088,11 @@ def cmd_execute(args: argparse.Namespace) -> None:
     print(json.dumps(execute_action(connection, args.action_id, args.attempt), indent=2, sort_keys=True))
 
 
+def cmd_run_approved(args: argparse.Namespace) -> None:
+    connection = initialize(args.db)
+    print(json.dumps(run_approved(connection), indent=2, sort_keys=True))
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description=__doc__)
     root.add_argument("--db", help="Override GROWTH_DB_PATH")
@@ -1019,6 +1109,10 @@ def parser() -> argparse.ArgumentParser:
     execute.add_argument("--action-id", type=int, required=True)
     execute.add_argument("--attempt", type=int, default=0, choices=(0, 1))
     execute.set_defaults(handler=cmd_execute)
+    commands.add_parser(
+        "run-approved",
+        help="Scheduled executor: next eligible attempt for approved actions only",
+    ).set_defaults(handler=cmd_run_approved)
     return root
 
 
