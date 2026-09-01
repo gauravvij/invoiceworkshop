@@ -34,9 +34,16 @@ from growth_level1a import export_manifest, initialize, load_action, render_mess
 
 NAMESPACE = "invoiceworkshop-level1a"
 PAYLOAD_VERSION = "v2"
+# Root-owned and world-readable. The executor can read it and cannot write it
+# without sudo. That stops a compromised growth process, not an agent holding
+# root — see docs/OWNER_APPROVAL.md for the honest threat model.
+SYSTEM_ALLOWED_SIGNERS = Path("/etc/invoiceworkshop/level1_owner_allowed_signers")
 DEFAULT_ALLOWED_SIGNERS = Path(
     "/home/azureuser/.config/invoiceworkshop/level1_owner_allowed_signers"
 )
+# Committed to the repository. Swapping the installed key without also editing
+# this file makes verification fail; editing it leaves a reviewable commit.
+TRUST_ANCHOR_PIN = Path(__file__).resolve().parents[1] / "data" / "owner_trust_anchor.json"
 DEFAULT_IDENTITY = "owner"
 APPROVAL_DIR = Path("/home/azureuser/.config/invoiceworkshop/approvals")
 
@@ -95,14 +102,45 @@ def manifest_payload(connection) -> tuple[str, str]:
 # Verification
 # ---------------------------------------------------------------------------
 
+def anchor_fingerprint(path: Path) -> str:
+    result = subprocess.run(
+        ["ssh-keygen", "-lf", str(path)], capture_output=True, text=True, timeout=15
+    )
+    for token in result.stdout.split():
+        if token.startswith("SHA256:"):
+            return token
+    raise ApprovalError(f"could not read a key fingerprint from {path}")
+
+
+def _check_pin(path: Path) -> str:
+    """Refuse to verify against a key that is not the pinned trust anchor."""
+    live = anchor_fingerprint(path)
+    if not TRUST_ANCHOR_PIN.is_file():
+        return live  # nothing pinned yet; install-owner-key writes the pin
+    pinned = json.loads(TRUST_ANCHOR_PIN.read_text(encoding="utf-8")).get("fingerprint", "")
+    if pinned and live != pinned:
+        raise ApprovalError(
+            "installed owner key does not match the fingerprint pinned in "
+            f"{TRUST_ANCHOR_PIN.name}: live {live} vs pinned {pinned}. The trust anchor "
+            "was replaced. Refusing to verify any approval."
+        )
+    return live
+
+
 def _allowed_signers() -> Path:
     configured = os.environ.get("LEVEL1_OWNER_ALLOWED_SIGNERS", "").strip()
-    path = Path(configured).expanduser() if configured else DEFAULT_ALLOWED_SIGNERS
+    if configured:
+        path = Path(configured).expanduser()
+    elif SYSTEM_ALLOWED_SIGNERS.is_file():
+        path = SYSTEM_ALLOWED_SIGNERS
+    else:
+        path = DEFAULT_ALLOWED_SIGNERS
     if not path.is_file():
         raise ApprovalError(
             f"owner public key is not installed at {path}. Run: "
             "growth_level1a_admin.py install-owner-key --public-key '<ssh-ed25519 ...>'"
         )
+    _check_pin(path)
     return path
 
 
@@ -128,6 +166,7 @@ def verify_signature(payload: str, signature_path: Path, identity: str) -> tuple
     if not signature_path.is_file():
         raise ApprovalError(f"signature file not found: {signature_path}")
     allowed = _allowed_signers()
+    anchor = anchor_fingerprint(allowed)
     with tempfile.NamedTemporaryFile("w", suffix=".approval", delete=False) as handle:
         handle.write(payload)
         temporary = Path(handle.name)
@@ -145,7 +184,8 @@ def verify_signature(payload: str, signature_path: Path, identity: str) -> tuple
         if token.startswith("SHA256:"):
             fingerprint = token
             break
-    return result.returncode == 0, fingerprint, output
+    detail = f"anchor={anchor} {output}"
+    return result.returncode == 0, fingerprint, detail
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +200,14 @@ def cmd_install_owner_key(args: argparse.Namespace) -> None:
         raise ApprovalError("public key looks malformed")
     if "PRIVATE KEY" in key or key.startswith("-----"):
         raise ApprovalError("that is a private key; install only the .pub value")
+    if SYSTEM_ALLOWED_SIGNERS.is_file() and not os.access(SYSTEM_ALLOWED_SIGNERS, os.W_OK):
+        raise ApprovalError(
+            f"the trust anchor at {SYSTEM_ALLOWED_SIGNERS} is root-owned. Changing the "
+            "trusted owner key is a deliberate privileged action:\n"
+            "  sudo install -o root -g root -m 0644 <newkey.pub-derived file> "
+            f"{SYSTEM_ALLOWED_SIGNERS}\n"
+            f"then update the pinned fingerprint in {TRUST_ANCHOR_PIN} and commit it."
+        )
     path = DEFAULT_ALLOWED_SIGNERS
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     fields = key.split()
@@ -269,17 +317,24 @@ def cmd_deactivate(args: argparse.Namespace) -> None:
 
 def cmd_status(args: argparse.Namespace) -> None:
     connection = initialize(args.db)
-    allowed = DEFAULT_ALLOWED_SIGNERS
+    allowed = SYSTEM_ALLOWED_SIGNERS if SYSTEM_ALLOWED_SIGNERS.is_file() else DEFAULT_ALLOWED_SIGNERS
     installed = allowed.is_file()
     rows = [dict(row) for row in connection.execute(
         """SELECT scope, action_id, target_hash, method, signer_identity,
                   key_fingerprint, verified, recorded_at
              FROM level1a_approval_audit ORDER BY id DESC LIMIT 10"""
     )]
+    pin = json.loads(TRUST_ANCHOR_PIN.read_text(encoding="utf-8")) if TRUST_ANCHOR_PIN.is_file() else {}
+    live = anchor_fingerprint(allowed) if installed else None
     print(json.dumps({
         "owner_key_installed": installed,
         "allowed_signers": str(allowed) if installed else None,
+        "anchor_root_owned": installed and allowed == SYSTEM_ALLOWED_SIGNERS,
+        "anchor_writable_by_executor": installed and os.access(allowed, os.W_OK),
         "key_type": allowed.read_text().split()[1] if installed else None,
+        "live_fingerprint": live,
+        "pinned_fingerprint": pin.get("fingerprint"),
+        "pin_matches": bool(live and live == pin.get("fingerprint")),
         "namespace": NAMESPACE,
         "private_key_on_server": False,
         "recent_verifications": rows,

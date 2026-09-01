@@ -114,8 +114,60 @@ Turning outbound **off** needs no signature. `deactivate` always works, as does
 setting `LEVEL1_OUTBOUND_ENABLED=false` in
 `~/.config/invoiceworkshop/level1.env`. Stopping is never gated.
 
+## Threat model — read this before trusting the gate
+
+The signature checking is sound. What it is worth depends on who can replace the
+public key it checks against, and on this machine the honest answer is
+uncomfortable.
+
+`azureuser` runs Claude Code, the Hermes scheduler and the outbound executor. It
+also has `(ALL) NOPASSWD: ALL`. **An agent on this host can become root without a
+password.** No arrangement of file ownership or permissions on this machine is a
+hard boundary against that. Anything claiming otherwise would be theatre.
+
+What has been done is worth doing anyway, because it addresses a *different* and
+real threat — a compromise of the unprivileged growth process, for example
+through a malicious page fetched during discovery — and because it makes
+tampering by any route visible:
+
+1. **The anchor is root-owned.** `/etc/invoiceworkshop/level1_owner_allowed_signers`
+   is `root:root 0644` in a `root:root 0755` directory. The executor reads it and
+   cannot write or unlink it without an explicit `sudo`. The growth process is
+   never given sudo.
+2. **The fingerprint is pinned in Git.** `data/owner_trust_anchor.json` records
+   the expected fingerprint. Verification refuses outright if the live anchor
+   does not match. Swapping the key therefore also requires editing a tracked
+   file, which appears in a diff you review.
+3. **Every verification records the anchor it used**, so a substitution is
+   visible after the fact in `level1a_approval_audit`.
+
+Together: a silent swap is not possible, a swap by the unprivileged process is
+not possible, and a swap by a root-capable agent is possible but leaves a commit
+and an audit trail.
+
+**If you want a genuine boundary**, one of these is required, and none can be
+done from inside this host:
+
+- remove `NOPASSWD: ALL` from the account the agent runs as, and run the
+  executor as a separate unprivileged user; or
+- verify approvals somewhere the agent cannot reach at all — a second host, or a
+  hosted service holding the anchor.
+
+Changing the trusted key is deliberately a privileged manual step:
+
+```sh
+sudo install -o root -g root -m 0644 new_allowed_signers   /etc/invoiceworkshop/level1_owner_allowed_signers
+# then update data/owner_trust_anchor.json and commit it
+```
+
+`install-owner-key` refuses to overwrite a root-owned anchor and prints these
+instructions instead.
+
 ## Current state
 
+- Trust anchor: `/etc/invoiceworkshop/level1_owner_allowed_signers`, root-owned,
+  not writable by the executor, fingerprint pinned in
+  `data/owner_trust_anchor.json`.
 - Owner public key: **installed** 2026-09-01, identity `owner`, fingerprint
   `SHA256:qCeZ7ejNJqowHkb+6sKFg20CMOQKYUtoPCMIjEi28QY`. The gate is armed:
   verified by generating a keypair on this server, signing a real approval

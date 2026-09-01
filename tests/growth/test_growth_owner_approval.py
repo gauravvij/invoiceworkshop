@@ -116,10 +116,17 @@ class KeyInstallationTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.original = admin.DEFAULT_ALLOWED_SIGNERS
+        self.original_system = admin.SYSTEM_ALLOWED_SIGNERS
+        self.original_pin = admin.TRUST_ANCHOR_PIN
         admin.DEFAULT_ALLOWED_SIGNERS = Path(self.temp.name) / "allowed_signers"
+        # Isolate from the real root-owned anchor and committed pin.
+        admin.SYSTEM_ALLOWED_SIGNERS = Path(self.temp.name) / "absent_system_anchor"
+        admin.TRUST_ANCHOR_PIN = Path(self.temp.name) / "absent_pin.json"
 
     def tearDown(self):
         admin.DEFAULT_ALLOWED_SIGNERS = self.original
+        admin.SYSTEM_ALLOWED_SIGNERS = self.original_system
+        admin.TRUST_ANCHOR_PIN = self.original_pin
         os.environ.pop("LEVEL1_OWNER_ALLOWED_SIGNERS", None)
         self.temp.cleanup()
 
@@ -157,6 +164,67 @@ class KeyInstallationTests(unittest.TestCase):
             admin._allowed_signers()
 
 
+class TrustAnchorTests(unittest.TestCase):
+    """The trust anchor must not be writable by the account that sends email."""
+
+    def test_anchor_is_root_owned_and_not_executor_writable(self):
+        anchor = admin.SYSTEM_ALLOWED_SIGNERS
+        if not anchor.is_file():
+            self.skipTest("system trust anchor not installed in this environment")
+        stat = anchor.stat()
+        self.assertEqual(stat.st_uid, 0, "trust anchor must be owned by root")
+        self.assertFalse(
+            os.access(anchor, os.W_OK),
+            "the executor account can write the trust anchor",
+        )
+        self.assertTrue(os.access(anchor, os.R_OK), "the executor must be able to read it")
+        # The containing directory must not be writable either, or the file
+        # could simply be replaced by unlinking it.
+        self.assertFalse(os.access(anchor.parent, os.W_OK))
+
+    def test_a_replaced_anchor_is_refused(self):
+        """Swapping the key without updating the committed pin must fail closed."""
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        rogue = Path(temp.name) / "rogue"
+        subprocess.run(
+            ["ssh-keygen", "-t", "ed25519", "-f", str(rogue), "-N", "", "-q", "-C", "rogue"],
+            check=True, capture_output=True,
+        )
+        fields = (rogue.with_suffix(".pub")).read_text().split()
+        swapped = Path(temp.name) / "allowed_signers"
+        swapped.write_text(f"owner {fields[0]} {fields[1]}\n")
+        os.environ["LEVEL1_OWNER_ALLOWED_SIGNERS"] = str(swapped)
+        self.addCleanup(os.environ.pop, "LEVEL1_OWNER_ALLOWED_SIGNERS", None)
+        if not admin.TRUST_ANCHOR_PIN.is_file():
+            self.skipTest("no pinned fingerprint in this environment")
+        with self.assertRaises(SystemExit) as caught:
+            admin._allowed_signers()
+        self.assertIn("does not match the fingerprint pinned", str(caught.exception))
+
+    def test_pin_matches_the_installed_anchor(self):
+        anchor = admin.SYSTEM_ALLOWED_SIGNERS
+        if not (anchor.is_file() and admin.TRUST_ANCHOR_PIN.is_file()):
+            self.skipTest("anchor or pin not present")
+        import json as _json
+        pinned = _json.loads(admin.TRUST_ANCHOR_PIN.read_text())["fingerprint"]
+        self.assertEqual(admin.anchor_fingerprint(anchor), pinned)
+
+    def test_install_command_refuses_to_overwrite_a_root_owned_anchor(self):
+        anchor = admin.SYSTEM_ALLOWED_SIGNERS
+        if not anchor.is_file() or os.access(anchor, os.W_OK):
+            self.skipTest("anchor not root-protected in this environment")
+
+        class Args:
+            public_key = ("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIRogueRogueRogueRogue"
+                          "RogueRogueRo rogue@elsewhere")
+            identity = "owner"
+
+        with self.assertRaises(SystemExit) as caught:
+            admin.cmd_install_owner_key(Args())
+        self.assertIn("root-owned", str(caught.exception))
+
+
 class NoPrivateKeyOnServerTests(unittest.TestCase):
     def test_admin_module_never_generates_a_keypair(self):
         source = (SCRIPTS / "growth_level1a_admin.py").read_text(encoding="utf-8")
@@ -190,8 +258,13 @@ class SignatureVerificationTests(unittest.TestCase):
         signers = self.dir / "allowed_signers"
         signers.write_text(f"owner {public[0]} {public[1]}\n")
         os.environ["LEVEL1_OWNER_ALLOWED_SIGNERS"] = str(signers)
+        # This suite exercises signature maths with a throwaway key, which by
+        # design cannot match the committed production pin.
+        self.original_pin = admin.TRUST_ANCHOR_PIN
+        admin.TRUST_ANCHOR_PIN = self.dir / "absent_pin.json"
 
     def tearDown(self):
+        admin.TRUST_ANCHOR_PIN = self.original_pin
         os.environ.pop("LEVEL1_OWNER_ALLOWED_SIGNERS", None)
         self.temp.cleanup()
 
@@ -221,11 +294,23 @@ class SignatureVerificationTests(unittest.TestCase):
     def test_a_signature_from_an_unknown_key_is_refused(self):
         payload = "invoiceworkshop-level1a:approve-action:v2\naction_id=1\n"
         signature = self._sign(payload)
-        (self.dir / "allowed_signers").write_text(
-            "owner ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOtherOtherOtherOtherOtherOther\n"
+        # Trust a different, genuine key: the signature must no longer verify.
+        other = self.dir / "other"
+        subprocess.run(
+            ["ssh-keygen", "-t", "ed25519", "-f", str(other), "-N", "", "-q", "-C", "other"],
+            check=True, capture_output=True,
         )
+        fields = other.with_suffix(".pub").read_text().split()
+        (self.dir / "allowed_signers").write_text(f"owner {fields[0]} {fields[1]}\n")
         ok, _, _ = admin.verify_signature(payload, signature, "owner")
         self.assertFalse(ok)
+
+    def test_an_unreadable_anchor_fails_closed(self):
+        payload = "invoiceworkshop-level1a:approve-action:v2\naction_id=1\n"
+        signature = self._sign(payload)
+        (self.dir / "allowed_signers").write_text("owner ssh-ed25519 not-a-real-key\n")
+        with self.assertRaises(SystemExit):
+            admin.verify_signature(payload, signature, "owner")
 
 
 if __name__ == "__main__":

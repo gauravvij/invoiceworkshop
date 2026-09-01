@@ -1,0 +1,7 @@
+{
+  "identity": "owner",
+  "key_type": "ssh-ed25519",
+  "fingerprint": "SHA256:qCeZ7ejNJqowHkb+6sKFg20CMOQKYUtoPCMIjEi28QY",
+  "installed_at": "2026-09-01",
+  "note": "Trust anchor for Level-1A owner approvals. Pinned here so that replacing the installed public key cannot happen silently: verification refuses unless the live anchor matches this fingerprint, and changing this file leaves a reviewable commit. This is tamper-evidence, not tamper-prevention \u2014 see docs/OWNER_APPROVAL.md."
+}
