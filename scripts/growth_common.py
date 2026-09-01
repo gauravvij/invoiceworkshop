@@ -72,6 +72,15 @@ def apply_schema(connection: sqlite3.Connection) -> None:
         connection.execute(
             "ALTER TABLE level1a_actions ADD COLUMN context_value TEXT NOT NULL DEFAULT ''"
         )
+    opportunity_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(backlink_opportunities)")
+    }
+    if opportunity_columns and "extracted_at" not in opportunity_columns:
+        connection.execute("ALTER TABLE backlink_opportunities ADD COLUMN extracted_at TEXT")
+    if opportunity_columns and "fetch_attempts" not in opportunity_columns:
+        connection.execute(
+            "ALTER TABLE backlink_opportunities ADD COLUMN fetch_attempts INTEGER NOT NULL DEFAULT 0"
+        )
     template_columns = {
         row[1] for row in connection.execute("PRAGMA table_info(level1a_templates)")
     }

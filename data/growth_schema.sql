@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '8')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '10')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -571,3 +571,159 @@ CREATE TABLE IF NOT EXISTS experiments (
   outcome    TEXT,
   repeat     INTEGER CHECK (repeat IN (0, 1))
 );
+
+-- ---------------------------------------------------------------------------
+-- Aggressive backlink opportunity engine.
+-- Discovery is read-only and deterministic. Nothing here grants outbound
+-- capability: execution still runs through the Level-1A action gates.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS backlink_discovery_runs (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at        TEXT NOT NULL,
+  finished_at       TEXT,
+  mode              TEXT NOT NULL CHECK (mode IN ('daily', 'deep', 'accelerated', 'manual')),
+  channels_json     TEXT NOT NULL DEFAULT '[]',
+  raw_discovered    INTEGER NOT NULL DEFAULT 0,
+  filtered          INTEGER NOT NULL DEFAULT 0,
+  duplicates        INTEGER NOT NULL DEFAULT 0,
+  extracted         INTEGER NOT NULL DEFAULT 0,
+  reviewed          INTEGER NOT NULL DEFAULT 0,
+  qualified         INTEGER NOT NULL DEFAULT 0,
+  rejected          INTEGER NOT NULL DEFAULT 0,
+  llm_reviewed      INTEGER NOT NULL DEFAULT 0,
+  tokens_used       INTEGER NOT NULL DEFAULT 0,
+  tool_calls        INTEGER NOT NULL DEFAULT 0,
+  http_requests     INTEGER NOT NULL DEFAULT 0,
+  cost_usd          REAL,
+  status            TEXT NOT NULL DEFAULT 'running'
+                      CHECK (status IN ('running', 'success', 'partial', 'failed')),
+  errors_json       TEXT NOT NULL DEFAULT '[]',
+  external_side_effects TEXT NOT NULL DEFAULT 'none'
+                      CHECK (external_side_effects IN ('none', 'unknown'))
+);
+
+-- Part J: which channels earn more effort and which get throttled.
+CREATE TABLE IF NOT EXISTS backlink_channel_stats (
+  channel            TEXT PRIMARY KEY,
+  runs               INTEGER NOT NULL DEFAULT 0,
+  raw_discovered     INTEGER NOT NULL DEFAULT 0,
+  qualified          INTEGER NOT NULL DEFAULT 0,
+  tier_a             INTEGER NOT NULL DEFAULT 0,
+  rejected           INTEGER NOT NULL DEFAULT 0,
+  contacted          INTEGER NOT NULL DEFAULT 0,
+  replies            INTEGER NOT NULL DEFAULT 0,
+  placements         INTEGER NOT NULL DEFAULT 0,
+  referral_sessions  INTEGER NOT NULL DEFAULT 0,
+  barren_streak      INTEGER NOT NULL DEFAULT 0,
+  effort_weight      REAL NOT NULL DEFAULT 1.0 CHECK (effort_weight BETWEEN 0.0 AND 3.0),
+  last_run_at        TEXT,
+  updated_at         TEXT NOT NULL
+);
+
+-- Channel 1: reusable competitor-gap dataset so the same domains are not
+-- rediscovered every cycle.
+CREATE TABLE IF NOT EXISTS competitor_pages (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  competitor     TEXT NOT NULL,
+  referring_url  TEXT NOT NULL,
+  referring_domain TEXT NOT NULL,
+  anchor         TEXT NOT NULL DEFAULT '',
+  link_reason    TEXT NOT NULL DEFAULT 'unknown' CHECK (link_reason IN (
+                   'resource_recommendation', 'tool_roundup', 'editorial_recommendation',
+                   'freelancer_resource', 'small_business_resource', 'contractor_resource',
+                   'accounting_resource', 'template_collection', 'educational_resource',
+                   'funding_or_news', 'affiliate', 'unrelated_partnership',
+                   'login_portal', 'paid_placement', 'spam', 'unknown')),
+  actionable     INTEGER NOT NULL DEFAULT 0 CHECK (actionable IN (0, 1)),
+  first_seen_at  TEXT NOT NULL,
+  last_seen_at   TEXT NOT NULL,
+  UNIQUE(competitor, referring_url)
+);
+
+-- Scored, tiered opportunities. Editorial/resource work only; community
+-- discussion opportunities live in their own table.
+CREATE TABLE IF NOT EXISTS backlink_opportunities (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  domain              TEXT NOT NULL,
+  page_url            TEXT NOT NULL,
+  channel             TEXT NOT NULL,
+  discovery_run_id    INTEGER REFERENCES backlink_discovery_runs(id),
+  title               TEXT NOT NULL DEFAULT '',
+  page_evidence       TEXT NOT NULL DEFAULT '',
+  audience            TEXT NOT NULL DEFAULT '',
+  contact_route       TEXT,
+  contact_kind        TEXT NOT NULL DEFAULT 'unknown'
+                        CHECK (contact_kind IN ('email', 'form', 'editorial_guidelines', 'unknown')),
+  recipient           TEXT,
+  target_url          TEXT NOT NULL,
+  opportunity_type    TEXT NOT NULL DEFAULT 'resource' CHECK (opportunity_type IN (
+                        'resource', 'roundup', 'directory', 'broken_replacement',
+                        'unlinked_mention', 'competitor_gap', 'editorial', 'other')),
+  broken_url          TEXT,
+  broken_evidence     TEXT,
+  score_relevance     INTEGER NOT NULL DEFAULT 0 CHECK (score_relevance BETWEEN 0 AND 25),
+  score_audience      INTEGER NOT NULL DEFAULT 0 CHECK (score_audience BETWEEN 0 AND 20),
+  score_legitimacy    INTEGER NOT NULL DEFAULT 0 CHECK (score_legitimacy BETWEEN 0 AND 15),
+  score_resource_fit  INTEGER NOT NULL DEFAULT 0 CHECK (score_resource_fit BETWEEN 0 AND 15),
+  score_likelihood    INTEGER NOT NULL DEFAULT 0 CHECK (score_likelihood BETWEEN 0 AND 10),
+  score_referral      INTEGER NOT NULL DEFAULT 0 CHECK (score_referral BETWEEN 0 AND 10),
+  score_seo           INTEGER NOT NULL DEFAULT 0 CHECK (score_seo BETWEEN 0 AND 5),
+  total_score         INTEGER NOT NULL DEFAULT 0 CHECK (total_score BETWEEN 0 AND 100),
+  tier                TEXT NOT NULL DEFAULT 'C' CHECK (tier IN ('A', 'B', 'C', 'reject')),
+  second_pass_pass    INTEGER NOT NULL DEFAULT 0 CHECK (second_pass_pass IN (0, 1)),
+  second_pass_reason  TEXT NOT NULL DEFAULT '',
+  rejection_reason    TEXT,
+  requires_account    INTEGER NOT NULL DEFAULT 0 CHECK (requires_account IN (0, 1)),
+  requires_payment    INTEGER NOT NULL DEFAULT 0 CHECK (requires_payment IN (0, 1)),
+  llm_reviewed        INTEGER NOT NULL DEFAULT 0 CHECK (llm_reviewed IN (0, 1)),
+  extracted_at        TEXT,
+  fetch_attempts      INTEGER NOT NULL DEFAULT 0,
+  promoted_prospect_id INTEGER REFERENCES prospects(id),
+  discovered_at       TEXT NOT NULL,
+  updated_at          TEXT NOT NULL,
+  UNIQUE(domain, page_url)
+);
+CREATE INDEX IF NOT EXISTS idx_backlink_opportunities_tier
+  ON backlink_opportunities(tier, total_score DESC);
+
+-- Channel 10. Deliberately separate from editorial backlink prospects:
+-- research and draft only, never autonomous posting.
+CREATE TABLE IF NOT EXISTS community_opportunities (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  platform           TEXT NOT NULL,
+  thread_url         TEXT NOT NULL UNIQUE,
+  title              TEXT NOT NULL DEFAULT '',
+  question_summary   TEXT NOT NULL DEFAULT '',
+  relevance_evidence TEXT NOT NULL DEFAULT '',
+  helpful_without_link INTEGER NOT NULL DEFAULT 0 CHECK (helpful_without_link IN (0, 1)),
+  links_permitted    TEXT NOT NULL DEFAULT 'unknown'
+                       CHECK (links_permitted IN ('yes', 'no', 'unknown')),
+  thread_recent      INTEGER NOT NULL DEFAULT 0 CHECK (thread_recent IN (0, 1)),
+  requires_identity  INTEGER NOT NULL DEFAULT 0 CHECK (requires_identity IN (0, 1)),
+  suggested_target   TEXT NOT NULL DEFAULT '',
+  draft_response     TEXT NOT NULL DEFAULT '',
+  state              TEXT NOT NULL DEFAULT 'draft_only'
+                       CHECK (state IN ('draft_only', 'owner_review', 'rejected')),
+  rejection_reason   TEXT,
+  discovered_at      TEXT NOT NULL,
+  updated_at         TEXT NOT NULL
+);
+
+-- Part F: placement observations over time, joined to product outcomes.
+CREATE TABLE IF NOT EXISTS placement_observations (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  placement_id      INTEGER NOT NULL REFERENCES placements(id),
+  observed_at       TEXT NOT NULL,
+  http_status       INTEGER,
+  indexable         INTEGER CHECK (indexable IN (0, 1)),
+  link_present      INTEGER CHECK (link_present IN (0, 1)),
+  rel               TEXT,
+  anchor            TEXT,
+  surrounding_text  TEXT NOT NULL DEFAULT '',
+  referral_sessions INTEGER,
+  notes             TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_placement_observations_placement
+  ON placement_observations(placement_id, observed_at DESC);
+
