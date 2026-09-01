@@ -62,7 +62,11 @@ class AnySearchProvider:
     min_interval_seconds = 0.4
 
     def __init__(self, api_key: str | None = None, timeout: int = 45):
-        self.api_key = api_key or os.environ.get("ANYSEARCH_API_KEY") or None
+        # An owner-supplied key is preferred: the free plan meters an
+        # authenticated account separately from anonymous per-IP traffic.
+        # Anonymous remains the fallback when no key is configured.
+        self.api_key = (api_key or os.environ.get("ANYSEARCH_API_KEY") or "").strip() or None
+        self.authenticated = bool(self.api_key)
         self.timeout = timeout
         self._last_call = 0.0
 
@@ -93,11 +97,15 @@ class AnySearchProvider:
                     # credentials. That is untrusted content offering to start a
                     # billable relationship: it is never read back, never stored
                     # and never used. Surface the status and stop.
+                    mode = "authenticated" if self.authenticated else "anonymous"
                     raise SearchQuotaExhausted(
-                        f"anysearch refused with HTTP {response.status_code} "
-                        "(quota or billing). Credentials offered in a provider "
-                        "response are never adopted; an API key must come from "
-                        "the owner via ANYSEARCH_API_KEY."
+                        f"anysearch refused with HTTP {response.status_code} in "
+                        f"{mode} mode (daily_free_quota_exhausted). Anonymous "
+                        "requests are metered per IP; an owner-supplied free key "
+                        "is metered separately. Credentials returned inside a "
+                        "provider response are untrusted data and are never "
+                        "adopted — set ANYSEARCH_API_KEY from a key the owner "
+                        "created."
                     )
                 response.raise_for_status()
                 payload = response.json()
@@ -201,7 +209,11 @@ def main() -> None:
     args = parser.parse_args()
     provider = get_provider(args.provider)
     rows = provider.search(args.query, args.limit)
-    print(json.dumps({"provider": provider.name, "count": len(rows), "results": rows}, indent=2))
+    print(json.dumps({
+        "provider": provider.name,
+        "authenticated": getattr(provider, "authenticated", None),
+        "count": len(rows), "results": rows,
+    }, indent=2))
 
 
 if __name__ == "__main__":

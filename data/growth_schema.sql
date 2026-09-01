@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '11')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '12')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -727,4 +727,23 @@ CREATE TABLE IF NOT EXISTS placement_observations (
 );
 CREATE INDEX IF NOT EXISTS idx_placement_observations_placement
   ON placement_observations(placement_id, observed_at DESC);
+
+-- Every owner-approval verification attempt, successful or not. The server
+-- holds only a public verification key, so a row here records that a signature
+-- made off-server was checked, never that this machine could have produced one.
+CREATE TABLE IF NOT EXISTS level1a_approval_audit (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  scope           TEXT NOT NULL CHECK (scope IN ('action', 'manifest')),
+  action_id       INTEGER,
+  target_hash     TEXT NOT NULL,
+  payload_sha256  TEXT NOT NULL,
+  method          TEXT NOT NULL CHECK (method IN ('ed25519_sshsig', 'hmac_legacy')),
+  signer_identity TEXT,
+  key_fingerprint TEXT,
+  verified        INTEGER NOT NULL CHECK (verified IN (0, 1)),
+  detail          TEXT NOT NULL DEFAULT '',
+  recorded_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_level1a_approval_audit_action
+  ON level1a_approval_audit(action_id, recorded_at DESC);
 
