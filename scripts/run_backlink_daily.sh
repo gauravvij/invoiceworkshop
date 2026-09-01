@@ -20,6 +20,14 @@ PYTHON="/home/azureuser/growth-venv/bin/python"
 cd "$REPO"
 export PYTHONPATH="$REPO/scripts"
 
+# The AnySearch key lives in .env (gitignored). Load only that one variable:
+# sourcing the whole file would pull Cloudflare and S3 credentials into a
+# read-only discovery job that has no use for them.
+if [[ -r "$REPO/.env" ]]; then
+  ANYSEARCH_API_KEY="$(sed -n 's/^[[:space:]]*ANYSEARCH_API_KEY[[:space:]]*=[[:space:]]*//p' "$REPO/.env" | tail -n1 | tr -d '"'"'"'\r')"
+  export ANYSEARCH_API_KEY
+fi
+
 # --- 1. inbound state -------------------------------------------------------
 # A failed poll means we cannot know whether a prospect replied or bounced, so
 # it must block outbound rather than be shrugged off.

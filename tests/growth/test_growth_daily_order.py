@@ -59,6 +59,15 @@ class DailyOrderTests(unittest.TestCase):
         for forbidden in ("execute --action-id", "send_plaintext", "--recipient"):
             self.assertNotIn(forbidden, self.source, forbidden)
 
+    def test_search_key_is_loaded_without_sourcing_the_whole_env(self):
+        for name in ("run_backlink_daily.sh", "run_backlink_deep.sh", "run_backlink_weekly.sh"):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            self.assertIn("ANYSEARCH_API_KEY", source, name)
+            # Sourcing .env would pull Cloudflare/S3 credentials into a
+            # read-only discovery job that has no use for them.
+            self.assertNotIn('source "$REPO/.env"', source, name)
+            self.assertNotIn("source .env", source, name)
+
     def test_deployed_copy_matches_the_repository(self):
         deployed = Path.home() / ".hermes/scripts/invoiceworkshop-backlink-daily.sh"
         if not deployed.is_file():
