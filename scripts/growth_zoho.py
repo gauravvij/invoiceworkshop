@@ -13,6 +13,10 @@ from typing import Any
 import requests
 
 MAILBOX = "hello@invoiceworkshop.com"
+DISPLAY_NAME = "InvoiceWorkshop"
+# Zoho emits the From header verbatim from `fromAddress`; the mailbox displayName
+# setting only governs webmail compose, so the identity must be spelled out here.
+FROM_HEADER = f"{DISPLAY_NAME} <{MAILBOX}>"
 REQUIRED_SCOPES = {
     "ZohoMail.accounts.READ",
     "ZohoMail.messages.READ",
@@ -205,7 +209,7 @@ class ZohoClient:
                 f"{self.api_base}/accounts/{account_id}/messages",
                 headers=self._headers(),
                 json={
-                    "fromAddress": MAILBOX, "toAddress": recipient,
+                    "fromAddress": FROM_HEADER, "toAddress": recipient,
                     "subject": subject, "content": body, "mailFormat": "plaintext",
                     "askReceipt": "no",
                 },
@@ -228,7 +232,7 @@ class ZohoClient:
                 f"{self.api_base}/accounts/{account_id}/messages/{message_id}",
                 headers=self._headers(),
                 json={
-                    "fromAddress": MAILBOX, "toAddress": recipient,
+                    "fromAddress": FROM_HEADER, "toAddress": recipient,
                     "subject": subject, "content": body, "action": "reply",
                     "mailFormat": "plaintext", "askReceipt": "no",
                 },
