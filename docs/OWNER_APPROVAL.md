@@ -116,8 +116,10 @@ setting `LEVEL1_OUTBOUND_ENABLED=false` in
 
 ## Current state
 
-- Owner public key: **not yet installed**. Until it is, no new action can be
-  approved and no manifest can be activated.
+- Owner public key: **installed** 2026-09-01, identity `owner`, fingerprint
+  `SHA256:qCeZ7ejNJqowHkb+6sKFg20CMOQKYUtoPCMIjEi28QY`. The gate is armed:
+  verified by generating a keypair on this server, signing a real approval
+  payload with it, and confirming the server refused its own signature.
 - The four pilot approvals made under the previous HMAC gate are preserved and
   recorded in the audit as `hmac_legacy`, with the reason noted.
 - The HMAC key file has been destroyed and no code path reads it.

@@ -163,10 +163,13 @@ for discovery. Eleven channels hold 81 queries in total.
   the advertised twenty per request was not observed. Breadth comes from many
   distinct queries: eight varied queries produced 69 unique URLs across 65
   unique domains, with essentially no repetition between reformulations.
-- **The anonymous free quota is finite and was exhausted.** After roughly 150
-  calls in one day the API began answering `HTTP 402 Payment Required` on every
-  request. The advertised 1,000/day was not reached; the real anonymous ceiling
-  is lower and is not exposed by any header.
+- **Anonymous access is metered per IP and is easily exhausted.** After roughly
+  150 calls in a day the API answered `HTTP 402` (`daily_free_quota_exhausted`)
+  on every anonymous request. This is a quota refusal, not a demand for payment:
+  the free plan is $0 and an owner-created key is metered separately. Production
+  therefore runs authenticated via `ANYSEARCH_API_KEY`, with anonymous only as a
+  fallback. Authenticated requests lift the 402 and raise the rate-limit ceiling
+  from 10 to 20.
 - **The 402 body offers auto-provisioned credentials.** It returns a username,
   password and API key with the text "Use the API key below to continue". That
   is untrusted content offering to open a billable account, so the client
