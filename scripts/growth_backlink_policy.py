@@ -66,6 +66,9 @@ BLOCKED_DOMAINS = set(COMPETITORS) | {SELF_DOMAIN} | {
     "kaskus.co.id", "indeed.com", "glassdoor.com", "coursera.org", "udemy.com",
     "scribd.com", "slideshare.net", "issuu.com", "yumpu.com", "academia.edu",
     "researchgate.net", "quizlet.com", "chegg.com", "cloud.microsoft",
+    # User-generated publishing platforms: an article there cannot be edited on
+    # request, so it is not a placement opportunity.
+    "dev.to", "hashnode.dev", "substack.com", "tumblr.com", "weebly.com",
 }
 
 # Channel 10 platforms. Discovery only; posting is never automated.
@@ -394,3 +397,21 @@ VENDOR_PRODUCT_PATTERNS = (
     r"\bwhy choose \w+\b", r"\b\w+ helps you (?:create|send|manage) invoices\b",
 )
 VENDOR_CTA_THRESHOLD = 2
+
+# A page whose own title markets an invoicing/billing product is a competitor,
+# whatever language its calls to action are written in. factuurland.nl reached
+# Tier A because its CTAs are Dutch while its title says exactly what it sells.
+VENDOR_TITLE_PATTERNS = (
+    r"\b(?:invoicing|invoice|billing|facturatie|facturation|rechnungs)\s+"
+    r"(?:software|system|app|platform|tool|generator)\b",
+    r"\b(?:erp|accounting)\s+(?:software|system|platform)\b",
+    r"\ball-in-one\s+software\b",
+    r"\bsoftware\s+voor\b",
+)
+
+# Paths that are a site's front door under another name. A homepage is never a
+# resource page we could be added to.
+HOMEPAGE_PATHS = (
+    "", "home", "homepage", "index", "index.html", "index.php", "start",
+    "en", "en/home", "en/homepage", "us", "uk",
+)

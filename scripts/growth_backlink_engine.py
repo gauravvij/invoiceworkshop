@@ -26,6 +26,8 @@ import requests
 
 from growth_backlink_policy import (
     ACCOUNT_PATTERNS,
+    HOMEPAGE_PATHS,
+    VENDOR_TITLE_PATTERNS,
     SELF_DOMAIN,
     VENDOR_CTA_PATTERNS,
     VENDOR_CTA_THRESHOLD,
@@ -88,6 +90,7 @@ CAPTCHA_RE = re.compile("|".join(CAPTCHA_PATTERNS), re.I)
 OFF_TOPIC_RE = re.compile("|".join(OFF_TOPIC_PATTERNS), re.I)
 VENDOR_CTA_RE = re.compile("|".join(VENDOR_CTA_PATTERNS), re.I)
 VENDOR_PRODUCT_RE = re.compile("|".join(VENDOR_PRODUCT_PATTERNS), re.I)
+VENDOR_TITLE_RE = re.compile("|".join(VENDOR_TITLE_PATTERNS), re.I)
 
 # Signals used by the cheap pre-fetch filter.
 RESOURCE_HINT = re.compile(
@@ -507,7 +510,7 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
                 1 if PAID_RE.search(text) else 0,
                 # Judged on the full page: vendor CTAs usually sit well past the
                 # 1,500 characters kept as evidence.
-                1 if _is_vendor_content(text) else 0,
+                1 if _is_vendor_content(text, parser.title) else 0,
                 now, now, row["id"],
             ),
         )
@@ -521,7 +524,8 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
 # ---------------------------------------------------------------------------
 
 def hard_reject(text: str, domain: str, requires_payment: int,
-                vendor_content: int = 0) -> str | None:
+                vendor_content: int = 0, page_url: str = "",
+                title: str = "") -> str | None:
     if domain == SELF_DOMAIN or domain.endswith("." + SELF_DOMAIN):
         return "InvoiceWorkshop's own site"
     if SPAM_RE.search(text):
@@ -534,13 +538,24 @@ def hard_reject(text: str, domain: str, requires_payment: int,
         return "paid or sponsored placement"
     if OFF_TOPIC_RE.search(text):
         return "page subject is unrelated to business billing"
-    if vendor_content or _is_vendor_content(text):
+    if page_url and is_homepage(page_url):
+        return "site homepage rather than a resource page"
+    if vendor_content or _is_vendor_content(text, title):
         return "competitor or vendor content marketing"
     return None
 
 
-def _is_vendor_content(text: str) -> bool:
+def is_homepage(page_url: str) -> bool:
+    """True for a site's front door, including localised aliases."""
+    path = urlsplit(page_url).path.strip("/").lower()
+    return path in HOMEPAGE_PATHS
+
+
+def _is_vendor_content(text: str, title: str = "") -> bool:
     """A site selling its own invoicing product is not a placement opportunity."""
+    # Title positioning is language-independent in a way CTAs are not.
+    if VENDOR_TITLE_RE.search(title or text[:300]):
+        return True
     if not INVOICE_HINT.search(text):
         return False
     ctas = len(set(match.group(0).lower() for match in VENDOR_CTA_RE.finditer(text)))
@@ -653,7 +668,8 @@ def qualify(connection: sqlite3.Connection) -> dict:
         text = f"{row['title']} {row['page_evidence']}"
         reason = hard_reject(
             text, str(row["domain"]), int(row["requires_payment"]),
-            int(row["vendor_content"] or 0),
+            int(row["vendor_content"] or 0), str(row["page_url"]),
+            str(row["title"] or ""),
         )
         if reason:
             connection.execute(

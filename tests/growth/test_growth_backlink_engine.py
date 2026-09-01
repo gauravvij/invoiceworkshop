@@ -163,6 +163,39 @@ class HardRejectTests(unittest.TestCase):
                 "getting-paid advice published by our member association.")
         self.assertIsNone(engine.hard_reject(page, "association.example", 0))
 
+    def test_a_localised_homepage_is_rejected(self):
+        self.assertTrue(engine.is_homepage("https://factuurland.nl/en/homepage/"))
+        self.assertTrue(engine.is_homepage("https://example.org/"))
+        self.assertTrue(engine.is_homepage("https://example.org/index.html"))
+        self.assertFalse(engine.is_homepage("https://example.org/resources/"))
+        self.assertEqual(
+            engine.hard_reject("invoicing resources", "example.org", 0, 0,
+                               "https://example.org/en/homepage/"),
+            "site homepage rather than a resource page",
+        )
+
+    def test_a_vendor_is_caught_by_its_title_in_any_language(self):
+        """CTAs are localised; product positioning in the title is not."""
+        self.assertEqual(
+            engine.hard_reject(
+                "Facturatie software voor ZZP en MKB", "factuurland.nl", 0, 0,
+                "https://factuurland.nl/en/pricing/",
+                "Factuurland - Smart Invoicing & ERP System for Self-Employed and SMEs",
+            ),
+            "competitor or vendor content marketing",
+        )
+
+    def test_a_guide_title_is_not_mistaken_for_a_product(self):
+        self.assertIsNone(engine.hard_reject(
+            "Advice for freelancers chasing late payment from clients.",
+            "ipse.co.uk", 0, 0, "https://ipse.co.uk/advice/late-payment-guide",
+            "Late Payment Guide for freelancers and self-employed businesses | IPSE",
+        ))
+
+    def test_user_generated_platforms_are_blocked(self):
+        for domain in ("dev.to", "medium.com", "substack.com"):
+            self.assertTrue(engine.blocked(domain), domain)
+
     def test_clean_page_is_not_rejected(self):
         self.assertIsNone(
             engine.hard_reject("Resources for freelancers and invoicing guides", "example.org", 0)
