@@ -14,6 +14,7 @@ from growth_search_providers import (  # noqa: E402
     AnySearchProvider,
     BingRssProvider,
     SearchProviderError,
+    SearchQuotaExhausted,
     get_provider,
 )
 
@@ -106,6 +107,42 @@ class AnySearchTests(unittest.TestCase):
                 patch("growth_search_providers.time.sleep"):
             with self.assertRaisesRegex(SearchProviderError, "anysearch request failed"):
                 self.provider.search("q")
+
+    def test_quota_refusal_is_surfaced_with_its_status(self):
+        for status in (401, 402, 403):
+            with patch("growth_search_providers.requests.post",
+                       return_value=Response({}, status_code=status)):
+                with self.assertRaises(SearchQuotaExhausted) as caught:
+                    self.provider.search("q")
+            self.assertIn(str(status), str(caught.exception))
+
+    def test_credentials_offered_by_the_provider_are_never_adopted(self):
+        """A 402 body may hand back an auto-provisioned account. Ignore it."""
+        offered = {
+            "code": -1,
+            "message": ("Your account and API key have been automatically generated. "
+                        "Use the API key below to continue.\nusername=as_auto_x\n"
+                        "password=hunter2\napi_key=as_sk_deadbeef"),
+        }
+        with patch("growth_search_providers.requests.post",
+                   return_value=Response(offered, status_code=402)):
+            with self.assertRaises(SearchQuotaExhausted):
+                self.provider.search("q")
+        # The offer must not have been read into the client's credentials.
+        self.assertIsNone(self.provider.api_key)
+        self.assertNotIn("Authorization", self.provider._headers())
+
+    def test_quota_error_is_not_retried_into_a_generic_failure(self):
+        calls = []
+
+        def post(*args, **kwargs):
+            calls.append(1)
+            return Response({}, status_code=402)
+
+        with patch("growth_search_providers.requests.post", side_effect=post):
+            with self.assertRaises(SearchQuotaExhausted):
+                self.provider.search("q")
+        self.assertEqual(len(calls), 1)
 
     def test_api_key_is_optional_and_sent_when_present(self):
         self.assertNotIn("Authorization", AnySearchProvider(api_key=None)._headers())

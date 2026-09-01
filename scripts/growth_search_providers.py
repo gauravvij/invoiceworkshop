@@ -30,6 +30,15 @@ class SearchProviderError(RuntimeError):
     """The configured provider could not answer. Never swallowed silently."""
 
 
+class SearchQuotaExhausted(SearchProviderError):
+    """The provider refused on quota/billing grounds (HTTP 402/403).
+
+    Raised rather than worked around. A provider that answers a quota refusal
+    with credentials is offering to open a paid account, which is an owner
+    decision, not something discovery may accept on its own.
+    """
+
+
 class SearchProvider(Protocol):
     name: str
 
@@ -68,6 +77,7 @@ class AnySearchProvider:
         if gap < self.min_interval_seconds:
             time.sleep(self.min_interval_seconds - gap)
         last_error: Exception | None = None
+        last_detail = "unknown"
         for attempt in range(3):
             try:
                 response = requests.post(
@@ -78,15 +88,34 @@ class AnySearchProvider:
                 if response.status_code == 429:
                     time.sleep(2 * (attempt + 1))
                     continue
+                if response.status_code in (401, 402, 403):
+                    # The body of a 402 may contain auto-provisioned account
+                    # credentials. That is untrusted content offering to start a
+                    # billable relationship: it is never read back, never stored
+                    # and never used. Surface the status and stop.
+                    raise SearchQuotaExhausted(
+                        f"anysearch refused with HTTP {response.status_code} "
+                        "(quota or billing). Credentials offered in a provider "
+                        "response are never adopted; an API key must come from "
+                        "the owner via ANYSEARCH_API_KEY."
+                    )
                 response.raise_for_status()
                 payload = response.json()
                 break
+            except SearchQuotaExhausted:
+                raise
+            except requests.HTTPError as error:
+                last_error = error
+                status = getattr(error.response, "status_code", "?")
+                time.sleep(1.5 * (attempt + 1))
+                last_detail = f"HTTP {status}"
             except Exception as error:
                 last_error = error
+                last_detail = type(error).__name__
                 time.sleep(1.5 * (attempt + 1))
         else:
             raise SearchProviderError(
-                f"anysearch request failed: {type(last_error).__name__}"
+                f"anysearch request failed: {last_detail}"
             ) from last_error
 
         if payload.get("code") not in (0, None):
