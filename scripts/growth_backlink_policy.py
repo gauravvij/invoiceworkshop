@@ -82,6 +82,7 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         '"invoice template" "other resources" contractor',
         '"helpful links" invoicing self-employed resources',
         '"resources" "invoice generator" OR "invoice maker" small business',
+        'Find resource pages that recommend invoicing software to freelancers or small businesses',
     ),
     # Channel 2 — resource pages.
     "resource_pages": (
@@ -95,6 +96,8 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         '"free resources" solopreneur invoicing admin',
         '"resource page" consultants business tools',
         '"agency resources" freelance tools invoicing',
+        'Find resource pages for freelancers that recommend invoicing, billing or small-business tools',
+        'Find pages that list free online tools for self-employed people to send invoices and get paid',
     ),
     # Channel 3 — broken / outdated tool replacement.
     "broken_replacement": (
@@ -104,6 +107,7 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         '"invoice generator" "page not found" resources links',
         '"formerly free" invoice tool now paid resources',
         '"invoice maker" "dead link" OR "broken link" resources',
+        'Find resource pages that link to invoicing tools which have shut down or become paid only',
     ),
     # Channel 4 — accounting and bookkeeping.
     "accounting": (
@@ -114,6 +118,7 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         '"small business finance" guide resources invoice template',
         'bookkeeper blog "free tools" invoicing clients',
         '"accountants" association resources small business tools',
+        'Find bookkeeping and accounting firm websites that publish free downloadable resources for small business clients',
     ),
     # Channel 5 — contractor and construction.
     "contractor": (
@@ -125,6 +130,7 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         'electrician OR plumber OR hvac "business resources" invoicing',
         '"construction accounting" resources templates change orders',
         'contractor magazine "business tools" invoicing resources',
+        'Find contractor or construction-business resource pages that could reasonably include a free construction invoice tool',
     ),
     # Channel 6 — freelancer / consultant / creator.
     "freelancer": (
@@ -135,6 +141,7 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         '"independent worker" resources finances invoicing',
         '"freelance toolkit" resources business admin',
         '"for freelancers" resources page tools finance',
+        'Find freelancer association and community pages listing practical business admin tools',
     ),
     # Channel 7 — legitimate directories / tool discovery.
     "directory": (
@@ -153,6 +160,7 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         '"invoice apps" free comparison freelancers',
         '"contractor apps" OR "contractor tools" invoicing list',
         '"getting paid" tools freelancers article 2026',
+        'Find recently updated articles listing free invoicing tools for freelancers and small businesses',
     ),
     # Channel 9 — unlinked mentions.
     "unlinked_mention": (
@@ -168,6 +176,8 @@ CHANNEL_QUERIES: dict[str, tuple[str, ...]] = {
         'site:indiehackers.com invoicing tool free',
         'site:news.ycombinator.com "invoice generator"',
         'site:reddit.com/r/bookkeeping invoice template free tool',
+        'Find Reddit discussions where freelancers or small business owners are looking for an invoice generator',
+        'Find forum threads asking for a free invoicing tool that needs no signup',
     ),
     # Channel 11 — expert contribution requests (escalate, never impersonate).
     "expert_contribution": (

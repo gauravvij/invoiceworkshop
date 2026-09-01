@@ -16,11 +16,9 @@ never interpreted as an instruction.
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import re
 import sqlite3
-import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 
@@ -52,6 +50,7 @@ from growth_backlink_policy import (
     classify_link_reason,
     target_for,
 )
+from growth_search_providers import SearchProviderError, get_provider
 from growth_common import (
     apply_schema,
     canonical_domain,
@@ -61,7 +60,6 @@ from growth_common import (
     utc_now,
 )
 
-SEARCH_ENDPOINT = "https://www.bing.com/search"
 USER_AGENT = "InvoiceWorkshop-Level0/1.0 (+https://invoiceworkshop.com/)"
 # Some hosts return 403 to any unfamiliar agent. A second, ordinary browser
 # string is tried before a page is written off; nothing else about the request
@@ -174,23 +172,19 @@ def is_community(domain: str) -> bool:
 # Stage 1 — broad discovery
 # ---------------------------------------------------------------------------
 
+_PROVIDER: object | None = None
+
+
+def provider():
+    """The configured search provider. Never falls back to another source."""
+    global _PROVIDER
+    if _PROVIDER is None:
+        _PROVIDER = get_provider()
+    return _PROVIDER
+
+
 def search(query: str, limit: int = SEARCH_RESULTS_PER_QUERY) -> list[dict]:
-    response = requests.get(
-        SEARCH_ENDPOINT,
-        params={"q": query, "format": "rss"},
-        headers={"User-Agent": USER_AGENT},
-        timeout=25,
-    )
-    response.raise_for_status()
-    root = ET.fromstring(response.text)
-    rows = []
-    for item in root.findall("./channel/item")[:limit]:
-        rows.append({
-            "title": html.unescape(item.findtext("title") or "").strip(),
-            "page_url": html.unescape(item.findtext("link") or "").strip(),
-            "snippet": html.unescape(item.findtext("description") or "").strip(),
-        })
-    return rows
+    return provider().search(query, limit)
 
 
 def channel_plan(connection: sqlite3.Connection, channels: list[str] | None,
@@ -266,7 +260,11 @@ def discover(connection: sqlite3.Connection, run_id: int, channels: list[str] | 
         try:
             rows = search(query)
             requests_made += 1
-        except Exception as error:  # network/parse failure must not kill the run
+        except SearchProviderError as error:
+            # Recorded, never swallowed by switching to a weaker source.
+            errors.append(f"{channel}: search provider failed: {error}")
+            continue
+        except Exception as error:  # transient network/parse failure
             errors.append(f"{channel}: {type(error).__name__}")
             continue
         for row in rows:
@@ -279,7 +277,8 @@ def discover(connection: sqlite3.Connection, run_id: int, channels: list[str] | 
                 bucket["rejected"] += 1
                 continue
             domain = canonical_domain(page_url)
-            keep, reason = cheap_filter(channel, row["title"], row["snippet"], page_url)
+            evidence = row.get("content") or row.get("snippet") or ""
+            keep, reason = cheap_filter(channel, row["title"], evidence, page_url)
             if not keep:
                 rejected += 1
                 bucket["rejected"] += 1
@@ -309,13 +308,14 @@ def discover(connection: sqlite3.Connection, run_id: int, channels: list[str] | 
                    ON CONFLICT(domain, page_url) DO NOTHING""",
                 (
                     domain, page_url, channel, run_id, row["title"][:400],
-                    row["snippet"][:1500],
-                    target_for(f"{row['title']} {row['snippet']} {page_url}"),
+                    evidence[:1500],
+                    target_for(f"{row['title']} {evidence} {page_url}"),
                     now, now,
                 ),
             )
     connection.commit()
     return {
+        "provider": provider().name,
         "queries_run": len(plan), "raw": raw, "filtered": filtered,
         "duplicates": duplicates, "rejected": rejected,
         "http_requests": requests_made, "per_channel": per_channel, "errors": errors,
@@ -985,7 +985,8 @@ def cycle(connection: sqlite3.Connection, mode: str, channels: list[str] | None,
         errors_json=json.dumps(found["errors"]),
     )
     return {
-        "run_id": run_id, "mode": mode, "discovery": found, "crawl": crawled,
+        "run_id": run_id, "mode": mode, "provider": provider().name,
+        "discovery": found, "crawl": crawled,
         "extraction": pulled,
         "broken_links": broken, "qualification": counts,
         "channel_adjustments": adjustments, "http_requests": http_total,

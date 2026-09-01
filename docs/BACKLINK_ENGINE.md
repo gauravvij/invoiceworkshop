@@ -107,40 +107,77 @@ two or more new qualified opportunities gains 0.25. The weight is bounded to
 [0.25, 2.5], so automation throttles a weak channel but never silently switches
 one off — that stays an owner decision.
 
-## Known constraint: the search backend
+## Search provider
 
-**The free Bing RSS endpoint used for keyword discovery ignores search
-operators.** Verified directly on 2026-09-01:
+The search source is pluggable and selected with `BACKLINK_SEARCH_PROVIDER`,
+defaulting to `anysearch`. Providers live in `growth_search_providers.py` and
+return normalized `{title, page_url, snippet, content}` rows, so adding Brave or
+another SERP API is a registry entry rather than an engine change.
+
+**There is no fallback chain.** If the configured provider fails, discovery
+records the failure and that query is skipped. Silently degrading to a weaker
+source is what let the Bing RSS problem go unnoticed for weeks, so a test
+asserts the engine never names a concrete provider and never reaches for a
+second one.
+
+### Why the default changed
+
+`bing_rss` — `bing.com/search?format=rss` — was measured on 2026-09-01 to
+**ignore search operators entirely**:
 
 - `site:reddit.com invoice` returned no reddit.com results;
 - `site:freelancersunion.org resources` returned Wikipedia and NCERT textbooks;
 - a quoted nonsense phrase that should match nothing returned Wikipedia and
   court dockets.
 
-Quoted phrases and `site:` are both discarded, so keyword discovery degrades to
-loose matching. The filters behave correctly against this — they reject the
-dictionaries, textbooks and competitor pages it returns — but the *ceiling* on
-qualified output is set by search quality, not by the pipeline.
+It is retained in the registry only so the historical source stays runnable for
+comparison, and is flagged `honours_operators = False`.
 
-The same endpoint backs the existing Level-0 research job, so earlier reported
-discovery counts carry the same caveat.
+`anysearch` — `POST https://api.anysearch.com/v1/search` — was calibrated on the
+same query set the same day. Anonymous access works and an API key is optional;
+`ANYSEARCH_API_KEY` is sent as a bearer token when set. On twelve identical
+queries pushed through the same production filter:
 
-Two mitigations are in place:
+| Metric | bing_rss | anysearch |
+|---|---:|---:|
+| Raw URLs | 120 | 103 |
+| Passed the cheap filter | 9 | **74** |
+| Resource-page candidates | 9 | **49** |
+| Community candidates | 0 | **25** |
+| Rejects | 111 | 29 |
+| Mean latency | 271 ms | 1,865 ms |
 
-1. **Seed-hub crawling**, which needs no search engine. The crawler reads the
-   resource sections of membership bodies and trade associations directly, and
-   an expansion pass uses discovered resource pages as second-level seeds. This
-   produced the majority of real opportunities found so far.
-2. **Domain diversity accounting**, so a single cooperative site cannot inflate
-   the numbers.
+Operator fidelity measured 87% on site restriction (39/45 results on the
+requested domain), zero leakage on term exclusions, and quoted phrases returned
+9/10 results containing both phrases against 2/9 unquoted.
 
-Roughly 40% of association seeds refuse automated access (HTTP 403, or TLS
-errors). Their resource pages remain reachable by a person.
+Natural-language queries perform comparably to operator queries, so each channel
+now carries both forms: operators for precise domain targeting, intent phrasing
+for discovery. Eleven channels hold 81 queries in total.
 
-Lifting qualified throughput to the 5–15 per cycle target realistically needs a
-search API that honours operators — Brave Search, Bing Web Search, Google
-Programmable Search or similar. That requires a key and in most cases payment,
-so it is an owner decision; nothing was purchased.
+### Provider limitations
+
+- **About ten results per request, and no pagination.** `count`, `limit`,
+  `page`, `offset` and `top_k` are all accepted but none raise the ceiling, so
+  the advertised twenty per request was not observed. Breadth comes from many
+  distinct queries: eight varied queries produced 69 unique URLs across 65
+  unique domains, with essentially no repetition between reformulations.
+- **Rate-limit headers are not informative.** `x-ratelimit-limit: 10` with
+  `remaining` pinned at 8 and a reset timestamp that is always roughly now — a
+  QPS-style guard rather than a daily counter. No daily quota is exposed and no
+  429 was seen across roughly 90 anonymous calls, so the advertised 1,000/day
+  is plausible but unverified. The client spaces requests conservatively.
+- **Roughly seven times slower than the RSS endpoint** (1.9 s vs 0.27 s). At
+  this query volume that is minutes per cycle, which is irrelevant for a
+  scheduled job.
+- **Anonymous access carries no guarantee.** There is no account, so there is no
+  SLA and no quota entitlement. A provider failure now stops discovery loudly
+  instead of quietly returning junk, which is the correct trade.
+- One query returned zero results transiently and succeeded on retry; the client
+  retries three times before raising.
+
+Roughly 40% of association seeds still refuse automated crawling (HTTP 403 or
+TLS errors), which is independent of the search provider.
 
 ## Spam policy
 
