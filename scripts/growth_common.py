@@ -77,6 +77,10 @@ def apply_schema(connection: sqlite3.Connection) -> None:
     }
     if opportunity_columns and "extracted_at" not in opportunity_columns:
         connection.execute("ALTER TABLE backlink_opportunities ADD COLUMN extracted_at TEXT")
+    if opportunity_columns and "vendor_content" not in opportunity_columns:
+        connection.execute(
+            "ALTER TABLE backlink_opportunities ADD COLUMN vendor_content INTEGER NOT NULL DEFAULT 0"
+        )
     if opportunity_columns and "fetch_attempts" not in opportunity_columns:
         connection.execute(
             "ALTER TABLE backlink_opportunities ADD COLUMN fetch_attempts INTEGER NOT NULL DEFAULT 0"

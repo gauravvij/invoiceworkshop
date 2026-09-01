@@ -52,7 +52,7 @@ class DatabaseTests(unittest.TestCase):
         version = connection.execute(
             "SELECT value FROM schema_meta WHERE key='schema_version'"
         ).fetchone()[0]
-        self.assertEqual(version, "10")
+        self.assertEqual(version, "11")
         columns = {
             row[1]: row for row in connection.execute("PRAGMA table_info(prospects)")
         }

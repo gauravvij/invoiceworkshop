@@ -51,8 +51,11 @@ COMPETITORS = (
     "vertex42.com", "jotform.com", "pandadoc.com", "docusign.com",
 )
 
+# Our own site. Discovery must never treat InvoiceWorkshop as a prospect.
+SELF_DOMAIN = "invoiceworkshop.com"
+
 # Never contacted and never counted as an opportunity.
-BLOCKED_DOMAINS = set(COMPETITORS) | {
+BLOCKED_DOMAINS = set(COMPETITORS) | {SELF_DOMAIN} | {
     "bing.com", "google.com", "duckduckgo.com", "yahoo.com", "baidu.com",
     "facebook.com", "instagram.com", "linkedin.com", "pinterest.com", "tiktok.com",
     "youtube.com", "x.com", "twitter.com", "medium.com", "wordpress.com",
@@ -367,3 +370,27 @@ OFF_TOPIC_PATTERNS = (
     r"\binterview with\b", r"\bsponsored content\b",
 )
 
+
+# ---------------------------------------------------------------------------
+# Vendor content marketing.
+#
+# The long tail of invoicing/billing SaaS vendors cannot be enumerated by hand,
+# and their blogs rank well for exactly the queries this engine runs
+# ("best free invoicing software 2026"). Asking a competitor to list us is
+# pointless at best. Detect them structurally instead: a page that sells its own
+# product carries product CTAs, and combined with invoicing subject matter that
+# is a vendor blog rather than an independent resource.
+# ---------------------------------------------------------------------------
+VENDOR_CTA_PATTERNS = (
+    r"\bstart (?:your )?free trial\b", r"\bfree trial\b", r"\bbook a demo\b",
+    r"\brequest a demo\b", r"\bschedule a demo\b", r"\bget started free\b",
+    r"\bsign up free\b", r"\bstart for free\b", r"\bpricing plans?\b",
+    r"\bper user/month\b", r"\bper month, billed\b", r"\bno credit card required\b",
+    r"\btry \w+ free\b", r"\bcreate your account\b", r"\bview pricing\b",
+    r"\bplans start(?:ing)? at\b", r"\bupgrade to (?:pro|premium)\b",
+)
+VENDOR_PRODUCT_PATTERNS = (
+    r"\bour (?:invoicing |billing |accounting )?(?:software|platform|app|product|tool)\b",
+    r"\bwhy choose \w+\b", r"\b\w+ helps you (?:create|send|manage) invoices\b",
+)
+VENDOR_CTA_THRESHOLD = 2

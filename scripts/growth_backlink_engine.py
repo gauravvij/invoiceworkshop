@@ -26,6 +26,10 @@ import requests
 
 from growth_backlink_policy import (
     ACCOUNT_PATTERNS,
+    SELF_DOMAIN,
+    VENDOR_CTA_PATTERNS,
+    VENDOR_CTA_THRESHOLD,
+    VENDOR_PRODUCT_PATTERNS,
     OFF_TOPIC_PATTERNS,
     CRAWL_MAX_LINKS_PER_SEED,
     CRAWL_SEEDS,
@@ -64,6 +68,7 @@ USER_AGENT = "InvoiceWorkshop-Level0/1.0 (+https://invoiceworkshop.com/)"
 # Some hosts return 403 to any unfamiliar agent. A second, ordinary browser
 # string is tried before a page is written off; nothing else about the request
 # changes and it stays a plain read-only GET.
+BROKEN_LINK_CHECKS_PER_PAGE = 12
 FALLBACK_USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/141.0 Safari/537.36"
@@ -81,6 +86,8 @@ RECIPROCAL_RE = re.compile("|".join(RECIPROCAL_PATTERNS), re.I)
 ACCOUNT_RE = re.compile("|".join(ACCOUNT_PATTERNS), re.I)
 CAPTCHA_RE = re.compile("|".join(CAPTCHA_PATTERNS), re.I)
 OFF_TOPIC_RE = re.compile("|".join(OFF_TOPIC_PATTERNS), re.I)
+VENDOR_CTA_RE = re.compile("|".join(VENDOR_CTA_PATTERNS), re.I)
+VENDOR_PRODUCT_RE = re.compile("|".join(VENDOR_PRODUCT_PATTERNS), re.I)
 
 # Signals used by the cheap pre-fetch filter.
 RESOURCE_HINT = re.compile(
@@ -489,7 +496,7 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
             """UPDATE backlink_opportunities
                   SET title=?, page_evidence=?, contact_route=?, contact_kind=?,
                       recipient=?, target_url=?, requires_account=?, requires_payment=?,
-                      extracted_at=?, updated_at=?
+                      vendor_content=?, extracted_at=?, updated_at=?
                 WHERE id=?""",
             (
                 (parser.title.strip() or row["title"])[:400],
@@ -498,6 +505,9 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
                 target_for(f"{parser.title} {text[:4000]} {row['page_url']}"),
                 1 if ACCOUNT_RE.search(text) else 0,
                 1 if PAID_RE.search(text) else 0,
+                # Judged on the full page: vendor CTAs usually sit well past the
+                # 1,500 characters kept as evidence.
+                1 if _is_vendor_content(text) else 0,
                 now, now, row["id"],
             ),
         )
@@ -510,7 +520,10 @@ def extract(connection: sqlite3.Connection, limit: int = EXTRACT_LIMIT) -> dict:
 # Stage 3 — rule-based qualification, scoring (Part D) and tiering (Part E)
 # ---------------------------------------------------------------------------
 
-def hard_reject(text: str, domain: str, requires_payment: int) -> str | None:
+def hard_reject(text: str, domain: str, requires_payment: int,
+                vendor_content: int = 0) -> str | None:
+    if domain == SELF_DOMAIN or domain.endswith("." + SELF_DOMAIN):
+        return "InvoiceWorkshop's own site"
     if SPAM_RE.search(text):
         return "Part K spam signal on the page"
     if blocked(domain):
@@ -521,7 +534,17 @@ def hard_reject(text: str, domain: str, requires_payment: int) -> str | None:
         return "paid or sponsored placement"
     if OFF_TOPIC_RE.search(text):
         return "page subject is unrelated to business billing"
+    if vendor_content or _is_vendor_content(text):
+        return "competitor or vendor content marketing"
     return None
+
+
+def _is_vendor_content(text: str) -> bool:
+    """A site selling its own invoicing product is not a placement opportunity."""
+    if not INVOICE_HINT.search(text):
+        return False
+    ctas = len(set(match.group(0).lower() for match in VENDOR_CTA_RE.finditer(text)))
+    return ctas >= VENDOR_CTA_THRESHOLD or bool(VENDOR_PRODUCT_RE.search(text))
 
 
 def score_opportunity(row: sqlite3.Row) -> dict[str, int]:
@@ -628,7 +651,10 @@ def qualify(connection: sqlite3.Connection) -> dict:
     scored: list[tuple[sqlite3.Row, dict, str, str]] = []
     for row in rows:
         text = f"{row['title']} {row['page_evidence']}"
-        reason = hard_reject(text, str(row["domain"]), int(row["requires_payment"]))
+        reason = hard_reject(
+            text, str(row["domain"]), int(row["requires_payment"]),
+            int(row["vendor_content"] or 0),
+        )
         if reason:
             connection.execute(
                 """UPDATE backlink_opportunities
@@ -693,6 +719,50 @@ def qualify(connection: sqlite3.Connection) -> dict:
     return counts
 
 
+def vendor_audit(connection: sqlite3.Connection) -> dict:
+    """Promotion gate: judge the *site*, not just the article.
+
+    A vendor's article page often carries no call to action even though the
+    site sells competing invoicing software. Before an opportunity is offered
+    for outreach, check the domain root once and flag the whole domain.
+    """
+    now = utc_now()
+    domains = [
+        row["domain"] for row in connection.execute(
+            """SELECT DISTINCT domain FROM backlink_opportunities
+                WHERE tier IN ('A','B') AND vendor_content=0"""
+        )
+    ]
+    flagged, checked, failed = 0, 0, 0
+    for domain in domains:
+        try:
+            status, body = fetch(f"https://{domain}/")
+            checked += 1
+        except Exception:
+            failed += 1
+            continue
+        if status != 200 or not body:
+            failed += 1
+            continue
+        parser = PageParser()
+        try:
+            parser.feed(body)
+        except Exception:
+            pass
+        if _is_vendor_content(parser.body_text):
+            connection.execute(
+                """UPDATE backlink_opportunities
+                      SET vendor_content=1, tier='reject',
+                          rejection_reason='competitor or vendor content marketing',
+                          updated_at=? WHERE domain=?""",
+                (now, domain),
+            )
+            flagged += 1
+    connection.commit()
+    return {"domains_checked": checked, "flagged_as_vendor": flagged,
+            "unreachable": failed, "external_side_effects": "none"}
+
+
 # ---------------------------------------------------------------------------
 # Channel 3 — broken/outdated tool verification
 # ---------------------------------------------------------------------------
@@ -720,7 +790,12 @@ def verify_broken_links(connection: sqlite3.Connection, limit: int = 20) -> dict
             pass
         host = urlsplit(row["page_url"]).netloc
         broken_url = evidence = None
+        # Bound the probing: a link-heavy resource page can carry dozens of
+        # outbound tool links, and each HEAD carries its own timeout.
+        checked = 0
         for href, anchor in parser.links:
+            if checked >= BROKEN_LINK_CHECKS_PER_PAGE:
+                break
             if not href or href.startswith(("mailto:", "tel:", "#", "javascript:")):
                 continue
             absolute = urljoin(row["page_url"], href)
@@ -728,14 +803,15 @@ def verify_broken_links(connection: sqlite3.Connection, limit: int = 20) -> dict
                 continue
             if not INVOICE_HINT.search(f"{anchor} {absolute}"):
                 continue
+            checked += 1
             try:
                 response = requests.head(
-                    absolute, headers={"User-Agent": USER_AGENT}, timeout=15, allow_redirects=True
+                    absolute, headers={"User-Agent": USER_AGENT}, timeout=8, allow_redirects=True
                 )
                 code = response.status_code
                 if code in {405, 403}:  # some hosts reject HEAD
                     code = requests.get(
-                        absolute, headers={"User-Agent": USER_AGENT}, timeout=20
+                        absolute, headers={"User-Agent": USER_AGENT}, timeout=12
                     ).status_code
             except Exception as error:
                 broken_url, evidence = absolute, f"request failed: {type(error).__name__}"
@@ -970,6 +1046,9 @@ def cycle(connection: sqlite3.Connection, mode: str, channels: list[str] | None,
     pulled = extract(connection, extract_limit)
     broken = verify_broken_links(connection)
     counts = qualify(connection)
+    audit = vendor_audit(connection)
+    if audit["flagged_as_vendor"]:
+        counts = qualify(connection)
     adjustments = update_channel_stats(connection, found["per_channel"])
     http_total = found["http_requests"] + pulled["http_requests"]
     finish_run(
@@ -988,7 +1067,7 @@ def cycle(connection: sqlite3.Connection, mode: str, channels: list[str] | None,
         "run_id": run_id, "mode": mode, "provider": provider().name,
         "discovery": found, "crawl": crawled,
         "extraction": pulled,
-        "broken_links": broken, "qualification": counts,
+        "broken_links": broken, "qualification": counts, "vendor_audit": audit,
         "channel_adjustments": adjustments, "http_requests": http_total,
         "external_side_effects": "none",
     }
@@ -1080,6 +1159,7 @@ def main() -> None:
     run.add_argument("--extract-limit", type=int, default=EXTRACT_LIMIT)
 
     commands.add_parser("qualify", help="Re-score and re-tier extracted opportunities")
+    commands.add_parser("vendor-audit", help="Check A/B domains' own sites for vendor CTAs")
     gap = commands.add_parser("competitor-gap", help="Refresh the competitor-gap dataset")
     gap.add_argument("--competitors", nargs="*")
     placements = commands.add_parser("verify-placements", help="Re-verify recorded placements")
@@ -1100,6 +1180,8 @@ def main() -> None:
         result = cycle(connection, args.mode, args.channels, args.queries_per_channel, args.extract_limit)
     elif args.command == "qualify":
         result = qualify(connection)
+    elif args.command == "vendor-audit":
+        result = vendor_audit(connection)
     elif args.command == "competitor-gap":
         result = competitor_gap(connection, args.competitors)
     elif args.command == "verify-placements":

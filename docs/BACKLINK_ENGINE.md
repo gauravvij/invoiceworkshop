@@ -72,7 +72,8 @@ stays smaller than relevance and audience.
 - **Tier C** — everything else that survives, including pages demoted because a
   better page on the same domain already represents it.
 - **reject** — spam, competitor, reciprocal-link demand, paid placement,
-  off-topic subject, or a failed second pass.
+  off-topic subject, InvoiceWorkshop's own site, vendor content marketing, or a
+  failed second pass.
 
 Two rules matter more than the thresholds:
 
@@ -178,6 +179,31 @@ for discovery. Eleven channels hold 81 queries in total.
 
 Roughly 40% of association seeds still refuse automated crawling (HTTP 403 or
 TLS errors), which is independent of the search provider.
+
+## Vendor content marketing
+
+Better search reaches the commercial long tail, and that surfaced a problem the
+weaker source hid: a large share of pages ranking for "best free invoicing
+software 2026" are blogs owned by invoicing and billing vendors. The competitor
+list cannot enumerate them by hand. Two structural gates handle it instead:
+
+1. **Page-level.** During extraction the *full* page text — not the 1,500
+   characters kept as evidence — is scanned for product calls to action ("start
+   free trial", "book a demo", "plans start at", "no credit card required") plus
+   invoicing subject matter. The verdict is stored on the row.
+2. **Domain-level.** Before an opportunity is offered for outreach, the domain
+   root is fetched once and judged the same way, because a vendor's article page
+   frequently carries no CTA even though the site sells competing software. A
+   flagged domain rejects every opportunity on it.
+
+On the first AnySearch cycle these removed 18 opportunities, taking Tier A from
+an inflated 20 down to 6. `invoiceworkshop.com` itself also reached Tier A
+before `SELF_DOMAIN` was added to the block list — discovery must never treat
+our own site as a prospect.
+
+Vendor-published roundups that genuinely compare several tools are a real if
+low-probability placement type, so surviving examples are labelled rather than
+silently promoted.
 
 ## Spam policy
 

@@ -142,6 +142,27 @@ class HardRejectTests(unittest.TestCase):
             "paid or sponsored placement",
         )
 
+    def test_own_site_is_never_an_opportunity(self):
+        self.assertEqual(
+            engine.hard_reject("Invoice resources", "invoiceworkshop.com", 0),
+            "InvoiceWorkshop's own site",
+        )
+        self.assertTrue(engine.blocked("invoiceworkshop.com"))
+        self.assertTrue(engine.blocked("www.invoiceworkshop.com"))
+
+    def test_vendor_content_marketing_is_rejected(self):
+        page = ("Best free invoicing software 2026. Start your free trial today. "
+                "Pricing plans start at $9 per month. No credit card required.")
+        self.assertEqual(
+            engine.hard_reject(page, "someinvoicesaas.example", 0),
+            "competitor or vendor content marketing",
+        )
+
+    def test_independent_resource_page_is_not_mistaken_for_a_vendor(self):
+        page = ("Resources for freelancers: invoice templates, contract guides and "
+                "getting-paid advice published by our member association.")
+        self.assertIsNone(engine.hard_reject(page, "association.example", 0))
+
     def test_clean_page_is_not_rejected(self):
         self.assertIsNone(
             engine.hard_reject("Resources for freelancers and invoicing guides", "example.org", 0)
