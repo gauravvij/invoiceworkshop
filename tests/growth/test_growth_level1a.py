@@ -95,11 +95,37 @@ class Level1ATests(unittest.TestCase):
         audit = self.connection.execute("SELECT * FROM level1a_action_audit").fetchone()
         self.assertEqual((audit["mode"], audit["delivery_state"], audit["external_side_effects"]), ("dry_run", "none", "none"))
 
+    def test_manifest_excludes_suppressed_actions(self):
+        from growth_level1a import export_manifest
+
+        before = export_manifest(self.connection, execution_class="level1a_email")
+        names = {item["organization"] for item in before["actions"]}
+        self.assertIn("Umbrex", names)
+        self.connection.execute(
+            "UPDATE level1a_actions SET suppression_state='suppressed' WHERE organization='Umbrex'"
+        )
+        self.connection.commit()
+        after = export_manifest(self.connection, execution_class="level1a_email")
+        self.assertNotIn("Umbrex", {item["organization"] for item in after["actions"]})
+        self.assertEqual(len(after["actions"]), len(before["actions"]) - 1)
+
     def test_email_and_form_execution_classes_are_separate(self):
         counts = dict(self.connection.execute(
             "SELECT execution_class,COUNT(*) FROM level1a_actions GROUP BY execution_class"
         ).fetchall())
-        self.assertEqual(counts, {"level1a_email": 5, "level1a_form": 2})
+        self.assertEqual(counts, {"level1a_email": 4, "level1a_form": 2})
+        recipients = {
+            row["organization"]: row["recipient"]
+            for row in self.connection.execute(
+                "SELECT organization,recipient FROM level1a_actions WHERE execution_class='level1a_email'"
+            )
+        }
+        self.assertEqual(recipients, {
+            "LedgerCo": "info@ledgerco.ca",
+            "Coalesco": "info@coalesco.co.uk",
+            "Umbrex": "inquiry@umbrex.com",
+            "Freelancers Union": "community@freelancersunion.org",
+        })
         settings = dict(self.connection.execute(
             "SELECT key,value FROM level1a_settings WHERE key IN ('email_outbound_enabled','form_outbound_enabled')"
         ).fetchall())

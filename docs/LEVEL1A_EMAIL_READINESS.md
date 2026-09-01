@@ -98,120 +98,94 @@ checks, and daily caps.
 
 ## Email-only pilot
 
-All five current pages and public routes passed the deterministic dry run on
-2026-09-01. Each result is `review_ready`; approvals remain false and external
-side effects are `none`.
+The pilot is four actions after owner review on 2026-09-01. Creative Boom was
+rejected and is not replaced; the count was not padded back to five. All four
+pages and public routes passed the deterministic dry run with live page
+verification. Each result is `review_ready`; approvals remain false and external
+side effects are `none`. Manifest hash: `4125299cc38a17a064bb0b64fd638009e22024d9de24d569f5cf8cc382709d4a`.
 
 ### LedgerCo
 
+Page: `https://ledgerco.ca/resources/`  
 To: `info@ledgerco.ca`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
+Approval hash: `2d4a6caa298c9e357f7469cba25023984744e2edbf930333b9fb49bf9812dad0`  
 Initial hash: `25bbdf12c05096b396dad68f235b8ba405da538524faa4b11861edf4e0b2f792`
 
 > **Possible companion resource for your invoice-template library**
 >
 > Hello LedgerCo team,
 >
-> InvoiceWorkshop creates PDFs in the browser, and document contents are not
-> uploaded to InvoiceWorkshop application servers.
+> InvoiceWorkshop creates PDFs in the browser, and document contents are not uploaded to InvoiceWorkshop application servers.
 >
-> Your library already includes invoice and bookkeeping resources. This invoice
-> template may be a useful optional companion:
-> https://invoiceworkshop.com/invoice-template/
+> Your library already includes invoice and bookkeeping resources. This invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/
 >
-> If it does not meet your resource standards, no response or inclusion is
-> expected.
+> If it does not meet your resource standards, no response or inclusion is expected.
 >
-> InvoiceWorkshop  
+> InvoiceWorkshop
 > hello@invoiceworkshop.com
 
 ### Coalesco
 
+Page: `https://coalesco.co.uk/resources/ebooks-and-downloads/`  
 To: `info@coalesco.co.uk`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
+Approval hash: `d6b3f767ebb80dc2708813406412f70ed88d9aa2316cf8f2933326ccddf6b970`  
 Initial hash: `d58b7ce00c86be5f764b4c6b63116d4baec9a7c8e3a01c2149225d7df8e53079`
 
 > **Possible browser companion to your invoice download**
 >
 > Hello Coalesco team,
 >
-> InvoiceWorkshop is free to use, requires no signup for its core document tools,
-> and saves workspace data locally in the browser.
+> InvoiceWorkshop is free to use, requires no signup for its core document tools, and saves workspace data locally in the browser.
 >
-> Your downloads page includes an invoice template and other practical business
-> resources. This working invoice template may be a useful optional companion:
-> https://invoiceworkshop.com/invoice-template/
+> Your downloads page includes an invoice template and other practical business resources. This working invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/
 >
 > Please consider it only if it fits your resource standards.
 >
-> InvoiceWorkshop  
+> InvoiceWorkshop
 > hello@invoiceworkshop.com
 
 ### Umbrex
 
+Page: `https://umbrex.com/resources/invoice-template/`  
 To: `inquiry@umbrex.com`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
+Approval hash: `d1a8d51a0412d1cdb03f891397c6d2240e59514f2a62caaa86ae3c5012ba9833`  
 Initial hash: `54db5f8328a1b9c1845beb648ab60c43d4029ca28a8c14b9cc31d979566bd667`
 
 > **Working companion for your consultant invoice guide**
 >
 > Hello Umbrex team,
 >
-> InvoiceWorkshop creates PDFs in the browser, and document contents are not
-> uploaded to InvoiceWorkshop application servers.
+> InvoiceWorkshop creates PDFs in the browser, and document contents are not uploaded to InvoiceWorkshop application servers.
 >
-> Your invoice guide helps independent consultants prepare and manage client
-> invoices. This browser-based invoice template may be a useful optional working
-> companion: https://invoiceworkshop.com/invoice-template/
+> Your invoice guide helps independent consultants prepare and manage client invoices. This browser-based invoice template may be a useful optional working companion: https://invoiceworkshop.com/invoice-template/
 >
 > Please consider it only if it improves the existing resource for consultants.
 >
-> InvoiceWorkshop  
+> InvoiceWorkshop
 > hello@invoiceworkshop.com
 
 ### Freelancers Union
 
-To: `partnerships@freelancersunion.org`  
+Page: `https://freelancersunion.org/resources/`  
+To: `community@freelancersunion.org`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
-Initial hash: `7b528e756fb4742c7a9255397c4ed18bb5dfeca071a658ef89ac3dab4eb636fa`
+Approval hash: `063b8b2d03b2f6e973a7f1fd7a157f3026f3244ec33065f8ff1480fdc0c46458`  
+Initial hash: `c2f2910dccc39e1ad5cf9197d1be10b628aba02b027a99636664c3c5cf8556a7`
 
 > **Free invoicing resource for independent workers**
 >
 > Hello Freelancers Union team,
 >
-> InvoiceWorkshop is free to use, requires no signup for its core document tools,
-> and saves workspace data locally in the browser.
+> InvoiceWorkshop is free to use, requires no signup for its core document tools, and saves workspace data locally in the browser.
 >
-> Your resource collection helps independent workers manage clients and finances.
-> This invoice template may be a useful addition for freelancers who need a
-> working document tool: https://invoiceworkshop.com/invoice-template/
+> Your resource collection helps independent workers manage clients and finances. This invoice template may be a useful addition for freelancers who need a working document tool: https://invoiceworkshop.com/invoice-template/
 >
-> Please consider it only if it serves your members without commercial placement
-> terms.
+> Please consider it only if it is genuinely useful to your members.
 >
-> InvoiceWorkshop  
-> hello@invoiceworkshop.com
-
-### Creative Boom
-
-To: `hello@creativeboom.com`  
-Target: `https://invoiceworkshop.com/invoice-template/`  
-Initial hash: `1197b1548c5287d769fedf60406b2741bc215912293d23aaf4de33f0e77a4781`
-
-> **Resource suggestion for your freelancer tools coverage**
->
-> Hello Creative Boom team,
->
-> InvoiceWorkshop is free to use, requires no signup for its core document tools,
-> and saves workspace data locally in the browser.
->
-> Your resource coverage collects practical tools for creative freelancers and
-> small-business owners. This working invoice template may be worth considering
-> in a future update: https://invoiceworkshop.com/invoice-template/
->
-> Please include it only if an editor finds it genuinely useful to readers.
->
-> InvoiceWorkshop  
+> InvoiceWorkshop
 > hello@invoiceworkshop.com
 
 The exported email manifest includes the deterministic first and final follow-up
@@ -340,5 +314,28 @@ hello@invoiceworkshop.com` for the pre-fix message.
 The transport's `send_identity()` check is retained as defence in depth, but the
 emitted identity no longer depends on it.
 
-### LEVEL 1A EMAIL BLOCKED
+## Owner-approved pilot revision (2026-09-01)
+
+- **Freelancers Union** re-routed from `partnerships@freelancersunion.org` to
+  `community@freelancersunion.org`. The live contact page labels that address as
+  the **General** route and lists Partnerships separately, so the general route is
+  the correct one for an unsolicited resource suggestion. The closing line was
+  also reframed from "only if it serves your members without commercial placement
+  terms" to "only if it is genuinely useful to your members", removing commercial
+  framing entirely. The bundle was regenerated and re-hashed.
+- **Creative Boom** removed from the reviewed `PILOT` allowlist, its action set to
+  `suppression_state='suppressed'`, and its prospect marked `rejected` with the
+  reason recorded. It is now blocked twice over: the dry run rejects it with
+  `prospect is not currently evidence-qualified`, and `_validate_frozen_manifest`
+  would reject it as absent from the code allowlist. It was not replaced.
+- `export_manifest` now excludes non-active actions, so a suppressed action can no
+  longer appear in an owner-review bundle. Covered by a regression test.
+- Growth suite: 69/69 green.
+
+All four surviving actions were re-checked live: pages return 200 and each
+recipient is published on the site. Coalesco and Umbrex serve 403 to some user
+agents through bot protection; both render normally otherwise and were confirmed
+present with their published addresses.
+
+### LEVEL 1A EMAIL READY FOR OWNER APPROVAL
 

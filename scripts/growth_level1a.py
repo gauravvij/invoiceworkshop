@@ -187,7 +187,7 @@ PILOT = (
         "verified_contact_route": "https://freelancersunion.org/contact/",
         "contact_kind": "email",
         "execution_class": "level1a_email",
-        "recipient": "partnerships@freelancersunion.org",
+        "recipient": "community@freelancersunion.org",
         "form_handler": None,
         "action_type": "resource_suggestion",
         "target_url": "https://invoiceworkshop.com/invoice-template/",
@@ -198,43 +198,14 @@ PILOT = (
         "subject": "Free invoicing resource for independent workers",
         "opening": "Hello Freelancers Union team,",
         "fit": "Your resource collection helps independent workers manage clients and finances. This invoice template may be a useful addition for freelancers who need a working document tool: https://invoiceworkshop.com/invoice-template/",
-        "close": "Please consider it only if it serves your members without commercial placement terms.",
+        "close": "Please consider it only if it is genuinely useful to your members.",
         "title": "Freelancers Union resources",
         "excerpt": "A nonprofit freelancer resource collection covering client management, finances, tools, and protections.",
         "prospect": {
             "type": "resource", "score": 89, "risk": "low", "channel": "freelancer",
             "why_fit": "Freelancers Union curates practical financial and client-management resources for independent workers.",
             "audience": "Freelancers and independent workers managing client work, finances, and payment issues.",
-            "evidence": "The public resources page covers financial and client-management tools; the contact page publishes partnerships@freelancersunion.org.",
-            "confidence": "high",
-        },
-    },
-    {
-        "domain": "creativeboom.com",
-        "organization": "Creative Boom",
-        "external_page_url": "https://www.creativeboom.com/resources/110-essential-resources-for-creative-freelancers-and-small-business-owners/",
-        "verified_contact_route": "https://www.creativeboom.com/contact-us/",
-        "contact_kind": "email",
-        "execution_class": "level1a_email",
-        "recipient": "hello@creativeboom.com",
-        "form_handler": None,
-        "action_type": "roundup_suggestion",
-        "target_url": "https://invoiceworkshop.com/invoice-template/",
-        "allowed_intent": "Suggest a current invoicing tool for an established freelancer and small-business resource roundup.",
-        "claims": ["free_no_signup_local"],
-        "relevance": ["resource", "freelancer", "small business"],
-        "template_id": "short_roundup",
-        "subject": "Resource suggestion for your freelancer tools coverage",
-        "opening": "Hello Creative Boom team,",
-        "fit": "Your resource coverage collects practical tools for creative freelancers and small-business owners. This working invoice template may be worth considering in a future update: https://invoiceworkshop.com/invoice-template/",
-        "close": "Please include it only if an editor finds it genuinely useful to readers.",
-        "title": "Creative Boom freelancer and small-business resources",
-        "excerpt": "An established roundup of resources for creative freelancers and small-business owners with a public general-enquiries route.",
-        "prospect": {
-            "type": "resource", "score": 82, "risk": "low", "channel": "freelancer",
-            "why_fit": "Creative Boom maintains established tool roundups for creative freelancers and small-business owners.",
-            "audience": "Creative freelancers and independent studios seeking practical business tools.",
-            "evidence": "The current resource roundup explicitly covers tools for freelancers and small-business owners; the official contact page publishes hello@creativeboom.com.",
+            "evidence": "The public resources page covers financial and client-management tools; the contact page publishes community@freelancersunion.org as the General enquiry route, distinct from its separate Partnerships route.",
             "confidence": "high",
         },
     },
@@ -884,7 +855,9 @@ def export_manifest(
 ) -> dict[str, object]:
     actions = []
     for action in connection.execute(
-        "SELECT id FROM level1a_actions WHERE (? IS NULL OR execution_class=?) ORDER BY id",
+        """SELECT id FROM level1a_actions
+            WHERE (? IS NULL OR execution_class=?) AND suppression_state='active'
+            ORDER BY id""",
         (execution_class, execution_class),
     ):
         row = load_action(connection, int(action["id"]))
