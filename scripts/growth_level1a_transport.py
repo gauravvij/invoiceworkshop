@@ -3,13 +3,16 @@
 
 from __future__ import annotations
 
-import json
-import os
 from dataclasses import dataclass
-from pathlib import Path
+
+from growth_zoho import ZohoClient
 
 
 _VALIDATED = object()
+
+
+class PreSendTransportError(RuntimeError):
+    """A transport precondition failed before a message-create request."""
 
 
 @dataclass(frozen=True)
@@ -39,63 +42,36 @@ class ValidatedDelivery:
         )
 
 
-def _read_secret_file(variable: str) -> str:
-    path_value = os.environ.get(variable, "").strip()
-    if not path_value:
-        raise RuntimeError(f"{variable} is not configured")
-    path = Path(path_value).expanduser().resolve()
-    if not path.is_file():
-        raise RuntimeError(f"{variable} does not identify a readable file")
-    value = path.read_text(encoding="utf-8").strip()
-    if not value:
-        raise RuntimeError(f"{variable} file is empty")
-    return value
+@dataclass(frozen=True)
+class TransportResult:
+    message_id: str
+    thread_id: str = ""
 
 
 class ZohoMailTransport:
     """Zoho Mail API adapter which accepts only validator-created deliveries."""
 
-    def send(self, delivery: ValidatedDelivery) -> str:
+    def send(self, delivery: ValidatedDelivery) -> TransportResult:
         if delivery._capability is not _VALIDATED:
             raise RuntimeError("delivery did not originate from the Level-1A validator")
         if delivery.from_address != "hello@invoiceworkshop.com" or delivery.from_name != "InvoiceWorkshop":
             raise RuntimeError("sender identity is not the approved mailbox identity")
 
-        account_id = os.environ.get("ZOHO_MAIL_ACCOUNT_ID", "").strip()
-        if not account_id.isdigit():
-            raise RuntimeError("ZOHO_MAIL_ACCOUNT_ID is not configured")
-        access_token = _read_secret_file("ZOHO_MAIL_ACCESS_TOKEN_FILE")
-        api_base = os.environ.get("ZOHO_MAIL_API_BASE", "https://mail.zoho.in/api").rstrip("/")
-
-        import requests
-
-        response = requests.post(
-            f"{api_base}/accounts/{account_id}/messages",
-            headers={
-                "Authorization": f"Zoho-oauthtoken {access_token}",
-                "Content-Type": "application/json",
-                "User-Agent": "InvoiceWorkshop-Level1A/1.0",
-            },
-            data=json.dumps({
-                "fromAddress": delivery.from_address,
-                "toAddress": delivery.recipient,
-                "subject": delivery.subject,
-                "content": delivery.body,
-                "mailFormat": "plaintext",
-                "askReceipt": "no",
-            }),
-            timeout=30,
+        try:
+            client = ZohoClient()
+            identity = client.send_identity()
+        except Exception as error:
+            raise PreSendTransportError(f"Zoho pre-send verification failed: {type(error).__name__}") from error
+        if identity["display_name"] != "InvoiceWorkshop" or not identity["enabled"]:
+            raise PreSendTransportError("Zoho send identity must be enabled with display name InvoiceWorkshop")
+        result = client.send_plaintext(
+            recipient=delivery.recipient, subject=delivery.subject, body=delivery.body
         )
-        response.raise_for_status()
-        payload = response.json()
-        provider_id = str(payload.get("data", {}).get("messageId") or payload.get("data", {}).get("mailId") or "")
-        if not provider_id:
-            raise RuntimeError("Zoho accepted the request without returning a message identifier")
-        return provider_id
+        return TransportResult(result["message_id"], result["thread_id"])
 
 
 class FormTransport:
     """No generic form submission is permitted; allowlisted handlers are separate work."""
 
-    def send(self, _delivery: ValidatedDelivery) -> str:
-        raise RuntimeError("no allowlisted site-specific Level-1A form handler is installed")
+    def send(self, _delivery: ValidatedDelivery) -> TransportResult:
+        raise PreSendTransportError("no allowlisted site-specific Level-1A form handler is installed")

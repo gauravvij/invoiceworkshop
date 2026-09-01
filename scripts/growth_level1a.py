@@ -21,7 +21,12 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from growth_common import apply_schema, connect_db, fetch_public_url, normalize_public_url, utc_now
-from growth_level1a_transport import FormTransport, ValidatedDelivery, ZohoMailTransport
+from growth_level1a_transport import (
+    FormTransport,
+    PreSendTransportError,
+    ValidatedDelivery,
+    ZohoMailTransport,
+)
 
 FROM_ADDRESS = "hello@invoiceworkshop.com"
 FROM_NAME = "InvoiceWorkshop"
@@ -66,6 +71,10 @@ TEMPLATES = (
         "short_directory", 1, "directory_submission", "{subject_value}", "{opening_value}",
         "{fit_value}", "{close_value}", 900,
     ),
+    (
+        "short_roundup", 1, "roundup_suggestion", "{subject_value}", "{opening_value}",
+        "{fit_value}", "{close_value}", 900,
+    ),
 )
 
 PILOT = (
@@ -75,6 +84,7 @@ PILOT = (
         "external_page_url": "https://www.freelancethings.co/official-information",
         "verified_contact_route": "https://www.freelancethings.co/official-information",
         "contact_kind": "form",
+        "execution_class": "level1a_form",
         "recipient": None,
         "form_handler": None,
         "action_type": "resource_suggestion",
@@ -96,6 +106,7 @@ PILOT = (
         "external_page_url": "https://ledgerco.ca/resources/",
         "verified_contact_route": "https://ledgerco.ca/contact/",
         "contact_kind": "email",
+        "execution_class": "level1a_email",
         "recipient": "info@ledgerco.ca",
         "form_handler": None,
         "action_type": "resource_suggestion",
@@ -112,11 +123,128 @@ PILOT = (
         "excerpt": "A small-business accounting resource hub with invoice, bookkeeping, and receivables resources.",
     },
     {
+        "domain": "coalesco.co.uk",
+        "organization": "Coalesco",
+        "external_page_url": "https://coalesco.co.uk/resources/ebooks-and-downloads/",
+        "verified_contact_route": "https://coalesco.co.uk/resources/ebooks-and-downloads/",
+        "contact_kind": "email",
+        "execution_class": "level1a_email",
+        "recipient": "info@coalesco.co.uk",
+        "form_handler": None,
+        "action_type": "resource_suggestion",
+        "target_url": "https://invoiceworkshop.com/invoice-template/",
+        "allowed_intent": "Suggest a working browser companion to Coalesco's existing invoice download.",
+        "claims": ["free_no_signup_local"],
+        "relevance": ["invoice", "resource", "template"],
+        "template_id": "short_resource",
+        "subject": "Possible browser companion to your invoice download",
+        "opening": "Hello Coalesco team,",
+        "fit": "Your downloads page includes an invoice template and other practical business resources. This working invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/",
+        "close": "Please consider it only if it fits your resource standards.",
+        "title": "Coalesco eBooks and downloads",
+        "excerpt": "An accounting-firm resource page offering an invoice template and other practical small-business downloads.",
+        "prospect": {
+            "type": "resource", "score": 84, "risk": "low", "channel": "accounting",
+            "why_fit": "Coalesco publishes an accounting resource library containing an invoice template and practical small-business downloads.",
+            "audience": "Sole traders and small businesses using Coalesco's accounting guides and templates.",
+            "evidence": "The public downloads page lists an invoice template, cash-flow, credit-control, budgeting, and construction VAT resources and publishes info@coalesco.co.uk.",
+            "confidence": "high",
+        },
+    },
+    {
+        "domain": "umbrex.com",
+        "organization": "Umbrex",
+        "external_page_url": "https://umbrex.com/resources/invoice-template/",
+        "verified_contact_route": "https://umbrex.com/contact-us/",
+        "contact_kind": "email",
+        "execution_class": "level1a_email",
+        "recipient": "inquiry@umbrex.com",
+        "form_handler": None,
+        "action_type": "resource_suggestion",
+        "target_url": "https://invoiceworkshop.com/invoice-template/",
+        "allowed_intent": "Suggest an optional working companion to Umbrex's invoice guidance for independent consultants.",
+        "claims": ["browser_pdf_privacy"],
+        "relevance": ["invoice", "resource", "consultant"],
+        "template_id": "short_resource",
+        "subject": "Working companion for your consultant invoice guide",
+        "opening": "Hello Umbrex team,",
+        "fit": "Your invoice guide helps independent consultants prepare and manage client invoices. This browser-based invoice template may be a useful optional working companion: https://invoiceworkshop.com/invoice-template/",
+        "close": "Please consider it only if it improves the existing resource for consultants.",
+        "title": "Umbrex invoice tips and template",
+        "excerpt": "Detailed invoice guidance and downloadable templates for independent management consultants.",
+        "prospect": {
+            "type": "resource", "score": 87, "risk": "low", "channel": "freelancer",
+            "why_fit": "Umbrex maintains detailed invoice guidance and templates specifically for independent consultants.",
+            "audience": "Independent management consultants creating invoices and handling client payment processes.",
+            "evidence": "The current page provides consultant invoice guidance and templates; Umbrex publishes inquiry@umbrex.com for general inquiries.",
+            "confidence": "high",
+        },
+    },
+    {
+        "domain": "freelancersunion.org",
+        "organization": "Freelancers Union",
+        "external_page_url": "https://freelancersunion.org/resources/",
+        "verified_contact_route": "https://freelancersunion.org/contact/",
+        "contact_kind": "email",
+        "execution_class": "level1a_email",
+        "recipient": "partnerships@freelancersunion.org",
+        "form_handler": None,
+        "action_type": "resource_suggestion",
+        "target_url": "https://invoiceworkshop.com/invoice-template/",
+        "allowed_intent": "Suggest a free invoicing resource for the union's freelancer resource collection.",
+        "claims": ["free_no_signup_local"],
+        "relevance": ["invoice", "resource", "freelancer"],
+        "template_id": "short_resource",
+        "subject": "Free invoicing resource for independent workers",
+        "opening": "Hello Freelancers Union team,",
+        "fit": "Your resource collection helps independent workers manage clients and finances. This invoice template may be a useful addition for freelancers who need a working document tool: https://invoiceworkshop.com/invoice-template/",
+        "close": "Please consider it only if it serves your members without commercial placement terms.",
+        "title": "Freelancers Union resources",
+        "excerpt": "A nonprofit freelancer resource collection covering client management, finances, tools, and protections.",
+        "prospect": {
+            "type": "resource", "score": 89, "risk": "low", "channel": "freelancer",
+            "why_fit": "Freelancers Union curates practical financial and client-management resources for independent workers.",
+            "audience": "Freelancers and independent workers managing client work, finances, and payment issues.",
+            "evidence": "The public resources page covers financial and client-management tools; the contact page publishes partnerships@freelancersunion.org.",
+            "confidence": "high",
+        },
+    },
+    {
+        "domain": "creativeboom.com",
+        "organization": "Creative Boom",
+        "external_page_url": "https://www.creativeboom.com/resources/110-essential-resources-for-creative-freelancers-and-small-business-owners/",
+        "verified_contact_route": "https://www.creativeboom.com/contact-us/",
+        "contact_kind": "email",
+        "execution_class": "level1a_email",
+        "recipient": "hello@creativeboom.com",
+        "form_handler": None,
+        "action_type": "roundup_suggestion",
+        "target_url": "https://invoiceworkshop.com/invoice-template/",
+        "allowed_intent": "Suggest a current invoicing tool for an established freelancer and small-business resource roundup.",
+        "claims": ["free_no_signup_local"],
+        "relevance": ["resource", "freelancer", "small business"],
+        "template_id": "short_roundup",
+        "subject": "Resource suggestion for your freelancer tools coverage",
+        "opening": "Hello Creative Boom team,",
+        "fit": "Your resource coverage collects practical tools for creative freelancers and small-business owners. This working invoice template may be worth considering in a future update: https://invoiceworkshop.com/invoice-template/",
+        "close": "Please include it only if an editor finds it genuinely useful to readers.",
+        "title": "Creative Boom freelancer and small-business resources",
+        "excerpt": "An established roundup of resources for creative freelancers and small-business owners with a public general-enquiries route.",
+        "prospect": {
+            "type": "resource", "score": 82, "risk": "low", "channel": "freelancer",
+            "why_fit": "Creative Boom maintains established tool roundups for creative freelancers and small-business owners.",
+            "audience": "Creative freelancers and independent studios seeking practical business tools.",
+            "evidence": "The current resource roundup explicitly covers tools for freelancers and small-business owners; the official contact page publishes hello@creativeboom.com.",
+            "confidence": "high",
+        },
+    },
+    {
         "domain": "business-software.com",
         "organization": "Business-Software.com",
         "external_page_url": "https://www.business-software.com/add-your-product/",
         "verified_contact_route": "https://www.business-software.com/add-your-product/",
         "contact_kind": "form",
+        "execution_class": "level1a_form",
         "recipient": None,
         "form_handler": None,
         "action_type": "directory_submission",
@@ -237,10 +365,70 @@ def _ensure_directory_prospect(connection: sqlite3.Connection, now: str) -> int:
     return prospect_id
 
 
+def _ensure_email_prospect(connection: sqlite3.Connection, item: dict[str, object], now: str) -> int:
+    details = item["prospect"]
+    assert isinstance(details, dict)
+    page = normalize_public_url(str(item["external_page_url"]))
+    contact = normalize_public_url(str(item["verified_contact_route"]))
+    row = connection.execute(
+        "SELECT id FROM prospects WHERE domain=? AND page_url=?", (item["domain"], page)
+    ).fetchone()
+    if row:
+        prospect_id = int(row["id"])
+        connection.execute(
+            """UPDATE prospects SET prospect_type=?, opportunity_score=?, risk=?,
+                      why_fit=?, audience=?, contact_method=?, requires_account=0,
+                      requires_payment=0, status='qualified', rejection_reason=NULL,
+                      external_action_approved=0, approved_by=NULL, approved_at=NULL,
+                      notes=?, updated_at=? WHERE id=?""",
+            (
+                details["type"], details["score"], details["risk"], details["why_fit"],
+                details["audience"], contact,
+                "Public evidence reverified read-only for the email-only Level-1A pilot; no contact occurred.",
+                now, prospect_id,
+            ),
+        )
+    else:
+        cursor = connection.execute(
+            """INSERT INTO prospects (
+                 domain, page_url, prospect_type, opportunity_score, risk, why_fit,
+                 audience, contact_method, requires_account, requires_payment,
+                 link_type, source_url, status, notes, discovered_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'editorial', ?, 'qualified', ?, ?, ?)""",
+            (
+                item["domain"], page, details["type"], details["score"], details["risk"],
+                details["why_fit"], details["audience"], contact, page,
+                "Public evidence reverified read-only for the email-only Level-1A pilot; no contact occurred.",
+                now, now,
+            ),
+        )
+        prospect_id = int(cursor.lastrowid)
+    connection.execute(
+        """INSERT INTO prospect_qualification (
+             prospect_id, channel, page_evidence, outbound_resources, target_url,
+             proposed_action, confidence, second_pass_pass, review_reason, reviewed_at)
+           VALUES (?, ?, ?, '[]', ?, ?, ?, 1, ?, ?)
+           ON CONFLICT(prospect_id) DO UPDATE SET
+             channel=excluded.channel, page_evidence=excluded.page_evidence,
+             target_url=excluded.target_url, proposed_action=excluded.proposed_action,
+             confidence=excluded.confidence, second_pass_pass=1,
+             review_reason=excluded.review_reason, reviewed_at=excluded.reviewed_at""",
+        (
+            prospect_id, details["channel"], details["evidence"], item["target_url"],
+            item["allowed_intent"], details["confidence"],
+            "Direct public email and resource relevance were manually reverified; useful without SEO value.", now,
+        ),
+    )
+    return prospect_id
+
+
 def seed_pilot(connection: sqlite3.Connection) -> list[int]:
     seed_reference_data(connection)
     now = utc_now()
     _ensure_directory_prospect(connection, now)
+    for item in PILOT:
+        if item.get("prospect"):
+            _ensure_email_prospect(connection, item, now)
     action_ids: list[int] = []
     for item in PILOT:
         prospect = connection.execute(
@@ -258,7 +446,8 @@ def seed_pilot(connection: sqlite3.Connection) -> list[int]:
             "prospect_id": int(prospect["id"]), "organization": item["organization"],
             "external_page_url": normalize_public_url(item["external_page_url"]),
             "verified_contact_route": normalize_public_url(item["verified_contact_route"]),
-            "contact_kind": item["contact_kind"], "recipient": item["recipient"],
+            "contact_kind": item["contact_kind"], "execution_class": item["execution_class"],
+            "recipient": item["recipient"],
             "form_handler": item["form_handler"], "action_type": item["action_type"],
             "target_url": normalize_public_url(item["target_url"]), "allowed_intent": item["allowed_intent"],
             "claims": _json(item["claims"]), "forbidden": _json(list(FORBIDDEN_PATTERNS)),
@@ -270,7 +459,7 @@ def seed_pilot(connection: sqlite3.Connection) -> list[int]:
         connection.execute(
             """INSERT INTO level1a_actions (
                  prospect_id, organization, external_page_url, verified_contact_route,
-                 contact_kind, recipient, form_handler, action_type, target_url,
+                 contact_kind, execution_class, recipient, form_handler, action_type, target_url,
                  allowed_intent, allowed_claim_keys_json, forbidden_claims_json,
                  relevance_terms_json, template_id, template_version, subject_value,
                  opening_value, fit_value, close_value, max_followups,
@@ -278,13 +467,14 @@ def seed_pilot(connection: sqlite3.Connection) -> list[int]:
                  message_approved, suppression_state, page_title, page_excerpt,
                  created_at, updated_at)
                VALUES (:prospect_id, :organization, :external_page_url,
-                 :verified_contact_route, :contact_kind, :recipient, :form_handler,
+                 :verified_contact_route, :contact_kind, :execution_class, :recipient, :form_handler,
                  :action_type, :target_url, :allowed_intent, :claims, :forbidden,
                  :relevance, :template_id, 1, :subject, :opening, :fit, :close,
                  2, 0, 0, 0, 0, 'active', :title, :excerpt, :now, :now)
                ON CONFLICT(prospect_id, action_type, verified_contact_route) DO UPDATE SET
                  organization=excluded.organization, external_page_url=excluded.external_page_url,
-                 contact_kind=excluded.contact_kind, recipient=excluded.recipient,
+                 contact_kind=excluded.contact_kind, execution_class=excluded.execution_class,
+                 recipient=excluded.recipient,
                  form_handler=excluded.form_handler, target_url=excluded.target_url,
                  allowed_intent=excluded.allowed_intent,
                  allowed_claim_keys_json=excluded.allowed_claim_keys_json,
@@ -313,7 +503,7 @@ def load_action(connection: sqlite3.Connection, action_id: int) -> sqlite3.Row:
                   p.contact_method AS prospect_contact_method,
                   q.second_pass_pass, t.subject_template, t.opening_template,
                   t.fit_template, t.close_template, t.max_body_characters,
-                  t.active AS template_active
+                  t.active AS template_active, t.action_type AS template_action_type
              FROM level1a_actions a
              JOIN prospects p ON p.id=a.prospect_id
              JOIN prospect_qualification q ON q.prospect_id=p.id
@@ -377,7 +567,8 @@ def _validate_frozen_manifest(action: sqlite3.Row) -> None:
     expected = {
         "external_page_url": normalize_public_url(source["external_page_url"]),
         "verified_contact_route": normalize_public_url(source["verified_contact_route"]),
-        "contact_kind": source["contact_kind"], "recipient": source["recipient"],
+        "contact_kind": source["contact_kind"], "execution_class": source["execution_class"],
+        "recipient": source["recipient"],
         "form_handler": source["form_handler"], "action_type": source["action_type"],
         "target_url": normalize_public_url(source["target_url"]),
         "allowed_intent": source["allowed_intent"],
@@ -451,6 +642,8 @@ def validate_action(
         raise ValidationError(f"action is suppressed: {action['suppression_state']}")
     if action["template_active"] != 1:
         raise ValidationError("message template is inactive")
+    if action["template_action_type"] != action["action_type"]:
+        raise ValidationError("template/action type mismatch")
     if action["external_page_url"] != action["prospect_page_url"]:
         raise ValidationError("action/prospect page mismatch")
     if action["verified_contact_route"] != action["prospect_contact_method"]:
@@ -514,6 +707,12 @@ def validate_action(
         setting = connection.execute("SELECT value FROM level1a_settings WHERE key='outbound_enabled'").fetchone()
         if not setting or setting["value"].lower() != "true":
             raise ValidationError("database outbound kill switch is false")
+        class_key = "email_outbound_enabled" if action["execution_class"] == "level1a_email" else "form_outbound_enabled"
+        class_setting = connection.execute(
+            "SELECT value FROM level1a_settings WHERE key=?", (class_key,)
+        ).fetchone()
+        if not class_setting or class_setting["value"].lower() != "true":
+            raise ValidationError(f"database {action['execution_class']} kill switch is false")
         if not action["external_action_approved"] or not action["message_approved"]:
             raise ValidationError("action and exact message have not received owner approval")
         approved_hashes = json.loads(action["approved_message_hashes_json"])
@@ -537,7 +736,8 @@ def validate_action(
 def _record_audit(
     connection: sqlite3.Connection, action: sqlite3.Row, rendered: RenderedMessage,
     *, mode: str, result: str, reason: str | None = None,
-    provider_id: str | None = None, side_effects: str = "none",
+    provider_id: str | None = None, provider_thread_id: str | None = None,
+    side_effects: str = "none",
     delivery_state: str | None = None,
 ) -> str:
     now = utc_now()
@@ -547,13 +747,15 @@ def _record_audit(
              action_id, message_id, attempt_number, mode, started_at, finished_at,
              subject, body, recipient_or_route, source_page, target_url,
              message_hash, validation_result, rejection_reason, provider_response_id,
+             provider_thread_id,
              delivery_state, reply_state, suppression_state, external_side_effects)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)""",
         (
             action["id"], message_id, rendered.attempt_number, mode, now, now,
             rendered.subject, rendered.body, action["recipient"] or action["verified_contact_route"],
             action["external_page_url"], action["target_url"], rendered.message_hash,
-            result, reason, provider_id, delivery_state or ("submitted" if provider_id else "none"),
+            result, reason, provider_id, provider_thread_id,
+            delivery_state or ("submitted" if provider_id else "none"),
             action["suppression_state"], side_effects,
         ),
     )
@@ -596,7 +798,14 @@ def execute_action(connection: sqlite3.Connection, action_id: int, attempt_numbe
     )
     transport = ZohoMailTransport() if action["contact_kind"] == "email" else FormTransport()
     try:
-        provider_id = transport.send(delivery)
+        transport_result = transport.send(delivery)
+    except PreSendTransportError as error:
+        _record_audit(
+            connection, action, rendered, mode="live", result="rejected",
+            reason=f"transport precondition: {error}",
+            side_effects="none", delivery_state="none",
+        )
+        raise
     except Exception as error:
         _record_audit(
             connection, action, rendered, mode="live", result="rejected",
@@ -606,10 +815,15 @@ def execute_action(connection: sqlite3.Connection, action_id: int, attempt_numbe
         raise
     message_id = _record_audit(
         connection, action, rendered, mode="live", result="passed",
-        provider_id=provider_id,
+        provider_id=transport_result.message_id,
+        provider_thread_id=transport_result.thread_id or None,
         side_effects="email_sent" if action["contact_kind"] == "email" else "form_submitted",
     )
-    return {"action_id": action_id, "message_id": message_id, "status": "sent", "provider_id": provider_id}
+    return {
+        "action_id": action_id, "message_id": message_id, "status": "sent",
+        "provider_id": transport_result.message_id,
+        "provider_thread_id": transport_result.thread_id or None,
+    }
 
 
 def classify_reply(text: str, *, bounced: bool = False) -> tuple[str, bool, str]:
@@ -665,9 +879,14 @@ def record_reply(
     return {"classification": classification, "requires_escalation": escalation, "automated_action": automated}
 
 
-def export_manifest(connection: sqlite3.Connection) -> dict[str, object]:
+def export_manifest(
+    connection: sqlite3.Connection, execution_class: str | None = None
+) -> dict[str, object]:
     actions = []
-    for action in connection.execute("SELECT id FROM level1a_actions ORDER BY id"):
+    for action in connection.execute(
+        "SELECT id FROM level1a_actions WHERE (? IS NULL OR execution_class=?) ORDER BY id",
+        (execution_class, execution_class),
+    ):
         row = load_action(connection, int(action["id"]))
         renderings = [render_message(connection, row, attempt) for attempt in range(int(row["max_followups"]) + 1)]
         rendered = renderings[0]
@@ -676,6 +895,7 @@ def export_manifest(connection: sqlite3.Connection) -> dict[str, object]:
             "action_id": row["id"], "prospect_id": row["prospect_id"],
             "organization": row["organization"], "page": row["external_page_url"],
             "contact_route": row["verified_contact_route"], "contact_kind": row["contact_kind"],
+            "execution_class": row["execution_class"],
             "recipient": row["recipient"], "action_type": row["action_type"],
             "target_url": row["target_url"], "intent": row["allowed_intent"],
             "claim_keys": json.loads(row["allowed_claim_keys_json"]),
@@ -694,8 +914,13 @@ def export_manifest(connection: sqlite3.Connection) -> dict[str, object]:
             "suppression_state": row["suppression_state"],
             "last_verified_at": row["last_verified_at"],
         })
+    settings = {
+        row["key"]: row["value"] for row in connection.execute(
+            "SELECT key,value FROM level1a_settings WHERE key LIKE '%outbound_enabled'"
+        )
+    }
     payload: dict[str, object] = {
-        "level": "1A", "outbound_enabled": False,
+        "level": execution_class or "1A", "outbound_settings": settings,
         "sender": f"{FROM_NAME} <{FROM_ADDRESS}>", "actions": actions,
     }
     payload["manifest_hash"] = _sha256(_json(payload))
@@ -710,13 +935,16 @@ def cmd_seed(args: argparse.Namespace) -> None:
 def cmd_manifest(args: argparse.Namespace) -> None:
     connection = initialize(args.db)
     seed_pilot(connection)
-    print(json.dumps(export_manifest(connection), indent=2, sort_keys=True))
+    print(json.dumps(export_manifest(connection, args.execution_class), indent=2, sort_keys=True))
 
 
 def cmd_dry_run(args: argparse.Namespace) -> None:
     connection = initialize(args.db)
     action_ids = seed_pilot(connection)
-    selected = [args.action_id] if args.action_id else action_ids
+    selected = [args.action_id] if args.action_id else [
+        action_id for action_id in action_ids
+        if not args.execution_class or load_action(connection, action_id)["execution_class"] == args.execution_class
+    ]
     print(json.dumps([dry_run_action(connection, action_id) for action_id in selected], indent=2, sort_keys=True))
 
 
@@ -730,9 +958,12 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--db", help="Override GROWTH_DB_PATH")
     commands = root.add_subparsers(dest="command", required=True)
     commands.add_parser("seed-pilot").set_defaults(handler=cmd_seed)
-    commands.add_parser("manifest").set_defaults(handler=cmd_manifest)
+    manifest = commands.add_parser("manifest")
+    manifest.add_argument("--execution-class", choices=("level1a_email", "level1a_form"))
+    manifest.set_defaults(handler=cmd_manifest)
     dry = commands.add_parser("dry-run")
     dry.add_argument("--action-id", type=int)
+    dry.add_argument("--execution-class", choices=("level1a_email", "level1a_form"))
     dry.set_defaults(handler=cmd_dry_run)
     execute = commands.add_parser("execute", help="Execute only a pre-approved database action")
     execute.add_argument("--action-id", type=int, required=True)

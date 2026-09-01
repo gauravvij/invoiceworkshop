@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '6')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '7')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -344,6 +344,12 @@ ON CONFLICT(key) DO NOTHING;
 INSERT INTO level1a_settings (key, value, updated_at)
 VALUES ('daily_total_cap', '5', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 ON CONFLICT(key) DO NOTHING;
+INSERT INTO level1a_settings (key, value, updated_at)
+VALUES ('email_outbound_enabled', 'false', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+ON CONFLICT(key) DO NOTHING;
+INSERT INTO level1a_settings (key, value, updated_at)
+VALUES ('form_outbound_enabled', 'false', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+ON CONFLICT(key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS level1a_claims (
   claim_key      TEXT NOT NULL,
@@ -379,6 +385,9 @@ CREATE TABLE IF NOT EXISTS level1a_actions (
   external_page_url         TEXT NOT NULL,
   verified_contact_route    TEXT NOT NULL,
   contact_kind              TEXT NOT NULL CHECK (contact_kind IN ('email', 'form')),
+  execution_class           TEXT NOT NULL CHECK (execution_class IN (
+                              'level1a_email', 'level1a_form'
+                            )),
   recipient                 TEXT,
   form_handler              TEXT,
   action_type               TEXT NOT NULL CHECK (action_type IN (
@@ -441,6 +450,7 @@ CREATE TABLE IF NOT EXISTS level1a_action_audit (
                         )),
   rejection_reason      TEXT,
   provider_response_id  TEXT,
+  provider_thread_id    TEXT,
   delivery_state        TEXT NOT NULL CHECK (delivery_state IN (
                           'none', 'submitted', 'delivered', 'bounced', 'unknown'
                         )),
@@ -479,6 +489,45 @@ CREATE TABLE IF NOT EXISTS level1a_replies (
   requires_escalation     INTEGER NOT NULL CHECK (requires_escalation IN (0, 1)),
   automated_action        TEXT NOT NULL,
   content_hash            TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS level1a_mail_poll_state (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS level1a_mail_poll_runs (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at            TEXT NOT NULL,
+  finished_at           TEXT NOT NULL,
+  status                TEXT NOT NULL CHECK (status IN ('success', 'partial', 'failure')),
+  messages_examined     INTEGER NOT NULL DEFAULT 0,
+  matched_replies       INTEGER NOT NULL DEFAULT 0,
+  bounces_detected      INTEGER NOT NULL DEFAULT 0,
+  suppressions_updated  INTEGER NOT NULL DEFAULT 0,
+  errors_json           TEXT NOT NULL DEFAULT '[]',
+  external_side_effects TEXT NOT NULL DEFAULT 'none' CHECK (external_side_effects='none')
+);
+
+CREATE TABLE IF NOT EXISTS level1a_inbound_audit (
+  id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider_message_id       TEXT NOT NULL UNIQUE,
+  provider_thread_id        TEXT,
+  received_at               TEXT NOT NULL,
+  sender_hash               TEXT NOT NULL,
+  subject_hash              TEXT NOT NULL,
+  matched_action_id         INTEGER REFERENCES level1a_actions(id),
+  match_method              TEXT,
+  authentication_state      TEXT NOT NULL CHECK (authentication_state IN (
+                              'pass', 'unverified', 'fail'
+                            )),
+  classification            TEXT,
+  requires_escalation       INTEGER CHECK (requires_escalation IN (0, 1)),
+  content_hash              TEXT,
+  attachment_ignored        INTEGER NOT NULL DEFAULT 0 CHECK (attachment_ignored IN (0, 1)),
+  external_content_executed INTEGER NOT NULL DEFAULT 0 CHECK (external_content_executed=0),
+  recorded_at               TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS placements (

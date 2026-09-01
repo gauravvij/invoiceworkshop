@@ -1,5 +1,8 @@
 # InvoiceWorkshop Level-1A safety and readiness
 
+> Historical implementation report from 2026-08-31. Mailbox integration and the
+> current email/form split are documented in `LEVEL1A_EMAIL_READINESS.md`.
+
 Prepared: 2026-08-31 UTC
 
 This implementation prepares a tightly bounded resource-suggestion layer. It did

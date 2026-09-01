@@ -95,9 +95,26 @@ class Level1ATests(unittest.TestCase):
         audit = self.connection.execute("SELECT * FROM level1a_action_audit").fetchone()
         self.assertEqual((audit["mode"], audit["delivery_state"], audit["external_side_effects"]), ("dry_run", "none", "none"))
 
+    def test_email_and_form_execution_classes_are_separate(self):
+        counts = dict(self.connection.execute(
+            "SELECT execution_class,COUNT(*) FROM level1a_actions GROUP BY execution_class"
+        ).fetchall())
+        self.assertEqual(counts, {"level1a_email": 5, "level1a_form": 2})
+        settings = dict(self.connection.execute(
+            "SELECT key,value FROM level1a_settings WHERE key IN ('email_outbound_enabled','form_outbound_enabled')"
+        ).fetchall())
+        self.assertEqual(settings, {"email_outbound_enabled": "false", "form_outbound_enabled": "false"})
+
+    def test_form_live_path_is_rejected_without_handler(self):
+        action = load_action(self.connection, self.action_ids[0])
+        message = render_message(self.connection, action)
+        with self.assertRaisesRegex(ValidationError, "site-specific form handler"):
+            validate_action(self.connection, action, message, live=True, verify_page=False)
+
     def test_unapproved_live_action_is_rejected(self):
         action, message = self.action_and_message()
         self.connection.execute("UPDATE level1a_settings SET value='true' WHERE key='outbound_enabled'")
+        self.connection.execute("UPDATE level1a_settings SET value='true' WHERE key='email_outbound_enabled'")
         with patch.dict(os.environ, {"LEVEL1_OUTBOUND_ENABLED": "true"}), self.assertRaisesRegex(ValidationError, "owner approval"):
             validate_action(self.connection, action, message, live=True, verify_page=False)
 
@@ -205,6 +222,7 @@ class Level1ATests(unittest.TestCase):
     def test_daily_cap_is_enforced(self):
         action, message = self.action_and_message()
         self.connection.execute("UPDATE level1a_settings SET value='true' WHERE key='outbound_enabled'")
+        self.connection.execute("UPDATE level1a_settings SET value='true' WHERE key='email_outbound_enabled'")
         self.connection.execute(
             """UPDATE level1a_actions SET external_action_approved=1, message_approved=1,
                       approved_message_hash=?, approved_message_hashes_json=? WHERE id=?""",

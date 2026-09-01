@@ -55,7 +55,7 @@ def cmd_approve(args: argparse.Namespace) -> None:
 
 def cmd_activate(args: argparse.Namespace) -> None:
     connection = initialize(args.db)
-    manifest = export_manifest(connection)
+    manifest = export_manifest(connection, "level1a_email")
     if manifest["manifest_hash"] != args.manifest_hash:
         raise SystemExit("manifest hash does not match the current action set")
     _verify(f"activate-level1a:{args.manifest_hash}", args.signature)
@@ -63,17 +63,24 @@ def cmd_activate(args: argparse.Namespace) -> None:
         if not item["external_action_approved"] or not item["message_approved"]:
             raise SystemExit(f"action {item['action_id']} is not fully approved")
     connection.execute(
-        "UPDATE level1a_settings SET value='true', updated_at=? WHERE key='outbound_enabled'",
+        """UPDATE level1a_settings SET value=CASE
+                 WHEN key IN ('outbound_enabled','email_outbound_enabled') THEN 'true'
+                 ELSE 'false' END, updated_at=?
+             WHERE key IN ('outbound_enabled','email_outbound_enabled','form_outbound_enabled')""",
         (utc_now(),),
     )
     connection.commit()
-    print(json.dumps({"status": "database_switch_enabled", "environment_switch_required": True}))
+    print(json.dumps({
+        "status": "email_database_switch_enabled", "environment_switch_required": True,
+        "form_outbound_enabled": False,
+    }))
 
 
 def cmd_deactivate(args: argparse.Namespace) -> None:
     connection = initialize(args.db)
     connection.execute(
-        "UPDATE level1a_settings SET value='false', updated_at=? WHERE key='outbound_enabled'",
+        """UPDATE level1a_settings SET value='false', updated_at=?
+             WHERE key IN ('outbound_enabled','email_outbound_enabled','form_outbound_enabled')""",
         (utc_now(),),
     )
     connection.commit()

@@ -61,6 +61,27 @@ def apply_schema(connection: sqlite3.Connection) -> None:
         connection.execute(
             "ALTER TABLE level1a_actions ADD COLUMN approved_message_hashes_json TEXT NOT NULL DEFAULT '[]'"
         )
+    if level1a_columns and "execution_class" not in level1a_columns:
+        connection.execute(
+            "ALTER TABLE level1a_actions ADD COLUMN execution_class TEXT NOT NULL DEFAULT 'level1a_form'"
+        )
+        connection.execute(
+            "UPDATE level1a_actions SET execution_class='level1a_email' WHERE contact_kind='email'"
+        )
+    audit_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(level1a_action_audit)")
+    }
+    if audit_columns and "provider_thread_id" not in audit_columns:
+        connection.execute(
+            "ALTER TABLE level1a_action_audit ADD COLUMN provider_thread_id TEXT"
+        )
+    inbound_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(level1a_inbound_audit)")
+    }
+    if inbound_columns and "authentication_state" not in inbound_columns:
+        connection.execute(
+            "ALTER TABLE level1a_inbound_audit ADD COLUMN authentication_state TEXT NOT NULL DEFAULT 'unverified'"
+        )
     audit_sql_row = connection.execute(
         "SELECT sql FROM sqlite_master WHERE type='table' AND name='level1a_action_audit'"
     ).fetchone()
@@ -86,6 +107,7 @@ def apply_schema(connection: sqlite3.Connection) -> None:
               validation_result TEXT NOT NULL CHECK (validation_result IN ('review_ready', 'passed', 'rejected')),
               rejection_reason TEXT,
               provider_response_id TEXT,
+              provider_thread_id TEXT,
               delivery_state TEXT NOT NULL CHECK (delivery_state IN ('none', 'submitted', 'delivered', 'bounced', 'unknown')),
               reply_state TEXT,
               suppression_state TEXT NOT NULL,

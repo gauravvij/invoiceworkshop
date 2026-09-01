@@ -113,6 +113,7 @@ def cmd_status(args: argparse.Namespace) -> None:
         "prospect_qualification", "research_candidates", "outreach",
         "level1a_claims", "level1a_templates", "level1a_actions",
         "level1a_action_audit", "level1a_suppressions", "level1a_replies",
+        "level1a_mail_poll_runs", "level1a_inbound_audit",
         "placements", "experiments",
     )
     counts = {table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in tables}
