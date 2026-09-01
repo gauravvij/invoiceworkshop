@@ -98,29 +98,33 @@ checks, and daily caps.
 
 ## Email-only pilot
 
-The pilot is four actions after owner review on 2026-09-01. Creative Boom was
-rejected and is not replaced; the count was not padded back to five. All four
-pages and public routes passed the deterministic dry run with live page
-verification. Each result is `review_ready`; approvals remain false and external
-side effects are `none`. Manifest hash: `4125299cc38a17a064bb0b64fd638009e22024d9de24d569f5cf8cc382709d4a`.
+Four actions. Copy was rewritten on 2026-09-01 to read as a short human
+resource suggestion, and follow-ups were reduced from two to one, sent five
+business days after the initial message and only when nothing has come back.
+Freelancers Union now points at the homepage rather than /invoice-template/.
+All four render byte-exact against the approved copy. Manifest hash:
+`148e97136ee67e10e48b06a4388f6942401cb9f31d442fabba1ac7213f48872f`.
 
 ### LedgerCo
 
 Page: `https://ledgerco.ca/resources/`  
 To: `info@ledgerco.ca`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
-Approval hash: `2d4a6caa298c9e357f7469cba25023984744e2edbf930333b9fb49bf9812dad0`  
-Initial hash: `25bbdf12c05096b396dad68f235b8ba405da538524faa4b11861edf4e0b2f792`
+Approval hash: `e3e705cd462682f3f70a0ba6602ea68ef16ee591d940a1d01d3469e8d88faed9`  
+Initial hash: `ed23d2fb041505612401289ba93b3056737864b4d39e9c1ba5c9624e2394d3cf`  
+Follow-up hash: `b3944cce08d19f7504a4175f5838ccfbdd58bfff71361fbcef4251b7fcee99d0`
 
-> **Possible companion resource for your invoice-template library**
+> **Free invoice tool for your resource library**
 >
 > Hello LedgerCo team,
 >
-> InvoiceWorkshop creates PDFs in the browser, and document contents are not uploaded to InvoiceWorkshop application servers.
+> I came across your resources page and noticed the invoice and bookkeeping materials you share with small businesses.
 >
-> Your library already includes invoice and bookkeeping resources. This invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/
+> We built InvoiceWorkshop, a free invoice tool that works without signup and keeps the workspace in the browser. It may be useful as an interactive companion to the invoice resources you already provide:
 >
-> If it does not meet your resource standards, no response or inclusion is expected.
+> https://invoiceworkshop.com/invoice-template/
+>
+> If it’s useful for your readers, feel free to include it. If not, no worries.
 >
 > InvoiceWorkshop
 > hello@invoiceworkshop.com
@@ -130,18 +134,21 @@ Initial hash: `25bbdf12c05096b396dad68f235b8ba405da538524faa4b11861edf4e0b2f792`
 Page: `https://coalesco.co.uk/resources/ebooks-and-downloads/`  
 To: `info@coalesco.co.uk`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
-Approval hash: `d6b3f767ebb80dc2708813406412f70ed88d9aa2316cf8f2933326ccddf6b970`  
-Initial hash: `d58b7ce00c86be5f764b4c6b63116d4baec9a7c8e3a01c2149225d7df8e53079`
+Approval hash: `0e9d798b33cf2185003b72945c99c83fd5f9c7331c36df95a0574d457f9bbba8`  
+Initial hash: `2e759df0324af0cecd1a8f5b59cbe9073af7f92719e85255ae1be8796853dab2`  
+Follow-up hash: `6c4afcf10fa130df2a8b9a9bd77cf1eb1ea2634eb3361e865e35db31b573348e`
 
-> **Possible browser companion to your invoice download**
+> **Interactive companion to your invoice template**
 >
 > Hello Coalesco team,
 >
-> InvoiceWorkshop is free to use, requires no signup for its core document tools, and saves workspace data locally in the browser.
+> I noticed your downloads page includes an invoice template alongside your other practical business resources.
 >
-> Your downloads page includes an invoice template and other practical business resources. This working invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/
+> InvoiceWorkshop is a free, no-signup invoice tool that saves workspace information locally in the browser. It could be a useful interactive companion for people who prefer creating an invoice directly online:
 >
-> Please consider it only if it fits your resource standards.
+> https://invoiceworkshop.com/invoice-template/
+>
+> If it fits your resource library, feel free to include it.
 >
 > InvoiceWorkshop
 > hello@invoiceworkshop.com
@@ -151,18 +158,21 @@ Initial hash: `d58b7ce00c86be5f764b4c6b63116d4baec9a7c8e3a01c2149225d7df8e53079`
 Page: `https://umbrex.com/resources/invoice-template/`  
 To: `inquiry@umbrex.com`  
 Target: `https://invoiceworkshop.com/invoice-template/`  
-Approval hash: `d1a8d51a0412d1cdb03f891397c6d2240e59514f2a62caaa86ae3c5012ba9833`  
-Initial hash: `54db5f8328a1b9c1845beb648ab60c43d4029ca28a8c14b9cc31d979566bd667`
+Approval hash: `431f699fe9a72a52ddd1defff087832e8bcecf7c31d94d8e8479798fdd8dc03b`  
+Initial hash: `fd3632349944b047cc84bb2f66ed9e7a28b9a08192bdff187e85f195fd942a71`  
+Follow-up hash: `661d328735d48a67d5541b5ba6c33fc0c831ce9df0bf68adfe4b695eebd8e3d4`
 
-> **Working companion for your consultant invoice guide**
+> **Free invoicing tool for independent consultants**
 >
 > Hello Umbrex team,
 >
-> InvoiceWorkshop creates PDFs in the browser, and document contents are not uploaded to InvoiceWorkshop application servers.
+> I came across your invoice guide for independent consultants and the downloadable templates you provide.
 >
-> Your invoice guide helps independent consultants prepare and manage client invoices. This browser-based invoice template may be a useful optional working companion: https://invoiceworkshop.com/invoice-template/
+> We built InvoiceWorkshop, a free browser-based invoice tool that requires no signup and generates the PDF directly in the browser. It may be useful as a working companion to your existing guide:
 >
-> Please consider it only if it improves the existing resource for consultants.
+> https://invoiceworkshop.com/invoice-template/
+>
+> If it’s useful for your consultants, feel free to include it.
 >
 > InvoiceWorkshop
 > hello@invoiceworkshop.com
@@ -171,26 +181,31 @@ Initial hash: `54db5f8328a1b9c1845beb648ab60c43d4029ca28a8c14b9cc31d979566bd667`
 
 Page: `https://freelancersunion.org/resources/`  
 To: `community@freelancersunion.org`  
-Target: `https://invoiceworkshop.com/invoice-template/`  
-Approval hash: `063b8b2d03b2f6e973a7f1fd7a157f3026f3244ec33065f8ff1480fdc0c46458`  
-Initial hash: `c2f2910dccc39e1ad5cf9197d1be10b628aba02b027a99636664c3c5cf8556a7`
+Target: `https://invoiceworkshop.com/`  
+Approval hash: `83434860b09c3d4f977521ce417b4eca1aa18042b8d69b483cbb83f705083d26`  
+Initial hash: `f46d422f3f4231e3febfdc61af271cec654761f58c6f0a5ddfb4d8d0f618eac0`  
+Follow-up hash: `38eb04b5edd73b6880cf3dce3dbd2386325164bd9e3ce540dfd6a83528397c74`
 
-> **Free invoicing resource for independent workers**
+> **Free invoicing tool for freelancers**
 >
 > Hello Freelancers Union team,
 >
-> InvoiceWorkshop is free to use, requires no signup for its core document tools, and saves workspace data locally in the browser.
+> I was looking through your resources for freelancers around managing clients and finances.
 >
-> Your resource collection helps independent workers manage clients and finances. This invoice template may be a useful addition for freelancers who need a working document tool: https://invoiceworkshop.com/invoice-template/
+> We built InvoiceWorkshop, a free invoicing tool that requires no signup and remembers business, customer and item information locally in the browser.
 >
-> Please consider it only if it is genuinely useful to your members.
+> It may be useful to members who need a lightweight way to create invoices without adopting another software account:
+>
+> https://invoiceworkshop.com/
+>
+> If you think it belongs in your resource collection, feel free to include it.
 >
 > InvoiceWorkshop
 > hello@invoiceworkshop.com
 
-The exported email manifest includes the deterministic first and final follow-up
-messages and their combined approval hashes. Initial cadence remains three new
-emails and five total messages per UTC day.
+The single follow-up reuses the initial subject prefixed with `Re:` and repeats
+no product claim. Initial cadence remains three new emails and five total
+messages per UTC day.
 
 ## Form pilot
 
@@ -337,5 +352,25 @@ recipient is published on the site. Coalesco and Umbrex serve 403 to some user
 agents through bot protection; both render normally otherwise and were confirmed
 present with their published addresses.
 
-### LEVEL 1A EMAIL READY FOR OWNER APPROVAL
+## Owner-approved copy revision (2026-09-01)
+
+- Follow-ups reduced from two to one, at five business days, then the action
+  stops permanently. `max_followups` is 1 and the CLI accepts only attempt 0 or 1.
+- Copy rewritten to the owner's supplied text. The formal "optional companion",
+  "resource standards" and "no inclusion is expected" phrasing is gone.
+- Freelancers Union target moved from `/invoice-template/` to the homepage.
+- Creative Boom remains rejected and suppressed; it was not replaced.
+
+One structural change was required and is worth flagging. The previous template
+injected canonical claim text verbatim between the opening and the fit sentence,
+so approved claims could not drift. The new hand-written copy states the product
+claim in its own words, which that mechanism cannot express. Rather than drop the
+guarantee, `level1a_claim_paraphrases` now records owner-approved wordings for
+each canonical claim, and an initial message must carry either the canonical text
+or a registered wording for every claim key it declares. Each of the four new
+sentences was checked against the product and registered with an evidence
+reference. Follow-ups repeat no claim and are exempt. Copy was otherwise
+unaltered.
+
+### LEVEL 1A EMAIL READY FOR ACTIVATION
 
