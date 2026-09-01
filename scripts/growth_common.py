@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import re
 import socket
 import sqlite3
 import time
@@ -47,10 +48,33 @@ def connect_db(path: str | Path | None = None, *, read_only: bool = False) -> sq
         connection = sqlite3.connect(target)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
+    # Several scheduled jobs share this file. Wait for a writer rather than
+    # failing the run outright on a transient lock.
+    connection.execute("PRAGMA busy_timeout = 30000")
     return connection
 
 
+def _schema_is_current(connection: sqlite3.Connection) -> bool:
+    """True when the store already matches the shipped schema version."""
+    try:
+        current = connection.execute(
+            "SELECT value FROM schema_meta WHERE key='schema_version'"
+        ).fetchone()
+    except sqlite3.Error:
+        return False
+    if not current:
+        return False
+    match = re.search(
+        r"VALUES \('schema_version', '(\d+)'\)", SCHEMA.read_text(encoding="utf-8")
+    )
+    return bool(match) and str(current[0]) == match.group(1)
+
+
 def apply_schema(connection: sqlite3.Connection) -> None:
+    # Re-running the full script takes a write lock, which collides with a
+    # long discovery cycle. Skip it when the store is already up to date.
+    if _schema_is_current(connection):
+        return
     connection.executescript(SCHEMA.read_text(encoding="utf-8"))
     # CREATE TABLE IF NOT EXISTS cannot add columns to an existing local growth
     # store. Keep the small Level-1A migration explicit and idempotent.
