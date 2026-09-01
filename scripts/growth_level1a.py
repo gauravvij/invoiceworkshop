@@ -29,6 +29,18 @@ from growth_level1a_transport import (
 )
 
 FROM_ADDRESS = "hello@invoiceworkshop.com"
+# The SEO architecture is frozen; an outreach action may only ever point here.
+CANONICAL_TARGETS = (
+    "https://invoiceworkshop.com/",
+    "https://invoiceworkshop.com/invoice-template/",
+    "https://invoiceworkshop.com/construction-invoice-template/",
+    "https://invoiceworkshop.com/contractor-invoice-template/",
+    "https://invoiceworkshop.com/proforma-invoice-generator/",
+    "https://invoiceworkshop.com/quotation-generator/",
+    "https://invoiceworkshop.com/estimate-generator/",
+    "https://invoiceworkshop.com/work-order-generator/",
+    "https://invoiceworkshop.com/purchase-order-generator/",
+)
 FROM_NAME = "InvoiceWorkshop"
 FORBIDDEN_PATTERNS = (
     r"\bbest\b", r"\bleading\b", r"\bnumber\s*one\b", r"#\s*1\b",

@@ -45,16 +45,93 @@ export const generators: Record<string, GeneratorContent> = {
   },
   proforma: {
     path: '/proforma-invoice-generator/', kind: 'proforma', title: 'Free Proforma Invoice Generator | Invoice Workshop',
-    description: 'Create a free proforma invoice, save it in your browser and convert it into a final invoice when ready. No signup required.',
+    description: 'Create a free proforma invoice with itemized costs, validity dates and terms, then convert it into a final invoice. No signup required.',
     h1: 'Free Proforma Invoice Generator', eyebrow: 'Set expectations before the final invoice',
     intro: 'Create a clear preliminary invoice with itemized costs, dates and terms, then download a polished PDF or convert it into a final invoice.',
     reassurance: 'Your proforma invoice and customer details stay on this device.',
     sections: [
-      { heading: 'What is a proforma invoice?', paragraphs: ['A proforma invoice is a preliminary commercial document that outlines an expected transaction before a final invoice is issued. It can communicate anticipated products, services, prices, shipping, tax and terms, but it should be labeled clearly so the recipient does not mistake it for the final demand for payment.'] },
-      { heading: 'What to include', paragraphs: ['Identify both parties, give the proforma a reference number and date, describe each item, state the currency, and make any validity period or assumptions clear. For international transactions, businesses may also need shipment or customs information appropriate to their situation.'], bullets: ['Seller and prospective buyer', 'Proforma number, issue date and validity date', 'Items, quantities and expected prices', 'Shipping, tax and other adjustments', 'Terms and a clear proforma label'] },
-      { heading: 'Proforma invoice vs. final invoice', paragraphs: ['The proforma describes an expected sale; a final invoice records the actual amount being billed. Once the details are confirmed, use the conversion control in the workspace to create a final invoice without retyping the customer or line items. Review the converted document before sending it.'] },
+      {
+        heading: 'What is a proforma invoice?',
+        paragraphs: [
+          'A proforma invoice is a preliminary commercial document that describes a transaction before it happens. It tells the buyer what they will be charged, on what terms, and for how long that offer stands. It is not a demand for payment and it does not record a sale that has taken place.',
+          'That distinction matters practically. A buyer can take a proforma to their finance team to raise a purchase order or release funds, and a seller can send one without it appearing in their sales ledger as revenue. Label it clearly so nobody mistakes it for the final bill.',
+        ],
+      },
+      {
+        heading: 'When a proforma is the right document',
+        paragraphs: [
+          'Reach for a proforma when the buyer needs a formal figure before you can issue a real invoice. Common situations:',
+        ],
+        bullets: [
+          'The buyer needs a document to raise a purchase order',
+          'Payment is required in advance of work or shipment',
+          'Customs or a freight forwarder needs a declared value',
+          'A grant, budget holder or finance team must pre-approve the spend',
+          'Scope is agreed but the work has not yet been delivered',
+          'A new customer is being set up before trading terms exist',
+        ],
+      },
+      {
+        heading: 'What to include',
+        paragraphs: [
+          'Identify both parties, give the document its own reference number, and make the validity period explicit — a price that has no expiry is a price you have to honour indefinitely.',
+        ],
+        bullets: [
+          'The words "Proforma Invoice" prominently',
+          'Seller and prospective buyer details',
+          'Proforma number and issue date',
+          'Validity or expiry date for the quoted prices',
+          'Itemized goods or services with quantities',
+          'Currency, unit prices and line totals',
+          'Shipping, handling and any tax treatment',
+          'Payment terms and accepted methods',
+          'Any assumptions the price depends on',
+        ],
+      },
+      {
+        heading: 'A worked proforma',
+        paragraphs: [
+          'A short example for goods sold in advance of shipment. Note the validity date doing real work: it is the seller\'s protection against a price accepted three months later.',
+        ],
+        table: {
+          caption: 'Proforma PF-2026-014 — valid 30 days from issue',
+          columns: ['Description', 'Qty', 'Unit price', 'Amount'],
+          rows: [
+            ['Workshop bench, powder-coated steel', '6', '$418.00', '$2,508.00'],
+            ['Assembly and packing', '6', '$45.00', '$270.00'],
+            ['Freight to buyer\'s warehouse', '1', '$385.00', '$385.00'],
+          ],
+          total: [['Subtotal', '$3,163.00'], ['Tax at 6%', '$189.78'], ['Total payable in advance', '$3,352.78']],
+          note: 'Prices hold until the validity date. After that the buyer should request a fresh proforma rather than assume the figures still stand.',
+        },
+      },
+      {
+        heading: 'Proforma, quotation and final invoice',
+        paragraphs: [
+          'These three documents are often used interchangeably and should not be. Each one does a different job at a different point in the deal.',
+        ],
+        terms: [
+          { term: 'Quotation', definition: 'An offer to do defined work at a stated price. It invites acceptance and usually precedes any commitment.' },
+          { term: 'Proforma invoice', definition: 'A formal statement of what the buyer will be charged once the sale proceeds. It is used to obtain approval, funds or customs paperwork.' },
+          { term: 'Commercial invoice', definition: 'The final demand for payment, issued once goods ship or work completes. This is the document that enters the accounts.' },
+        ],
+      },
+      {
+        heading: 'Converting a proforma into the final invoice',
+        paragraphs: [
+          'Once the transaction is confirmed, use the conversion control in the workspace to create the final invoice without retyping the customer or line items. The new document receives its own number and type and keeps a reference to the proforma it came from.',
+          'Review before sending. Quantities shipped, freight actually incurred and any price changes since the proforma was issued all need checking against reality rather than carried over on trust.',
+        ],
+      },
+      {
+        heading: 'International shipments',
+        paragraphs: [
+          'A proforma is frequently the document a customs broker asks for when goods cross a border, because it states a value before a commercial invoice exists. Requirements vary considerably by destination and by what is being shipped.',
+          'Invoice Workshop formats the document and performs the arithmetic. It does not determine customs, export-control or tax obligations, which depend on the goods, the countries involved and your own circumstances. Check with your freight forwarder or broker for what a specific shipment needs.',
+        ],
+      },
     ],
-    related: [{ href: '/', label: 'Invoice Generator', text: 'Convert an agreed proforma into the final invoice.' }, { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Use a quotation when you are proposing work or pricing.' }, { href: '/purchase-order-generator/', label: 'Purchase Order Generator', text: 'Create the buyer-side purchasing document.' }],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'Convert an agreed proforma into the final invoice.' }, { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Use a quotation when you are proposing work or pricing.' }, { href: '/purchase-order-generator/', label: 'Purchase Order Generator', text: 'Create the buyer-side purchasing document.' }, { href: '/invoice-template/', label: 'Invoice Template', text: 'Start from a straightforward invoice layout.' }],
   },
   quotation: {
     path: '/quotation-generator/', kind: 'quotation', title: 'Free Quotation Generator | Invoice Workshop',
@@ -71,16 +148,90 @@ export const generators: Record<string, GeneratorContent> = {
   },
   workOrder: {
     path: '/work-order-generator/', kind: 'workOrder', title: 'Free Work Order Generator | Invoice Workshop',
-    description: 'Create a free professional work order with scope, jobsite, items and terms. Save locally and convert completed work into an invoice.',
+    description: 'Create a free work order with jobsite, scope, labor, materials, scheduling and sign-off, then convert completed work into an invoice.',
     h1: 'Free Work Order Generator', eyebrow: 'Turn approved scope into actionable work',
     intro: 'Document the customer, jobsite, scope, materials, labor and dates in a clear work order, then convert completed work into an invoice.',
     reassurance: 'Work orders stay saved in this browser—no account needed.',
     sections: [
-      { heading: 'What is a work order?', paragraphs: ['A work order records work that is requested or authorized. It gives the person doing the work a practical reference for the customer, location, tasks, materials, pricing and timing. It can also help connect the original estimate to the final invoice.'] },
-      { heading: 'Information to include', paragraphs: ['Use a unique work-order number and identify the customer and jobsite. Describe the scope in operational terms, itemize labor and materials when helpful, and record relevant dates, references, approvals and completion notes.'], bullets: ['Customer, project and jobsite', 'Requested work and deliverables', 'Labor, materials and quantities', 'Schedule and reference numbers', 'Terms, notes and completion status'] },
-      { heading: 'Estimate vs. work order vs. invoice', paragraphs: ['An estimate predicts the likely cost, a work order directs or records the approved work, and an invoice requests payment. You can convert an estimate into a work order, then use this tool to convert the completed work order into an invoice. Always review actual quantities before billing.'] },
+      {
+        heading: 'What a work order is for',
+        paragraphs: [
+          'A work order is the instruction that turns an agreed price into work someone can actually carry out. It answers four questions for whoever picks it up: who the customer is, where to go, what to do, and what has been authorized.',
+          'It is also the record that connects the estimate to the invoice. Without one, the gap between what was quoted and what was billed is filled by memory, which is where most billing disputes begin.',
+        ],
+      },
+      {
+        heading: 'What to put on a work order',
+        paragraphs: [
+          'The editor above carries project and jobsite fields alongside the usual customer details. Fill the operational parts properly — a technician reading this on site cannot ask the office what "as discussed" meant.',
+        ],
+        bullets: [
+          'Work order number and issue date',
+          'Customer and billing contact',
+          'Jobsite address and access notes',
+          'Requested work in operational terms',
+          'Labor: who, how long, what rate',
+          'Materials and equipment required',
+          'Scheduled date and expected duration',
+          'Reference to the estimate, contract or PO',
+          'Who authorized the work, and when',
+          'Space for completion notes and sign-off',
+        ],
+      },
+      {
+        heading: 'A worked work order',
+        paragraphs: [
+          'A typical service call. The estimate reference in the last line is what lets the office check the invoice against what was actually approved.',
+        ],
+        table: {
+          caption: 'Work order WO-2026-0412 — 22 Harbour Road, unit 3',
+          columns: ['Line', 'Qty', 'Rate', 'Amount'],
+          rows: [
+            ['Labor — diagnostic and repair, senior technician', '3.5 hrs', '$95.00', '$332.50'],
+            ['Labor — apprentice assistance', '3.5 hrs', '$48.00', '$168.00'],
+            ['Materials — replacement circulation pump', '1 ea', '$264.00', '$264.00'],
+            ['Materials — fittings and consumables', '1 lot', '$38.50', '$38.50'],
+            ['Call-out charge', '1 ea', '$75.00', '$75.00'],
+          ],
+          total: [['Subtotal', '$878.00'], ['Tax at 8%', '$70.24'], ['Total authorized', '$948.24']],
+          note: 'Authorized against estimate EST-2026-0388. Work beyond this scope needs a new authorization before it is carried out, not after.',
+        },
+      },
+      {
+        heading: 'Scope changes on site',
+        paragraphs: [
+          'The most common way a work order goes wrong is that the job turns out bigger than the paperwork. A technician finds a second failed part, fixes it because they are already there, and nobody tells the office until the invoice looks wrong.',
+          'Handle it the same way a construction change order is handled: record the additional work, note who approved it and when, and reference it explicitly on the invoice. Written approval before the extra work happens is worth more than any argument afterwards.',
+        ],
+      },
+      {
+        heading: 'Work order, purchase order and estimate',
+        paragraphs: [
+          'These three get confused constantly, usually because the same job produces all of them.',
+        ],
+        terms: [
+          { term: 'Estimate', definition: 'Your prediction of what the work will cost. It is an offer, and it may change as the job becomes clearer.' },
+          { term: 'Work order', definition: 'The internal instruction to perform work that has been authorized. It directs and records, it does not request payment.' },
+          { term: 'Purchase order', definition: 'The buyer\'s document committing to purchase. It comes from the customer, not from you.' },
+          { term: 'Invoice', definition: 'The request for payment once the work is done. It should reconcile back to the work order.' },
+        ],
+      },
+      {
+        heading: 'From work order to invoice',
+        paragraphs: [
+          'Start uncertain work as an estimate, convert the approved version into a work order, then convert the completed work order into an invoice. Each conversion keeps the customer and line items and gives the new document its own number, type and reference back to its source.',
+          'Before billing, check actual hours and quantities against what the work order authorized rather than invoicing the plan. The two are rarely identical, and the difference is exactly what the customer will scrutinise.',
+        ],
+      },
+      {
+        heading: 'Scheduling and dispatch',
+        paragraphs: [
+          'For teams running several jobs a day, the work order doubles as the dispatch record. Keeping the jobsite, access notes and scheduled window on the document itself means the person doing the work is not dependent on a separate system or a phone call.',
+          'Invoice Workshop handles the document and the arithmetic. It does not schedule crews or track vehicles; if you need dispatch routing, keep using whatever system you already have and use the work order as the billing record.',
+        ],
+      },
     ],
-    related: [{ href: '/estimate-generator/', label: 'Estimate Generator', text: 'Begin with an expected scope and price.' }, { href: '/', label: 'Invoice Generator', text: 'Bill the customer when work is complete.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use contractor-oriented billing fields.' }],
+    related: [{ href: '/estimate-generator/', label: 'Estimate Generator', text: 'Begin with an expected scope and price.' }, { href: '/', label: 'Invoice Generator', text: 'Bill the customer when work is complete.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use contractor-oriented billing fields.' }, { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Bill labor, materials and progress draws.' }],
   },
   purchaseOrder: {
     path: '/purchase-order-generator/', kind: 'purchaseOrder', title: 'Free Purchase Order Generator | Invoice Workshop',

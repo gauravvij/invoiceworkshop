@@ -63,9 +63,20 @@ elif [[ "${LEVEL1_OUTBOUND_ENABLED:-false}" == "true" ]]; then
   # Sends only the next eligible attempt for actions the owner already approved.
   # Accepts no recipient, subject or body and cannot reach an unapproved action.
   "$PYTHON" scripts/growth_level1a.py run-approved
+  # Reports whether a signed outreach policy is active. Until one is signed this
+  # only ever prints state; it cannot admit anything on its own.
+  "$PYTHON" scripts/growth_outreach_policy.py status
 else
   echo '{"level1_execution":"skipped: LEVEL1_OUTBOUND_ENABLED is false"}'
 fi
 
 # --- 4. discovery -----------------------------------------------------------
 "$PYTHON" scripts/growth_backlink_engine.py cycle --mode daily --queries-per-channel 2
+
+# --- 5. growth intelligence -------------------------------------------------
+# Re-measure content depth and rebuild the opportunity ranking from current
+# evidence, so tomorrow's priorities follow the data rather than yesterday's
+# assumptions. Deterministic: no model is invoked to restate unchanged metrics.
+"$PYTHON" scripts/growth_opportunities.py measure
+"$PYTHON" scripts/growth_opportunities.py refresh
+"$PYTHON" scripts/growth_opportunities.py top --limit 8

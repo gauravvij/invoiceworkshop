@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '13')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '15')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -750,4 +750,120 @@ CREATE TABLE IF NOT EXISTS level1a_approval_audit (
 );
 CREATE INDEX IF NOT EXISTS idx_level1a_approval_audit_action
   ON level1a_approval_audit(action_id, recorded_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Unified growth-opportunity model.
+--
+-- The point is to let different KINDS of growth action compete on one scale, so
+-- "improve a page that is gaining impressions" can outrank "email another
+-- mediocre resource page" when it deserves to. Scores are estimates, not
+-- precision: they exist to order work, not to look scientific.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS growth_opportunities (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_key     TEXT NOT NULL UNIQUE,   -- stable identity for re-scoring
+  opportunity_type    TEXT NOT NULL CHECK (opportunity_type IN (
+                        'SEO_PAGE_IMPROVEMENT', 'PRODUCT_UTILITY', 'NEW_SEARCH_LANDING_ASSET',
+                        'LINKABLE_ASSET', 'RESOURCE_OUTREACH', 'DIRECTORY_DISTRIBUTION',
+                        'INTERNAL_LINKING', 'CTR_IMPROVEMENT', 'TECHNICAL_SEO',
+                        'CONTENT_REFRESH', 'SERP_GAP', 'BACKLINK_GAP',
+                        'COMMUNITY_OPPORTUNITY', 'AI_SEARCH_VISIBILITY_OPPORTUNITY')),
+  title               TEXT NOT NULL,
+  target_url          TEXT,
+  target_query        TEXT,
+  evidence            TEXT NOT NULL DEFAULT '',
+  evidence_strength   TEXT NOT NULL DEFAULT 'weak'
+                        CHECK (evidence_strength IN ('none', 'weak', 'moderate', 'strong')),
+  -- Inputs to the estimate. NULL means unknown, which is scored conservatively
+  -- rather than optimistically.
+  current_impressions INTEGER,
+  current_clicks      INTEGER,
+  current_position    REAL,
+  demand_estimate     INTEGER,               -- rough monthly searches, if known
+  feasibility         REAL CHECK (feasibility BETWEEN 0 AND 1),
+  intent_quality      REAL CHECK (intent_quality BETWEEN 0 AND 1),
+  expected_upside     INTEGER,               -- rough monthly qualified sessions
+  authority_benefit   REAL CHECK (authority_benefit BETWEEN 0 AND 1),
+  effort_days         REAL,
+  confidence          REAL CHECK (confidence BETWEEN 0 AND 1),
+  time_to_impact_days INTEGER,
+  reversible          INTEGER NOT NULL DEFAULT 1 CHECK (reversible IN (0, 1)),
+  risk                TEXT NOT NULL DEFAULT 'low' CHECK (risk IN ('low', 'medium', 'high')),
+  expected_growth_value REAL NOT NULL DEFAULT 0,
+  execution_tier      TEXT NOT NULL DEFAULT 'REVIEW'
+                        CHECK (execution_tier IN ('AUTO', 'REVIEW', 'BLOCKED')),
+  state               TEXT NOT NULL DEFAULT 'open'
+                        CHECK (state IN ('open', 'in_progress', 'done', 'dismissed', 'escalated')),
+  dismissed_reason    TEXT,
+  experiment_id       INTEGER,
+  first_seen_at       TEXT NOT NULL,
+  updated_at          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_growth_opportunities_rank
+  ON growth_opportunities(state, expected_growth_value DESC);
+
+-- Every meaningful growth action, so effects can be attributed over time rather
+-- than assumed from coincidence.
+CREATE TABLE IF NOT EXISTS growth_experiments (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_key    TEXT,
+  hypothesis         TEXT NOT NULL,
+  action             TEXT NOT NULL,
+  action_type        TEXT NOT NULL,
+  target_url         TEXT,
+  target_query       TEXT,
+  started_at         TEXT NOT NULL,
+  evaluate_after     TEXT NOT NULL,          -- no conclusions before this date
+  baseline_json      TEXT NOT NULL DEFAULT '{}',
+  expected_outcome   TEXT NOT NULL DEFAULT '',
+  observed_json      TEXT NOT NULL DEFAULT '{}',
+  conclusion         TEXT,
+  outcome            TEXT CHECK (outcome IN ('positive', 'negative', 'neutral', 'inconclusive')),
+  attribution_note   TEXT NOT NULL DEFAULT '',
+  concluded_at       TEXT,
+  updated_at         TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_growth_experiments_open
+  ON growth_experiments(outcome, evaluate_after);
+
+-- Owner-signed outreach policy. The owner signs the policy once; the executor
+-- then checks each candidate action against it deterministically.
+CREATE TABLE IF NOT EXISTS outreach_policy (
+  version            INTEGER PRIMARY KEY,
+  policy_json        TEXT NOT NULL,
+  policy_hash        TEXT NOT NULL,
+  signed             INTEGER NOT NULL DEFAULT 0 CHECK (signed IN (0, 1)),
+  signer_fingerprint TEXT,
+  signed_at          TEXT,
+  active             INTEGER NOT NULL DEFAULT 0 CHECK (active IN (0, 1)),
+  created_at         TEXT NOT NULL
+);
+
+-- Actions admitted under a signed policy rather than an individual signature.
+CREATE TABLE IF NOT EXISTS policy_admissions (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  action_id       INTEGER NOT NULL REFERENCES level1a_actions(id),
+  policy_version  INTEGER NOT NULL,
+  policy_hash     TEXT NOT NULL,
+  admitted        INTEGER NOT NULL CHECK (admitted IN (0, 1)),
+  checks_json     TEXT NOT NULL DEFAULT '{}',
+  refusal_reason  TEXT,
+  recorded_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_policy_admissions_action
+  ON policy_admissions(action_id, recorded_at DESC);
+
+-- Measured content depth per canonical page, taken from the built output rather
+-- than estimated. Thin pages are an indexing and ranking liability on a young
+-- domain, so this is evidence the opportunity model needs.
+CREATE TABLE IF NOT EXISTS page_content_stats (
+  url          TEXT NOT NULL,
+  measured_at  TEXT NOT NULL,
+  words        INTEGER NOT NULL,
+  headings     INTEGER NOT NULL DEFAULT 0,
+  bytes        INTEGER NOT NULL DEFAULT 0,
+  internal_out INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (url, measured_at)
+);
+CREATE INDEX IF NOT EXISTS idx_page_content_stats_url ON page_content_stats(url, measured_at DESC);
 
