@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '7')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '8')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -361,6 +361,18 @@ CREATE TABLE IF NOT EXISTS level1a_claims (
   PRIMARY KEY (claim_key, version)
 );
 
+-- Owner-approved wordings for an approved factual claim. Every product assertion
+-- in an initial Level-1A message must appear here verbatim, tied to a canonical
+-- claim and its evidence, so hand-written copy cannot drift from what is true.
+CREATE TABLE IF NOT EXISTS level1a_claim_paraphrases (
+  claim_key    TEXT NOT NULL,
+  paraphrase   TEXT NOT NULL,
+  evidence_ref TEXT NOT NULL,
+  active       INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+  created_at   TEXT NOT NULL,
+  PRIMARY KEY (claim_key, paraphrase)
+);
+
 CREATE TABLE IF NOT EXISTS level1a_templates (
   template_id           TEXT NOT NULL,
   version               INTEGER NOT NULL CHECK (version > 0),
@@ -370,6 +382,7 @@ CREATE TABLE IF NOT EXISTS level1a_templates (
                         )),
   subject_template      TEXT NOT NULL,
   opening_template      TEXT NOT NULL,
+  context_template      TEXT NOT NULL DEFAULT '',
   fit_template          TEXT NOT NULL,
   close_template        TEXT NOT NULL,
   max_body_characters   INTEGER NOT NULL CHECK (max_body_characters BETWEEN 200 AND 1500),
@@ -404,6 +417,7 @@ CREATE TABLE IF NOT EXISTS level1a_actions (
   subject_value             TEXT NOT NULL,
   opening_value             TEXT NOT NULL,
   fit_value                 TEXT NOT NULL,
+  context_value             TEXT NOT NULL DEFAULT '',
   close_value               TEXT NOT NULL,
   max_followups             INTEGER NOT NULL DEFAULT 2 CHECK (max_followups BETWEEN 0 AND 2),
   attachments_allowed       INTEGER NOT NULL DEFAULT 0 CHECK (attachments_allowed = 0),

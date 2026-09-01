@@ -68,6 +68,17 @@ def apply_schema(connection: sqlite3.Connection) -> None:
         connection.execute(
             "UPDATE level1a_actions SET execution_class='level1a_email' WHERE contact_kind='email'"
         )
+    if level1a_columns and "context_value" not in level1a_columns:
+        connection.execute(
+            "ALTER TABLE level1a_actions ADD COLUMN context_value TEXT NOT NULL DEFAULT ''"
+        )
+    template_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(level1a_templates)")
+    }
+    if template_columns and "context_template" not in template_columns:
+        connection.execute(
+            "ALTER TABLE level1a_templates ADD COLUMN context_template TEXT NOT NULL DEFAULT ''"
+        )
     audit_columns = {
         row[1] for row in connection.execute("PRAGMA table_info(level1a_action_audit)")
     }

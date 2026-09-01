@@ -40,6 +40,17 @@ FORBIDDEN_PATTERNS = (
 PAYMENT_PATTERNS = (r"\bsponsor(?:ed|ship)?\b", r"\bpaid placement\b", r"\bpurchase\b", r"\bpayment\b", r"\bfee\b")
 EMAIL_PATTERN = re.compile(r"^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$", re.I)
 URL_PATTERN = re.compile(r"https?://[^\s<>\])]+")
+# One follow-up only, sent roughly five business days after the initial message,
+# and only when nothing has come back. It repeats no product claim.
+FOLLOWUP_BODY = (
+    "Hello again,\n\n"
+    "Just following up once in case this got buried. Here\u2019s the InvoiceWorkshop "
+    "resource I mentioned:\n\n"
+    "{target_url}\n\n"
+    "If it\u2019s not relevant for your resource library, no need to respond and I "
+    "won\u2019t follow up again."
+)
+FOLLOWUP_WAIT_BUSINESS_DAYS = 5
 CLAIMS = (
     (
         "free_no_signup_local", 1,
@@ -64,16 +75,43 @@ CLAIMS = (
 )
 TEMPLATES = (
     (
-        "short_resource", 1, "resource_suggestion", "{subject_value}", "{opening_value}",
-        "{fit_value}", "{close_value}", 900,
+        "human_resource", 1, "resource_suggestion", "{subject_value}", "{opening_value}",
+        "{context_value}", "{fit_value}", "{close_value}", 900,
     ),
     (
         "short_directory", 1, "directory_submission", "{subject_value}", "{opening_value}",
-        "{fit_value}", "{close_value}", 900,
+        "{context_value}", "{fit_value}", "{close_value}", 900,
+    ),
+)
+
+# Owner-approved wordings for each canonical claim. An initial message must carry
+# one of these verbatim for every claim key it declares, so hand-written copy
+# cannot assert something the claim registry does not support.
+PARAPHRASES = (
+    (
+        "free_no_signup_local",
+        "a free invoice tool that works without signup and keeps the workspace in the browser",
+        "README.md:3-15; src/lib/storage/database.ts; docs/PRODUCT_PRINCIPLES.md",
     ),
     (
-        "short_roundup", 1, "roundup_suggestion", "{subject_value}", "{opening_value}",
-        "{fit_value}", "{close_value}", 900,
+        "free_no_signup_local",
+        "a free, no-signup invoice tool that saves workspace information locally in the browser",
+        "README.md:3-15; src/lib/storage/database.ts; docs/PRODUCT_PRINCIPLES.md",
+    ),
+    (
+        "free_no_signup_local",
+        "a free browser-based invoice tool that requires no signup and generates the PDF directly in the browser",
+        "README.md:3-15; src/lib/documents/pdf.ts; docs/PRODUCT_PRINCIPLES.md",
+    ),
+    (
+        "free_no_signup_local",
+        "a free invoicing tool that requires no signup and remembers business, customer and item information locally in the browser",
+        "README.md:3-15; src/lib/storage/database.ts; docs/PRODUCT_PRINCIPLES.md",
+    ),
+    (
+        "browser_pdf_privacy",
+        "a free browser-based invoice tool that requires no signup and generates the PDF directly in the browser",
+        "src/lib/documents/pdf.ts; src/pages/privacy/index.astro; tests/e2e/privacy.spec.ts",
     ),
 )
 
@@ -92,11 +130,12 @@ PILOT = (
         "allowed_intent": "Suggest a practical invoicing resource for independent freelancers.",
         "claims": ["free_no_signup_local"],
         "relevance": ["freelance", "resource", "submit"],
-        "template_id": "short_resource",
-        "subject": "InvoiceWorkshop — invoicing resource for freelancers",
+        "template_id": "human_resource",
+        "subject": "Free invoice tool for freelancers",
         "opening": "Hello Freelance Things team,",
-        "fit": "The invoice template may be useful to freelancers who want to prepare client invoices without opening another hosted account: https://invoiceworkshop.com/invoice-template/",
-        "close": "Please include it only if it meets your resource standards.",
+        "context": "I came across your resource page for freelancers and the tools you share there.",
+        "fit": "We built InvoiceWorkshop, a free invoice tool that works without signup and keeps the workspace in the browser. It may be useful to freelancers preparing client invoices:",
+        "close": "If it fits your resource list, feel free to include it.",
         "title": "Freelance Things official information",
         "excerpt": "Curated tools and resources for freelancers with an on-page resource-submission route.",
     },
@@ -112,13 +151,14 @@ PILOT = (
         "action_type": "resource_suggestion",
         "target_url": "https://invoiceworkshop.com/invoice-template/",
         "allowed_intent": "Suggest a companion resource for LedgerCo's small-business resource library.",
-        "claims": ["browser_pdf_privacy"],
+        "claims": ["free_no_signup_local"],
         "relevance": ["invoice", "resource", "business"],
-        "template_id": "short_resource",
-        "subject": "Possible companion resource for your invoice-template library",
+        "template_id": "human_resource",
+        "subject": "Free invoice tool for your resource library",
         "opening": "Hello LedgerCo team,",
-        "fit": "Your library already includes invoice and bookkeeping resources. This invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/",
-        "close": "If it does not meet your resource standards, no response or inclusion is expected.",
+        "context": "I came across your resources page and noticed the invoice and bookkeeping materials you share with small businesses.",
+        "fit": "We built InvoiceWorkshop, a free invoice tool that works without signup and keeps the workspace in the browser. It may be useful as an interactive companion to the invoice resources you already provide:",
+        "close": "If it’s useful for your readers, feel free to include it. If not, no worries.",
         "title": "LedgerCo resources",
         "excerpt": "A small-business accounting resource hub with invoice, bookkeeping, and receivables resources.",
     },
@@ -136,11 +176,12 @@ PILOT = (
         "allowed_intent": "Suggest a working browser companion to Coalesco's existing invoice download.",
         "claims": ["free_no_signup_local"],
         "relevance": ["invoice", "resource", "template"],
-        "template_id": "short_resource",
-        "subject": "Possible browser companion to your invoice download",
+        "template_id": "human_resource",
+        "subject": "Interactive companion to your invoice template",
         "opening": "Hello Coalesco team,",
-        "fit": "Your downloads page includes an invoice template and other practical business resources. This working invoice template may be a useful optional companion: https://invoiceworkshop.com/invoice-template/",
-        "close": "Please consider it only if it fits your resource standards.",
+        "context": "I noticed your downloads page includes an invoice template alongside your other practical business resources.",
+        "fit": "InvoiceWorkshop is a free, no-signup invoice tool that saves workspace information locally in the browser. It could be a useful interactive companion for people who prefer creating an invoice directly online:",
+        "close": "If it fits your resource library, feel free to include it.",
         "title": "Coalesco eBooks and downloads",
         "excerpt": "An accounting-firm resource page offering an invoice template and other practical small-business downloads.",
         "prospect": {
@@ -163,13 +204,14 @@ PILOT = (
         "action_type": "resource_suggestion",
         "target_url": "https://invoiceworkshop.com/invoice-template/",
         "allowed_intent": "Suggest an optional working companion to Umbrex's invoice guidance for independent consultants.",
-        "claims": ["browser_pdf_privacy"],
+        "claims": ["free_no_signup_local", "browser_pdf_privacy"],
         "relevance": ["invoice", "resource", "consultant"],
-        "template_id": "short_resource",
-        "subject": "Working companion for your consultant invoice guide",
+        "template_id": "human_resource",
+        "subject": "Free invoicing tool for independent consultants",
         "opening": "Hello Umbrex team,",
-        "fit": "Your invoice guide helps independent consultants prepare and manage client invoices. This browser-based invoice template may be a useful optional working companion: https://invoiceworkshop.com/invoice-template/",
-        "close": "Please consider it only if it improves the existing resource for consultants.",
+        "context": "I came across your invoice guide for independent consultants and the downloadable templates you provide.",
+        "fit": "We built InvoiceWorkshop, a free browser-based invoice tool that requires no signup and generates the PDF directly in the browser. It may be useful as a working companion to your existing guide:",
+        "close": "If it’s useful for your consultants, feel free to include it.",
         "title": "Umbrex invoice tips and template",
         "excerpt": "Detailed invoice guidance and downloadable templates for independent management consultants.",
         "prospect": {
@@ -190,15 +232,16 @@ PILOT = (
         "recipient": "community@freelancersunion.org",
         "form_handler": None,
         "action_type": "resource_suggestion",
-        "target_url": "https://invoiceworkshop.com/invoice-template/",
+        "target_url": "https://invoiceworkshop.com/",
         "allowed_intent": "Suggest a free invoicing resource for the union's freelancer resource collection.",
         "claims": ["free_no_signup_local"],
         "relevance": ["invoice", "resource", "freelancer"],
-        "template_id": "short_resource",
-        "subject": "Free invoicing resource for independent workers",
+        "template_id": "human_resource",
+        "subject": "Free invoicing tool for freelancers",
         "opening": "Hello Freelancers Union team,",
-        "fit": "Your resource collection helps independent workers manage clients and finances. This invoice template may be a useful addition for freelancers who need a working document tool: https://invoiceworkshop.com/invoice-template/",
-        "close": "Please consider it only if it is genuinely useful to your members.",
+        "context": "I was looking through your resources for freelancers around managing clients and finances.",
+        "fit": "We built InvoiceWorkshop, a free invoicing tool that requires no signup and remembers business, customer and item information locally in the browser.\n\nIt may be useful to members who need a lightweight way to create invoices without adopting another software account:",
+        "close": "If you think it belongs in your resource collection, feel free to include it.",
         "title": "Freelancers Union resources",
         "excerpt": "A nonprofit freelancer resource collection covering client management, finances, tools, and protections.",
         "prospect": {
@@ -226,8 +269,9 @@ PILOT = (
         "template_id": "short_directory",
         "subject": "InvoiceWorkshop product listing",
         "opening": "InvoiceWorkshop is a browser-based business-document workspace.",
-        "fit": "It fits the financial-management category and is available at https://invoiceworkshop.com/",
-        "close": "Please list it only if it meets the directory's editorial standards.",
+        "context": "It creates invoices, quotations, estimates, work orders and purchase orders in the browser.",
+        "fit": "InvoiceWorkshop supports saved customers and reusable items, plus conversion between supported estimate, quotation, work-order, proforma, and invoice workflows.",
+        "close": "Please list it only if it meets the directory’s editorial standards.",
         "title": "Add your product to Business-Software.com",
         "excerpt": "A no-cost, editorially reviewed product-submission page with a financial-management category.",
     },
@@ -274,15 +318,25 @@ def seed_reference_data(connection: sqlite3.Connection) -> None:
     connection.executemany(
         """INSERT INTO level1a_templates
              (template_id, version, action_type, subject_template, opening_template,
-              fit_template, close_template, max_body_characters, active, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+              context_template, fit_template, close_template, max_body_characters,
+              active, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
            ON CONFLICT(template_id, version) DO UPDATE SET
              subject_template=excluded.subject_template,
              opening_template=excluded.opening_template,
+             context_template=excluded.context_template,
              fit_template=excluded.fit_template,
              close_template=excluded.close_template,
              max_body_characters=excluded.max_body_characters""",
         [(*template, now) for template in TEMPLATES],
+    )
+    connection.executemany(
+        """INSERT INTO level1a_claim_paraphrases
+             (claim_key, paraphrase, evidence_ref, active, created_at)
+           VALUES (?, ?, ?, 1, ?)
+           ON CONFLICT(claim_key, paraphrase) DO UPDATE SET
+             evidence_ref=excluded.evidence_ref, active=1""",
+        [(*paraphrase, now) for paraphrase in PARAPHRASES],
     )
     connection.commit()
 
@@ -423,8 +477,8 @@ def seed_pilot(connection: sqlite3.Connection) -> list[int]:
             "target_url": normalize_public_url(item["target_url"]), "allowed_intent": item["allowed_intent"],
             "claims": _json(item["claims"]), "forbidden": _json(list(FORBIDDEN_PATTERNS)),
             "relevance": _json(item["relevance"]), "template_id": item["template_id"],
-            "subject": item["subject"], "opening": item["opening"], "fit": item["fit"],
-            "close": item["close"], "title": item["title"], "excerpt": item["excerpt"],
+            "subject": item["subject"], "opening": item["opening"],
+            "context": item["context"], "fit": item["fit"], "close": item["close"], "title": item["title"], "excerpt": item["excerpt"],
             "now": now,
         }
         connection.execute(
@@ -433,15 +487,15 @@ def seed_pilot(connection: sqlite3.Connection) -> list[int]:
                  contact_kind, execution_class, recipient, form_handler, action_type, target_url,
                  allowed_intent, allowed_claim_keys_json, forbidden_claims_json,
                  relevance_terms_json, template_id, template_version, subject_value,
-                 opening_value, fit_value, close_value, max_followups,
+                 opening_value, context_value, fit_value, close_value, max_followups,
                  attachments_allowed, payment_allowed, external_action_approved,
                  message_approved, suppression_state, page_title, page_excerpt,
                  created_at, updated_at)
                VALUES (:prospect_id, :organization, :external_page_url,
                  :verified_contact_route, :contact_kind, :execution_class, :recipient, :form_handler,
                  :action_type, :target_url, :allowed_intent, :claims, :forbidden,
-                 :relevance, :template_id, 1, :subject, :opening, :fit, :close,
-                 2, 0, 0, 0, 0, 'active', :title, :excerpt, :now, :now)
+                 :relevance, :template_id, 1, :subject, :opening, :context, :fit, :close,
+                 1, 0, 0, 0, 0, 'active', :title, :excerpt, :now, :now)
                ON CONFLICT(prospect_id, action_type, verified_contact_route) DO UPDATE SET
                  organization=excluded.organization, external_page_url=excluded.external_page_url,
                  contact_kind=excluded.contact_kind, execution_class=excluded.execution_class,
@@ -453,7 +507,9 @@ def seed_pilot(connection: sqlite3.Connection) -> list[int]:
                  relevance_terms_json=excluded.relevance_terms_json,
                  template_id=excluded.template_id, template_version=excluded.template_version,
                  subject_value=excluded.subject_value, opening_value=excluded.opening_value,
+                 context_value=excluded.context_value,
                  fit_value=excluded.fit_value, close_value=excluded.close_value,
+                 max_followups=excluded.max_followups,
                  page_title=excluded.page_title, page_excerpt=excluded.page_excerpt,
                  updated_at=excluded.updated_at""",
             values,
@@ -473,7 +529,8 @@ def load_action(connection: sqlite3.Connection, action_id: int) -> sqlite3.Row:
                   p.requires_payment, p.page_url AS prospect_page_url,
                   p.contact_method AS prospect_contact_method,
                   q.second_pass_pass, t.subject_template, t.opening_template,
-                  t.fit_template, t.close_template, t.max_body_characters,
+                  t.context_template, t.fit_template, t.close_template,
+                  t.max_body_characters,
                   t.active AS template_active, t.action_type AS template_action_type
              FROM level1a_actions a
              JOIN prospects p ON p.id=a.prospect_id
@@ -491,27 +548,45 @@ def load_action(connection: sqlite3.Connection, action_id: int) -> sqlite3.Row:
 def render_message(connection: sqlite3.Connection, action: sqlite3.Row, attempt_number: int = 0) -> RenderedMessage:
     if attempt_number < 0 or attempt_number > int(action["max_followups"]):
         raise ValidationError("attempt exceeds the approved follow-up limit")
-    claim_keys = json.loads(action["allowed_claim_keys_json"])
-    claims: list[str] = []
-    for key in claim_keys:
+    values = dict(action)
+    subject = str(action["subject_template"]).format_map(values).strip()
+    target = str(action["target_url"])
+    if attempt_number:
+        subject = f"Re: {subject}"
+        core = FOLLOWUP_BODY.format(target_url=target)
+    else:
+        opening = str(action["opening_template"]).format_map(values).strip()
+        context = str(action["context_template"]).format_map(values).strip()
+        fit = str(action["fit_template"]).format_map(values).strip()
+        close = str(action["close_template"]).format_map(values).strip()
+        core = f"{opening}\n\n{context}\n\n{fit}\n\n{target}\n\n{close}"
+    body = f"{core}\n\nInvoiceWorkshop\n{FROM_ADDRESS}"
+    digest = _sha256(subject + "\n\n" + body)
+    return RenderedMessage(int(action["id"]), attempt_number, subject, body, digest)
+
+
+def _validate_claim_support(
+    connection: sqlite3.Connection, action: sqlite3.Row, rendered: RenderedMessage
+) -> None:
+    """Every product assertion in an initial message must be registered wording."""
+    if rendered.attempt_number:
+        return  # the single follow-up repeats no product claim
+    for key in json.loads(action["allowed_claim_keys_json"]):
         claim = connection.execute(
             "SELECT canonical_text FROM level1a_claims WHERE claim_key=? AND active=1 ORDER BY version DESC LIMIT 1",
             (key,),
         ).fetchone()
         if not claim:
             raise ValidationError(f"inactive or unknown approved claim: {key}")
-        claims.append(str(claim["canonical_text"]))
-    values = dict(action)
-    subject = str(action["subject_template"]).format_map(values).strip()
-    opening = str(action["opening_template"]).format_map(values).strip()
-    fit = str(action["fit_template"]).format_map(values).strip()
-    close = str(action["close_template"]).format_map(values).strip()
-    if attempt_number:
-        opening = "Hello again — this is a brief follow-up." if attempt_number == 1 else "Hello again — this is the final follow-up."
-        close = "No response is needed if this is not relevant." if attempt_number == 1 else "No further follow-up will be sent if this is not relevant."
-    body = f"{opening}\n\n{' '.join(claims)}\n\n{fit}\n\n{close}\n\nInvoiceWorkshop\n{FROM_ADDRESS}"
-    digest = _sha256(subject + "\n\n" + body)
-    return RenderedMessage(int(action["id"]), attempt_number, subject, body, digest)
+        allowed = [str(claim["canonical_text"])] + [
+            str(row["paraphrase"])
+            for row in connection.execute(
+                "SELECT paraphrase FROM level1a_claim_paraphrases WHERE claim_key=? AND active=1",
+                (key,),
+            )
+        ]
+        if not any(wording in rendered.body for wording in allowed):
+            raise ValidationError(f"message does not carry an approved wording for claim: {key}")
 
 
 def _valid_email(value: str | None) -> bool:
@@ -547,6 +622,7 @@ def _validate_frozen_manifest(action: sqlite3.Row) -> None:
         "relevance_terms_json": _json(source["relevance"]),
         "template_id": source["template_id"], "template_version": 1,
         "subject_value": source["subject"], "opening_value": source["opening"],
+        "context_value": source["context"],
         "fit_value": source["fit"], "close_value": source["close"],
     }
     for key, value in expected.items():
@@ -655,11 +731,12 @@ def validate_action(
         if not previous or int(previous["attempt_number"]) != rendered.attempt_number - 1:
             raise ValidationError("follow-up sequence is incomplete")
         earlier = datetime.fromisoformat(str(previous["started_at"]).replace("Z", "+00:00"))
-        wait_days = 4 if rendered.attempt_number == 1 else 7
+        wait_days = FOLLOWUP_WAIT_BUSINESS_DAYS
         if _business_days_between(earlier, now) < wait_days:
             raise ValidationError("follow-up interval has not elapsed")
     _validate_frozen_manifest(action)
     _validate_text(action, rendered)
+    _validate_claim_support(connection, action, rendered)
     expected_rendering = render_message(connection, action, rendered.attempt_number)
     if rendered != expected_rendering:
         raise ValidationError("rendered message differs from the deterministic approved template")
@@ -940,7 +1017,7 @@ def parser() -> argparse.ArgumentParser:
     dry.set_defaults(handler=cmd_dry_run)
     execute = commands.add_parser("execute", help="Execute only a pre-approved database action")
     execute.add_argument("--action-id", type=int, required=True)
-    execute.add_argument("--attempt", type=int, default=0, choices=(0, 1, 2))
+    execute.add_argument("--attempt", type=int, default=0, choices=(0, 1))
     execute.set_defaults(handler=cmd_execute)
     return root
 

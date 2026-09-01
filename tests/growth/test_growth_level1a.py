@@ -181,12 +181,58 @@ class Level1ATests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "interval"):
             validate_action(self.connection, action, followup, live=False, verify_page=False)
 
-    def test_unknown_claim_is_rejected(self):
+    def test_tampered_claim_keys_are_caught_by_the_manifest_freeze(self):
         action_id = self.action_ids[1]
         self.connection.execute("UPDATE level1a_actions SET allowed_claim_keys_json='[\"invented\"]' WHERE id=?", (action_id,))
         action = load_action(self.connection, action_id)
+        message = render_message(self.connection, action)
+        with self.assertRaisesRegex(ValidationError, "allowed_claim_keys_json"):
+            validate_action(self.connection, action, message, live=False, verify_page=False)
+
+    def test_unknown_claim_is_rejected(self):
+        from growth_level1a import _validate_claim_support
+
+        action_id = self.action_ids[1]
+        self.connection.execute("UPDATE level1a_actions SET allowed_claim_keys_json='[\"invented\"]' WHERE id=?", (action_id,))
+        action = load_action(self.connection, action_id)
+        message = render_message(self.connection, action)
         with self.assertRaisesRegex(ValidationError, "unknown approved claim"):
-            render_message(self.connection, action)
+            _validate_claim_support(self.connection, action, message)
+
+    def test_claim_without_registered_wording_is_rejected(self):
+        from growth_level1a import _validate_claim_support
+
+        action_id = self.action_ids[1]
+        self.connection.execute(
+            "UPDATE level1a_actions SET allowed_claim_keys_json='[\"unbranded_documents\"]' WHERE id=?",
+            (action_id,),
+        )
+        action = load_action(self.connection, action_id)
+        message = render_message(self.connection, action)
+        with self.assertRaisesRegex(ValidationError, "approved wording for claim"):
+            _validate_claim_support(self.connection, action, message)
+
+    def test_approved_wording_is_present_in_every_initial_message(self):
+        from growth_level1a import _validate_claim_support
+
+        for action_id in self.action_ids:
+            action = load_action(self.connection, action_id)
+            _validate_claim_support(self.connection, action, render_message(self.connection, action))
+            _validate_claim_support(self.connection, action, render_message(self.connection, action, 1))
+
+    def test_only_one_follow_up_is_renderable(self):
+        action = load_action(self.connection, self.action_ids[1])
+        self.assertEqual(int(action["max_followups"]), 1)
+        followup = render_message(self.connection, action, 1)
+        self.assertTrue(followup.subject.startswith("Re: "))
+        self.assertIn(action["target_url"], followup.body)
+        with self.assertRaisesRegex(ValidationError, "exceeds the approved follow-up limit"):
+            render_message(self.connection, action, 2)
+
+    def test_follow_up_waits_five_business_days(self):
+        from growth_level1a import FOLLOWUP_WAIT_BUSINESS_DAYS
+
+        self.assertEqual(FOLLOWUP_WAIT_BUSINESS_DAYS, 5)
 
     def test_unsupported_freeform_claim_is_rejected(self):
         action, message = self.action_and_message()
