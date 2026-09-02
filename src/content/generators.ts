@@ -430,6 +430,37 @@ export const generators: Record<string, GeneratorContent> = {
     sections: [
       { heading: 'An invoice template you can reuse', paragraphs: ['Unlike a static word-processing file, this browser template handles line calculations, totals and currency formatting while retaining your business details and common contacts locally. Create a new numbered document whenever you need one.'] },
       { heading: 'How to fill in the template', paragraphs: ['Add accurate seller and customer details, choose dates and currency, itemize what was supplied, then check discounts, taxes, shipping and the final amount. Finish with payment instructions and terms that match your agreement.'], bullets: ['Add your logo and business identity', 'Enter customer and invoice details', 'Itemize products or services', 'Review calculations and preview', 'Save, print or download PDF'] },
+      {
+        heading: 'A filled-in template, worked through',
+        paragraphs: [
+          'The template accepts fractional quantities, so hours, months, sessions and units can sit on the same invoice. Below is one filled in, with every figure shown so you can check it against your own.',
+          'Each line amount is quantity multiplied by rate. Tax is worked out on each line and rounded there, and the line taxes are then added together to give the tax on the document.',
+        ],
+        table: {
+          caption: 'Invoice INV-2026-0244 — consulting and training, tax 6.5%',
+          columns: ['Description', 'Qty', 'Rate', 'Amount', 'Tax'],
+          rows: [
+            ['Consulting', '7.25 hrs', '$135.00', '$978.75', '$63.62'],
+            ['Support retainer', '1 month', '$450.00', '$450.00', '$29.25'],
+            ['Training session', '3', '$187.50', '$562.50', '$36.56'],
+            ['Printed handbooks', '14', '$12.95', '$181.30', '$11.78'],
+          ],
+          total: [['Subtotal', '$2,172.55'], ['Tax at 6.5%, added up from the lines', '$141.21'], ['Total', '$2,313.76']],
+          note: 'The tax figure is $63.62 + $29.25 + $36.56 + $11.78 = $141.21. Applying 6.5% to the $2,172.55 subtotal in a single step instead gives $141.22, because rounding once at the end is not the same as rounding on each line. A cent either way is normal and both methods are defensible; what matters is that the invoice is internally consistent, which is exactly where a hand-totalled template usually slips.',
+        },
+      },
+      {
+        heading: 'Which kind of invoice template do you need?',
+        paragraphs: [
+          '“Invoice template” means four fairly different things, and the one you want depends on how often you invoice and how much arithmetic you are willing to do yourself.',
+        ],
+        terms: [
+          { term: 'Word-processing template', definition: 'A .docx or Google Docs layout you overwrite by hand. It gives you a presentable document and nothing else: every subtotal, tax figure and total is yours to calculate and re-check on each invoice. Reasonable for a handful of invoices a year.' },
+          { term: 'Spreadsheet template', definition: 'An .xlsx or Sheets file with formulas doing the totals. Faster, until the formulas are edited: a total that sums a fixed range quietly ignores rows added below it, which is the classic way a spreadsheet invoice goes out short.' },
+          { term: 'Fillable PDF', definition: 'A fixed form with typeable fields. It prints exactly as designed and cannot be reflowed, so you are stuck with the number of line rows the form provides, and most such forms do not calculate anything.' },
+          { term: 'Browser template', definition: 'The editor on this page. It totals as you type, keeps your business details, customers and items for reuse on this device, and generates the PDF here in the browser with no signup and no file to keep versions of.' },
+        ],
+      },
       { heading: 'Keep records safely', paragraphs: ['Documents persist only in this browser, so export backups as part of your normal recordkeeping. Clearing browser site data removes the saved workspace. The generated PDF can be stored or shared wherever you normally manage business records.'] },
     ],
     related: [{ href: '/', label: 'Invoice Generator', text: 'Use the primary invoice-generation page.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use project and deposit fields for contract work.' }, { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Itemize construction labor and materials.' }],
