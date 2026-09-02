@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '16')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '17')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -962,3 +962,68 @@ CREATE TABLE IF NOT EXISTS outreach_calibration (
                         'REDUCE_EMAIL_ALLOCATION', 'STOP_CHANNEL', 'CONTINUE_CALIBRATION')),
   rationale           TEXT NOT NULL DEFAULT ''
 );
+
+
+-- Every unattended Claude Code invocation, successful or not. This is the
+-- ledger the weekly review uses to answer "is waking the reasoning agent
+-- producing enough growth value to justify what it costs?", so a run that
+-- decided to do nothing is as important to record as one that shipped.
+CREATE TABLE IF NOT EXISTS claude_runs (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at     TEXT NOT NULL,
+  finished_at    TEXT,
+  run_type       TEXT NOT NULL CHECK (run_type IN (
+                   'auto_opportunity', 'weekly_strategist', 'fixture')),
+  opportunity_key TEXT,
+  opportunity_id INTEGER,
+  target_url     TEXT,
+  model          TEXT NOT NULL DEFAULT '',
+  session_id     TEXT,
+  outcome        TEXT NOT NULL CHECK (outcome IN (
+                   'changed', 'no_action', 'refused', 'validation_failed',
+                   'deploy_failed', 'verify_failed', 'rolled_back', 'timeout',
+                   'blocked_auth', 'error')),
+  num_turns      INTEGER,
+  cost_usd       REAL,
+  duration_ms    INTEGER,
+  files_changed  TEXT NOT NULL DEFAULT '',
+  commit_sha     TEXT,
+  ci_run_id      TEXT,
+  deployed       INTEGER NOT NULL DEFAULT 0 CHECK (deployed IN (0, 1)),
+  summary        TEXT NOT NULL DEFAULT '',
+  error          TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_claude_runs_started ON claude_runs(started_at DESC);
+
+-- One row per unattended orchestrator run. Written whether or not anything
+-- happened, so a silent week is distinguishable from a scheduler that stopped.
+CREATE TABLE IF NOT EXISTS autonomous_runs (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at    TEXT NOT NULL,
+  finished_at   TEXT,
+  trigger       TEXT NOT NULL DEFAULT 'scheduler',
+  decision      TEXT NOT NULL CHECK (decision IN (
+                  'no_action', 'claude_invoked', 'deterministic_only',
+                  'budget_exhausted', 'locked', 'blocked', 'error')),
+  reason        TEXT NOT NULL DEFAULT '',
+  claude_run_id INTEGER REFERENCES claude_runs(id),
+  steps_json    TEXT NOT NULL DEFAULT '{}'
+);
+
+-- Things a person actually needs to see. Routine successful runs never land
+-- here; the point of the table is that its being empty is meaningful.
+CREATE TABLE IF NOT EXISTS escalations (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  raised_at    TEXT NOT NULL,
+  kind         TEXT NOT NULL,
+  severity     TEXT NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+  subject      TEXT NOT NULL,
+  detail       TEXT NOT NULL DEFAULT '',
+  fingerprint  TEXT NOT NULL UNIQUE,
+  occurrences  INTEGER NOT NULL DEFAULT 1,
+  last_seen_at TEXT NOT NULL,
+  acknowledged INTEGER NOT NULL DEFAULT 0 CHECK (acknowledged IN (0, 1)),
+  resolved_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_escalations_open
+  ON escalations(resolved_at, severity, last_seen_at DESC);

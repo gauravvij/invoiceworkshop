@@ -160,6 +160,16 @@ def apply_schema(connection: sqlite3.Connection) -> None:
             connection.execute(
                 f"ALTER TABLE growth_opportunities ADD COLUMN {column} {definition}"
             )
+    if growth_columns:
+        for column, definition in (
+            ("attempt_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("last_attempted_at", "TEXT"),
+            ("last_attempt_outcome", "TEXT"),
+        ):
+            if column not in growth_columns:
+                connection.execute(
+                    f"ALTER TABLE growth_opportunities ADD COLUMN {column} {definition}"
+                )
     audit_sql_row = connection.execute(
         "SELECT sql FROM sqlite_master WHERE type='table' AND name='level1a_action_audit'"
     ).fetchone()
@@ -198,6 +208,42 @@ def apply_schema(connection: sqlite3.Connection) -> None:
               ON level1a_action_audit(action_id, started_at DESC);
             """
         )
+    connection.commit()
+
+
+def record_escalation(connection, *, kind: str, severity: str, subject: str,
+                      detail: str = "", fingerprint: str | None = None) -> int:
+    """Raise something a person genuinely needs to see.
+
+    Repeats collapse onto one row by fingerprint. A scheduler that fails every
+    night should be one item with a count, not thirty items nobody reads.
+    """
+    now = utc_now()
+    key = fingerprint or f"{kind}:{subject}"
+    connection.execute(
+        """INSERT INTO escalations
+             (raised_at, kind, severity, subject, detail, fingerprint, last_seen_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(fingerprint) DO UPDATE SET
+             occurrences=escalations.occurrences+1,
+             last_seen_at=excluded.last_seen_at,
+             detail=excluded.detail,
+             severity=excluded.severity,
+             resolved_at=NULL""",
+        (now, kind, severity, subject, detail, key, now),
+    )
+    connection.commit()
+    return int(connection.execute(
+        "SELECT id FROM escalations WHERE fingerprint=?", (key,)
+    ).fetchone()[0])
+
+
+def resolve_escalation(connection, fingerprint: str) -> None:
+    """Close an escalation once the condition it described has cleared."""
+    connection.execute(
+        "UPDATE escalations SET resolved_at=? WHERE fingerprint=? AND resolved_at IS NULL",
+        (utc_now(), fingerprint),
+    )
     connection.commit()
 
 
