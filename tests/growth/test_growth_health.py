@@ -113,6 +113,22 @@ class EscalationTests(Fixture):
         self.assertIn("health_check_error", kinds)
         self.assertIn("collection_stale", kinds)
 
+    def test_an_escalation_raised_elsewhere_is_not_silently_closed(self):
+        """A refused change describes something that happened; the watchdog does
+        not re-derive it and so must not decide it has cleared."""
+        from growth_common import record_escalation
+        record_escalation(self.connection, kind="auto_policy_refusal", severity="warning",
+                          subject="AUTO change refused", detail="too many lines",
+                          fingerprint="refusal:example")
+        self.fresh_collection()
+        with mock.patch.object(health, "check_scheduler", return_value=[]), \
+             mock.patch.object(health, "check_locks", return_value=[]):
+            health.run(self.connection)
+        still_open = self.connection.execute(
+            "SELECT COUNT(*) FROM escalations WHERE fingerprint='refusal:example' "
+            "AND resolved_at IS NULL").fetchone()[0]
+        self.assertEqual(still_open, 1)
+
     def test_the_first_backlink_is_a_milestone_worth_reporting(self):
         self.connection.execute(
             """INSERT INTO placements (placement_url, link_target, status)

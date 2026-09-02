@@ -159,6 +159,12 @@ CHECKS = (
 )
 
 
+# Only these are re-derived from live state every run, so only these may be
+# auto-resolved when they stop being raised.
+HEALTH_OWNED_KINDS = ("scheduler_down", "collection_stale", "stale_lock",
+                      "worker_failing", "health_check_error")
+
+
 def run(connection) -> list[dict]:
     problems: list[dict] = []
     for name, check in CHECKS:
@@ -172,9 +178,16 @@ def run(connection) -> list[dict]:
     raised = {problem["fingerprint"] for problem in problems}
     for problem in problems:
         record_escalation(connection, **problem)
-    # A condition that has cleared should stop being reported.
+    # A condition that has cleared should stop being reported -- but only the
+    # conditions this module actually re-checks. Escalations raised elsewhere,
+    # such as a refused change or a rolled-back deployment, describe something
+    # that happened rather than something still true, and closing those here
+    # would quietly discard them before anyone saw them.
+    placeholders = ",".join("?" * len(HEALTH_OWNED_KINDS))
     for row in connection.execute(
-        "SELECT fingerprint FROM escalations WHERE resolved_at IS NULL AND kind<>'milestone'"
+        f"""SELECT fingerprint FROM escalations
+             WHERE resolved_at IS NULL AND kind IN ({placeholders})""",
+        HEALTH_OWNED_KINDS,
     ).fetchall():
         if row["fingerprint"] not in raised:
             resolve_escalation(connection, row["fingerprint"])
