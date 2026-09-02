@@ -190,7 +190,7 @@ def invoke_claude(prompt: str, *, model: str = MODEL, timeout: int = CLAUDE_TIME
                   tools: str = "Read,Edit,Grep,Glob") -> dict:
     """Run Claude Code headlessly with the smallest tool set that can do the job."""
     command = [
-        str(CLAUDE), "-p", prompt,
+        str(CLAUDE), "-p",
         "--output-format", "json",
         "--model", model,
         "--fallback-model", FALLBACK_MODEL,
@@ -210,9 +210,12 @@ def invoke_claude(prompt: str, *, model: str = MODEL, timeout: int = CLAUDE_TIME
     environment["CI"] = "1"
     started = time.monotonic()
     try:
+        # The prompt goes in on stdin rather than argv: a scheduled run's command
+        # line is visible in the process table, and the prompt carries the
+        # growth evidence for the page being changed.
         completed = subprocess.run(command, cwd=ROOT, check=False, capture_output=True,
                                    text=True, timeout=timeout, env=environment,
-                                   stdin=subprocess.DEVNULL)
+                                   input=prompt)
     except subprocess.TimeoutExpired:
         return {"outcome": "timeout", "duration_ms": int((time.monotonic() - started) * 1000),
                 "error": f"claude did not finish within {timeout}s"}
@@ -453,7 +456,7 @@ def execute(connection, opportunity: dict, *, fixture: bool = False) -> dict:
 
     # --- the change exists; now everything the model may not do ---------------
     try:
-        checks = policy.validate_change(changed, policy.working_diff())
+        checks = policy.validate_change(changed, policy.working_diff(changed))
     except policy.PolicyRefusal as refusal:
         _revert_working_tree(changed)
         run = {**base, **usage, "outcome": "refused", "files_changed": ",".join(changed),
@@ -622,6 +625,10 @@ def main() -> None:
     run.add_argument("--opportunity-id", type=int)
     run.add_argument("--fixture", action="store_true",
                      help="Exercise the whole path against a fixture; changes nothing")
+    run.add_argument("--override-budget", action="store_true",
+                     help="Run a named opportunity even though today's budget is used. "
+                          "Only a person directing a run may pass this; the scheduled "
+                          "path never does, so unattended runs cannot exceed the cap.")
     args = parser.parse_args()
 
     connection = connect_db(database_path(args.db))
@@ -653,6 +660,9 @@ def main() -> None:
                 raise SystemExit(f"no opportunity {args.opportunity_id}")
             opportunity = dict(row)
             blocked = policy.disqualify(connection, opportunity)
+            if not blocked and not args.override_budget and policy.runs_today(connection) >= policy.MAX_RUNS_PER_DAY:
+                blocked = ("today's unattended run budget is used; pass --override-budget "
+                           "to direct a run anyway")
             if blocked:
                 summary = {"decision": "no_action", "reason": blocked, "claude_invoked": False}
                 _record_run(connection, started, summary)

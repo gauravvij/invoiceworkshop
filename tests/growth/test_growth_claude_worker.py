@@ -86,6 +86,17 @@ class InvocationTests(unittest.TestCase):
         _, command = self._invoke(completed)
         self.assertEqual(command[command.index("--permission-mode") + 1], "acceptEdits")
 
+    def test_the_prompt_is_not_exposed_in_the_process_table(self):
+        """A scheduled run's argv is world-readable; the prompt carries evidence."""
+        completed = mock.Mock(returncode=0, stdout=envelope({"decision": "NO_ACTION",
+                                                             "summary": "s", "rationale": "r"}),
+                              stderr="")
+        with mock.patch("subprocess.run", return_value=completed) as runner:
+            worker.invoke_claude("SECRET-EVIDENCE-MARKER")
+        command = runner.call_args[0][0]
+        self.assertNotIn("SECRET-EVIDENCE-MARKER", " ".join(command))
+        self.assertEqual(runner.call_args.kwargs["input"], "SECRET-EVIDENCE-MARKER")
+
     def test_a_timeout_is_reported_rather_than_raised(self):
         import subprocess
         with mock.patch("subprocess.run",
@@ -292,6 +303,19 @@ class ExecutionTests(unittest.TestCase):
             _revert_working_tree=revert,
         ):
             return worker.execute(self.connection, dict(OPPORTUNITY), fixture=True)
+
+
+class BudgetTests(unittest.TestCase):
+    def test_the_scheduled_path_cannot_exceed_the_daily_cap(self):
+        source = (SCRIPTS / "growth_claude_worker.py").read_text(encoding="utf-8")
+        # The unattended branch goes through select_candidate, which counts the
+        # day's runs; only an explicitly directed run may pass the override.
+        self.assertIn("policy.select_candidate(connection)", source)
+        self.assertIn("args.override_budget", source)
+        directed = source.index("args.opportunity_id:")
+        scheduled = source.index("candidate = policy.select_candidate(connection)")
+        self.assertLess(directed, scheduled)
+        self.assertNotIn("override_budget", source[scheduled:])
 
 
 class NoPrivilegeEscalationTests(unittest.TestCase):

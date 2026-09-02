@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -122,6 +123,45 @@ def seed_opportunity(connection, **overrides) -> int:
         f"INSERT INTO growth_opportunities ({columns}) VALUES ({placeholders})", row)
     connection.commit()
     return int(cursor.lastrowid)
+
+
+class ScopedDiffTests(unittest.TestCase):
+    """The files being judged and the diff being measured must be the same set.
+
+    They were not: the diff covered the whole working tree, so unrelated
+    untracked files in the checkout counted toward the line budget and a modest
+    edit was refused for being two thousand lines long.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=self.root, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=self.root, check=True)
+        (self.root / "tracked.ts").write_text("one\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=self.root, check=True)
+        subprocess.run(["git", "commit", "-qm", "base"], cwd=self.root, check=True)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_unrelated_untracked_files_are_not_counted(self):
+        (self.root / "tracked.ts").write_text("one\ntwo\n", encoding="utf-8")
+        (self.root / "notes.md").write_text("\n".join(str(n) for n in range(900)),
+                                            encoding="utf-8")
+        diff = policy.working_diff(["tracked.ts"], cwd=self.root)
+        self.assertIn("+two", diff)
+        self.assertNotIn("+899", diff)
+        policy.validate_change(["src/content/generators.ts"], diff)
+
+    def test_a_genuinely_new_allowed_file_is_still_measured(self):
+        (self.root / "guard.spec.ts").write_text("test('x', () => {});\n", encoding="utf-8")
+        diff = policy.working_diff(["guard.spec.ts"], cwd=self.root)
+        self.assertIn("+test('x'", diff)
+
+    def test_no_paths_means_no_diff(self):
+        self.assertEqual(policy.working_diff([], cwd=self.root), "")
 
 
 class EligibilityTests(unittest.TestCase):

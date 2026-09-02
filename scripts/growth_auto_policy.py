@@ -112,23 +112,35 @@ def changed_files(cwd: Path | None = None) -> list[str]:
     return sorted(files)
 
 
-def working_diff(cwd: Path | None = None) -> str:
+def working_diff(paths: list[str], cwd: Path | None = None) -> str:
+    """The diff for exactly these paths.
+
+    Scoped deliberately. An earlier version diffed the whole working tree, so
+    unrelated untracked files in the checkout counted toward the change budget
+    and a small edit was refused for being two thousand lines long. The set of
+    files being judged and the set being measured have to be the same set.
+    """
     root = cwd or ROOT
-    tracked = subprocess.run(["git", "diff"], cwd=root, check=True,
-                             capture_output=True, text=True).stdout
-    untracked = ""
-    for path in changed_files(root):
-        full = root / path
-        if not (root / ".git").exists() or not full.is_file():
-            continue
-        known = subprocess.run(["git", "ls-files", "--error-unmatch", path], cwd=root,
+    if not paths:
+        return ""
+    tracked, untracked = [], ""
+    for path in paths:
+        known = subprocess.run(["git", "ls-files", "--error-unmatch", "--", path], cwd=root,
                                check=False, capture_output=True, text=True)
-        if known.returncode != 0:
+        if known.returncode == 0:
+            tracked.append(path)
+            continue
+        full = root / path
+        if full.is_file():
             body = full.read_text(encoding="utf-8", errors="ignore")
             untracked += f"\n+++ b/{path}\n" + "".join(
                 f"+{line}\n" for line in body.splitlines()
             )
-    return tracked + untracked
+    diff = ""
+    if tracked:
+        diff = subprocess.run(["git", "diff", "--", *tracked], cwd=root, check=True,
+                              capture_output=True, text=True).stdout
+    return diff + untracked
 
 
 def validate_change(files: list[str], diff: str) -> dict:
