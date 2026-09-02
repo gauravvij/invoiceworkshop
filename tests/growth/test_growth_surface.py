@@ -21,7 +21,7 @@ def family(**overrides) -> dict:
             surface._d("tax_identifier", "different registration number"),
             surface._d("currency", "different currency"),
         ],
-        "product_change": "locale preset",
+        "product_change": "locale preset", "build_scope": "content_only",
     }
     base.update(overrides)
     return base
@@ -31,6 +31,16 @@ class GateTests(unittest.TestCase):
     def test_a_family_with_real_functional_differences_is_admitted(self):
         gate = surface.check(family(), taken=set())
         self.assertEqual(gate["functional"], 3)
+
+    def test_a_family_must_say_whether_its_capability_exists(self):
+        """A family needing a product change the worker cannot make is queued,
+        not offered to it, so the scope has to be stated."""
+        with self.assertRaises(surface.GateRefusal) as raised:
+            surface.check(family(build_scope=None), taken=set())
+        self.assertIn("build scope", str(raised.exception))
+
+    def test_the_scope_is_reported_so_the_executor_can_filter_on_it(self):
+        self.assertEqual(surface.check(family(), taken=set())["build_scope"], "content_only")
 
     def test_wording_alone_is_refused(self):
         """The whole point: a page family that only renames things is scaled

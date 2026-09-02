@@ -46,6 +46,17 @@ PRESENTATIONAL_KINDS = frozenset({"heading", "description", "copy", "example"})
 MIN_DIFFERENTIATORS = 3
 MIN_FUNCTIONAL = 2
 
+# Whether the product change a family depends on already exists.
+#
+#   content_only -- the capability is shipped, so the page is an entry in
+#                   generators.ts and the unattended worker can build it inside
+#                   the AUTO envelope.
+#   product      -- the capability does not exist yet and lives outside that
+#                   envelope (document kinds, totals logic, storage). Admitted,
+#                   queued, and deliberately not offered to the worker, which
+#                   would only be refused and would waste the run.
+BUILD_SCOPES = ("content_only", "product")
+
 
 class GateRefusal(Exception):
     """The family does not earn its pages. Recorded, not worked around."""
@@ -61,7 +72,7 @@ def _d(kind: str, detail: str) -> dict:
 
 LOCALES = [
     {
-        "key": "locale-gb", "name": "UK VAT invoice", "route": "/vat-invoice-template-uk/",
+        "key": "locale-gb", "build_scope": "content_only", "name": "UK VAT invoice", "route": "/vat-invoice-template-uk/",
         "demand": "SERP for 'vat invoice template uk' returns UK-specific templates from "
                   "Sage, FreeAgent, GOV.UK guidance and several template libraries",
         "differentiators": [
@@ -76,7 +87,7 @@ LOCALES = [
                           "requirement, currency, date format, document title",
     },
     {
-        "key": "locale-in", "name": "India GST invoice", "route": "/gst-invoice-format-india/",
+        "key": "locale-in", "build_scope": "product", "name": "India GST invoice", "route": "/gst-invoice-format-india/",
         "demand": "SERP for 'gst invoice format india free' returns several dedicated GST "
                   "generators and bill-format downloads; demand is large and specific",
         "differentiators": [
@@ -92,7 +103,7 @@ LOCALES = [
                           "intra/inter-state GST split in the totals calculation",
     },
     {
-        "key": "locale-au", "name": "Australia tax invoice", "route": "/tax-invoice-template-australia/",
+        "key": "locale-au", "build_scope": "content_only", "name": "Australia tax invoice", "route": "/tax-invoice-template-australia/",
         "demand": "SERP for 'tax invoice template australia' returns ATO guidance and "
                   "Australian-specific generators",
         "differentiators": [
@@ -105,7 +116,7 @@ LOCALES = [
         "product_change": "locale preset with ABN validation and the required document title",
     },
     {
-        "key": "locale-ca", "name": "Canada GST/HST invoice", "route": "/gst-hst-invoice-template-canada/",
+        "key": "locale-ca", "build_scope": "content_only", "name": "Canada GST/HST invoice", "route": "/gst-hst-invoice-template-canada/",
         "demand": "SERP for 'gst hst invoice template canada' returns CRA guidance and "
                   "province-specific templates",
         "differentiators": [
@@ -117,7 +128,7 @@ LOCALES = [
         "product_change": "locale preset plus a province table driving the tax rate",
     },
     {
-        "key": "locale-ae", "name": "UAE VAT invoice", "route": "/vat-invoice-template-uae/",
+        "key": "locale-ae", "build_scope": "content_only", "name": "UAE VAT invoice", "route": "/vat-invoice-template-uae/",
         "demand": "SERP for 'vat invoice format uae' returns FTA guidance and UAE generators",
         "differentiators": [
             _d("tax_computation", "VAT fixed at 5%"),
@@ -128,7 +139,7 @@ LOCALES = [
         "product_change": "locale preset with TRN validation",
     },
     {
-        "key": "locale-za", "name": "South Africa VAT invoice", "route": "/vat-invoice-template-south-africa/",
+        "key": "locale-za", "build_scope": "content_only", "name": "South Africa VAT invoice", "route": "/vat-invoice-template-south-africa/",
         "demand": "SERP for 'vat invoice template south africa' returns SARS guidance and "
                   "local templates",
         "differentiators": [
@@ -140,7 +151,7 @@ LOCALES = [
         "product_change": "locale preset with SARS VAT number validation",
     },
     {
-        "key": "locale-eu-de", "name": "Germany VAT (USt) invoice", "route": "/rechnung-vorlage-vat-germany/",
+        "key": "locale-eu-de", "build_scope": "content_only", "name": "Germany VAT (USt) invoice", "route": "/rechnung-vorlage-vat-germany/",
         "demand": "SERP for 'rechnung vorlage kleinunternehmer' shows heavy German demand "
                   "for invoice templates with USt handling",
         "differentiators": [
@@ -152,7 +163,7 @@ LOCALES = [
         "product_change": "locale preset with German tax identifier and date format",
     },
     {
-        "key": "locale-ie", "name": "Ireland VAT invoice", "route": "/vat-invoice-template-ireland/",
+        "key": "locale-ie", "build_scope": "content_only", "name": "Ireland VAT invoice", "route": "/vat-invoice-template-ireland/",
         "demand": "SERP for 'vat invoice template ireland' returns Revenue guidance and "
                   "Irish templates",
         "differentiators": [
@@ -164,7 +175,7 @@ LOCALES = [
         "product_change": "locale preset with Irish rate table",
     },
     {
-        "key": "locale-sg", "name": "Singapore GST invoice", "route": "/gst-invoice-template-singapore/",
+        "key": "locale-sg", "build_scope": "content_only", "name": "Singapore GST invoice", "route": "/gst-invoice-template-singapore/",
         "demand": "SERP for 'gst invoice template singapore' returns IRAS guidance and "
                   "Singapore templates",
         "differentiators": [
@@ -176,7 +187,7 @@ LOCALES = [
         "product_change": "locale preset with UEN field",
     },
     {
-        "key": "locale-nz", "name": "New Zealand GST invoice", "route": "/gst-invoice-template-new-zealand/",
+        "key": "locale-nz", "build_scope": "content_only", "name": "New Zealand GST invoice", "route": "/gst-invoice-template-new-zealand/",
         "demand": "SERP for 'gst invoice template nz' returns IRD guidance and NZ templates",
         "differentiators": [
             _d("tax_computation", "GST fixed at 15%"),
@@ -190,7 +201,7 @@ LOCALES = [
 
 DOCUMENTS = [
     {
-        "key": "doc-receipt", "name": "Receipt generator", "route": "/receipt-generator/",
+        "key": "doc-receipt", "build_scope": "product", "name": "Receipt generator", "route": "/receipt-generator/",
         "demand": "SERP for 'free receipt maker' is a crowded commercial market -- "
                   "MakeReceipt, MakeMyReceipt, Portant -- which is evidence of real volume",
         "differentiators": [
@@ -206,7 +217,7 @@ DOCUMENTS = [
                           "has no page; give it payment fields and a paid-status total block",
     },
     {
-        "key": "doc-credit-note", "name": "Credit note generator", "route": "/credit-note-generator/",
+        "key": "doc-credit-note", "build_scope": "product", "name": "Credit note generator", "route": "/credit-note-generator/",
         "demand": "SERP for 'credit note template free' returns dedicated generators from "
                   "Zoho, SumUp and several template libraries",
         "differentiators": [
@@ -221,7 +232,7 @@ DOCUMENTS = [
                           "sign-inverted totals",
     },
     {
-        "key": "doc-delivery-note", "name": "Delivery note / packing slip",
+        "key": "doc-delivery-note", "build_scope": "product", "name": "Delivery note / packing slip",
         "route": "/delivery-note-template/",
         "demand": "SERP for 'delivery note template free' returns Word/Excel downloads and "
                   "one or two generators -- a weakly served market",
@@ -237,7 +248,7 @@ DOCUMENTS = [
                           "shipped/ordered quantity pair",
     },
     {
-        "key": "doc-timesheet-invoice", "name": "Timesheet invoice",
+        "key": "doc-timesheet-invoice", "build_scope": "product", "name": "Timesheet invoice",
         "route": "/timesheet-invoice-generator/",
         "demand": "SERP for 'timesheet invoice template' returns contractor and agency "
                   "templates; strong recurring intent among hourly workers",
@@ -254,7 +265,7 @@ DOCUMENTS = [
 
 UTILITIES = [
     {
-        "key": "util-late-payment", "name": "Late payment interest calculator",
+        "key": "util-late-payment", "build_scope": "product", "name": "Late payment interest calculator",
         "route": "/late-payment-interest-calculator/",
         "demand": "Statutory late-payment interest is the most cited freelancer problem in "
                   "the resource pages our own outreach research surfaced",
@@ -272,7 +283,7 @@ UTILITIES = [
 
 TRADES_PLACEHOLDER = [
     {
-        "key": "trade-generic-copy-only", "name": "Trade pages, wording only",
+        "key": "trade-generic-copy-only", "build_scope": "content_only", "name": "Trade pages, wording only",
         "route": "/plumber-invoice-template/",
         "demand": "'plumber invoice template' has genuine search demand",
         "differentiators": [
@@ -330,7 +341,11 @@ def check(family: dict, *, taken: set[str]) -> dict:
         raise GateRefusal("no product change named, so nothing would actually differ")
     if family.get("route") in taken:
         raise GateRefusal(f"route {family['route']} is already served")
+    scope = family.get("build_scope")
+    if scope not in BUILD_SCOPES:
+        raise GateRefusal(f"build scope must be one of {BUILD_SCOPES}, got {scope!r}")
     return {
+        "build_scope": scope,
         "differentiators": len(differentiators),
         "functional": len(functional),
         "functional_kinds": sorted({d["kind"] for d in functional}),
@@ -342,9 +357,16 @@ def evaluate(connection: sqlite3.Connection) -> dict:
     """Run every catalogued family through the gate and record the verdicts."""
     now = utc_now()
     taken = existing_routes(connection)
-    admitted, refused = [], []
+    built = {row["family_key"] for row in connection.execute(
+        "SELECT family_key FROM page_families WHERE status='built'")}
+    admitted, refused, already = [], [], []
     for dimension, families in CATALOG.items():
         for family in families:
+            # A family that already shipped is not a candidate; re-testing it
+            # would report its own route as a duplicate of itself.
+            if family["key"] in built:
+                already.append(family["key"])
+                continue
             try:
                 gate = check(family, taken=taken)
                 status, reason = "admitted", None
@@ -384,7 +406,7 @@ def evaluate(connection: sqlite3.Connection) -> dict:
                 )
     connection.commit()
     return {
-        "admitted": admitted, "refused": refused,
+        "admitted": admitted, "refused": refused, "already_built": already,
         "admitted_count": len(admitted), "refused_count": len(refused),
         "note": ("Refusals are permanent for as long as the family cannot state two "
                  "functional differences. A page family that only changes wording is "

@@ -246,11 +246,15 @@ def next_surface_page(connection: sqlite3.Connection) -> dict | None:
     if pages_this_week(connection) >= weekly_page_quota(connection):
         return None
     try:
+        # Only families whose product capability already exists. A family that
+        # needs a new document kind is real work, but it lives outside the AUTO
+        # envelope, so offering it here would spend a run on a certain refusal.
         row = connection.execute(
             """SELECT c.slug, c.title, c.route, c.differentiators, f.dimension,
                       f.product_change, f.demand_evidence
                  FROM page_candidates c JOIN page_families f ON f.family_key=c.family_key
                 WHERE c.status='queued' AND f.status IN ('admitted','built')
+                  AND json_extract(f.gate_json, '$.build_scope') = 'content_only'
                 ORDER BY c.demand_score DESC, c.slug LIMIT 1""").fetchone()
     except sqlite3.Error:
         return None
