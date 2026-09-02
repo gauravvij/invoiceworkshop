@@ -42,3 +42,10 @@ fi
 # reallocation rather than waiting a day for the next daily run.
 "$PYTHON" scripts/growth_opportunities.py refresh
 "$PYTHON" scripts/growth_opportunities.py top --limit 10
+
+# The trajectory checkpoint. Measures the week against the plan written at the
+# start, and moves intensity: behind target raises the production quota, which
+# the executor reads the next time it runs. It never lowers the quality gate --
+# being behind is a reason to build more of what helps, never a reason to
+# publish something that does not.
+"$PYTHON" scripts/growth_trajectory.py checkpoint

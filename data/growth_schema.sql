@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '17')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '18')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1027,3 +1027,89 @@ CREATE TABLE IF NOT EXISTS escalations (
 );
 CREATE INDEX IF NOT EXISTS idx_escalations_open
   ON escalations(resolved_at, severity, last_seen_at DESC);
+
+
+-- The 90-day aggressive growth experiment.
+--
+-- One row per metric per week, written once when the experiment starts, so the
+-- targets cannot drift to meet whatever happened. Sessions are the destination;
+-- the leading indicators are what can actually be steered in the first weeks,
+-- when sessions are still rounding to zero.
+CREATE TABLE IF NOT EXISTS growth_targets (
+  experiment    TEXT NOT NULL,
+  week          INTEGER NOT NULL CHECK (week BETWEEN 0 AND 13),
+  week_ending   TEXT NOT NULL,
+  metric        TEXT NOT NULL CHECK (metric IN (
+                  'monthly_pageviews', 'daily_sessions', 'indexed_pages',
+                  'published_pages', 'ranking_queries', 'monthly_impressions',
+                  'referring_domains')),
+  target        REAL NOT NULL,
+  rationale     TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (experiment, week, metric)
+);
+
+-- What actually happened, measured, against what was planned. Written weekly and
+-- never edited: the record of a missed week is the point of the record.
+CREATE TABLE IF NOT EXISTS trajectory_checkpoints (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  experiment     TEXT NOT NULL,
+  week           INTEGER NOT NULL,
+  checked_at     TEXT NOT NULL,
+  metrics_json   TEXT NOT NULL DEFAULT '{}',
+  attainment     REAL NOT NULL DEFAULT 0,
+  intensity_before INTEGER NOT NULL,
+  intensity_after  INTEGER NOT NULL,
+  verdict        TEXT NOT NULL DEFAULT '',
+  UNIQUE (experiment, week)
+);
+
+-- Current intensity, and why. Raising this raises production quotas; it never
+-- lowers the quality bar, because the way to be below target is to build more
+-- of what genuinely helps, not more of what does not.
+CREATE TABLE IF NOT EXISTS intensity_state (
+  id            INTEGER PRIMARY KEY CHECK (id = 1),
+  level         INTEGER NOT NULL CHECK (level BETWEEN 1 AND 5),
+  since         TEXT NOT NULL,
+  reason        TEXT NOT NULL DEFAULT '',
+  updated_at    TEXT NOT NULL
+);
+
+-- A family is a whole dimension of pages -- one country, one trade, one document
+-- type -- and is admitted or refused as a unit. Admitting a family is the only
+-- decision that can create pages, so the quality test lives here rather than on
+-- the individual page, where it would be too late and too easy to wave through.
+CREATE TABLE IF NOT EXISTS page_families (
+  family_key      TEXT PRIMARY KEY,
+  dimension       TEXT NOT NULL CHECK (dimension IN ('locale', 'trade', 'document', 'utility')),
+  name            TEXT NOT NULL,
+  demand_evidence TEXT NOT NULL DEFAULT '',
+  differentiation TEXT NOT NULL DEFAULT '',
+  product_change  TEXT NOT NULL DEFAULT '',
+  gate_json       TEXT NOT NULL DEFAULT '{}',
+  status          TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN (
+                    'proposed', 'admitted', 'refused', 'built')),
+  refusal_reason  TEXT,
+  page_count      INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
+
+-- Individual pages inside an admitted family, with the evidence that each one
+-- is a different tool rather than the same tool under a different heading.
+CREATE TABLE IF NOT EXISTS page_candidates (
+  slug             TEXT PRIMARY KEY,
+  family_key       TEXT NOT NULL REFERENCES page_families(family_key),
+  title            TEXT NOT NULL,
+  route            TEXT NOT NULL,
+  demand_score     REAL NOT NULL DEFAULT 0,
+  differentiators  TEXT NOT NULL DEFAULT '',
+  status           TEXT NOT NULL DEFAULT 'queued' CHECK (status IN (
+                     'queued', 'building', 'shipped', 'rejected')),
+  rejection_reason TEXT,
+  shipped_at       TEXT,
+  commit_sha       TEXT,
+  created_at       TEXT NOT NULL,
+  updated_at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_page_candidates_family
+  ON page_candidates(family_key, status);

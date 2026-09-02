@@ -88,3 +88,10 @@ fi
 # Where the outreach calibration cohort has got to. Recommends; approves
 # nothing. Only the owner's signature can widen the channel.
 "$PYTHON" scripts/growth_allocation.py outreach-calibration
+
+# --- 6. the 90-day experiment ----------------------------------------------
+# Re-run the admission gate so any new family evidence is judged, then report
+# where the trajectory stands. Both are deterministic and cost nothing; the
+# gate refuses families rather than admitting them, so running it often is safe.
+"$PYTHON" scripts/growth_surface.py evaluate
+"$PYTHON" scripts/growth_trajectory.py status

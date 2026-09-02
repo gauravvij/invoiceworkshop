@@ -1,0 +1,16 @@
+---
+// One route for every page whose content is data rather than a file. Adding a
+// country or document family means adding an entry to `generators`, not a new
+// route: the sitemap, the canonical and the layout all follow from the data.
+import GeneratorPage from '@/components/GeneratorPage.astro';
+import { generators } from '@/content/generators';
+
+export function getStaticPaths() {
+  return Object.values(generators)
+    .filter((page) => page.dynamic)
+    .map((page) => ({ params: { slug: page.path.replace(/^\/|\/$/g, '') }, props: { page } }));
+}
+
+const { page } = Astro.props;
+---
+<GeneratorPage content={page} />

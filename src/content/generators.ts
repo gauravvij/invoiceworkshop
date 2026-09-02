@@ -4,6 +4,10 @@ export interface GeneratorContent {
   path: string;
   kind: DocumentKind;
   vertical?: 'construction' | 'contractor';
+  /** Country preset key from lib/documents/locales.ts. */
+  locale?: string;
+  /** Built by the shared [slug] route rather than its own page file. */
+  dynamic?: boolean;
   title: string;
   description: string;
   h1: string;
@@ -420,6 +424,249 @@ export const generators: Record<string, GeneratorContent> = {
       { heading: 'Keep the workflow connected', paragraphs: ['Start uncertain work with an estimate, record approved delivery in a work order, and convert the finished information into an invoice. Keeping each document’s role clear gives both parties a more understandable paper trail.'] },
     ],
     related: [{ href: '/estimate-generator/', label: 'Estimate Generator', text: 'Outline expected contractor costs.' }, { href: '/work-order-generator/', label: 'Work Order Generator', text: 'Record the approved scope.' }, { href: '/', label: 'Invoice Generator', text: 'Create a general business invoice.' }],
+  },
+  vatInvoiceUk: {
+    path: '/vat-invoice-template-uk/', kind: 'invoice', locale: 'gb', dynamic: true,
+    title: 'Free UK VAT Invoice Template & Generator | Invoice Workshop',
+    description: 'Create a UK VAT invoice free: VAT registration number, 20% / 5% / 0% rates, VAT shown separately, GBP and DD/MM/YYYY dates. No signup.',
+    h1: 'UK VAT Invoice Template', eyebrow: 'Set up for HMRC requirements',
+    intro: 'Build a VAT invoice with your VAT registration number, UK rates and the VAT shown as its own figure, then download a PDF. The editor is set to GBP and UK date format.',
+    reassurance: 'Your business and customer details stay in this browser.',
+    sections: [
+      {
+        heading: 'What makes an invoice a VAT invoice',
+        paragraphs: [
+          'A VAT invoice is a specific document, not an invoice that happens to include VAT. If you are VAT registered, HMRC expects a defined set of information, and a customer who is also registered needs it to reclaim the VAT you charged.',
+        ],
+        bullets: [
+          'A unique, sequential invoice number',
+          'Your business name, address and VAT registration number',
+          'The customer’s name and address',
+          'The time of supply (tax point) and the invoice date if different',
+          'A description of what was supplied, per line',
+          'The rate of VAT charged on each line',
+          'The total excluding VAT, the VAT amount, and the total including VAT',
+        ],
+      },
+      {
+        heading: 'A worked UK VAT invoice',
+        paragraphs: [
+          'Rates are per line, not per invoice, which matters more often than people expect. Printed leaflets and brochures are zero-rated in the UK while the design work that produced them is standard-rated, so one job can legitimately carry both.',
+        ],
+        table: {
+          caption: 'Invoice 2026-118 — design studio, mixed VAT rates',
+          columns: ['Description', 'Qty', 'Rate', 'VAT', 'Amount'],
+          rows: [
+            ['Brand and layout design', '12 hrs', '£65.00', '20%', '£780.00'],
+            ['Website hosting setup', '1', '£150.00', '20%', '£150.00'],
+            ['Printed leaflets, A5', '500', '£0.42', '0%', '£210.00'],
+          ],
+          total: [['Total excluding VAT', '£1,140.00'], ['VAT at 20% on £930.00', '£186.00'], ['Total including VAT', '£1,326.00']],
+          note: 'VAT is charged on the £930.00 of standard-rated work, not on the £1,140.00 total: £780.00 + £150.00 = £930.00, and 20% of that is £186.00. The zero-rated leaflets still appear on the invoice with their rate shown, because a zero rate is a rate and not an omission.',
+        },
+      },
+      {
+        heading: 'Rates, registration and thresholds',
+        paragraphs: [
+          'Three numbers do most of the work in UK VAT, and mixing them up is the common error.',
+        ],
+        terms: [
+          { term: 'Standard rate, 20%', definition: 'The default for most goods and services. This generator applies it to new lines unless you change the line.' },
+          { term: 'Reduced rate, 5%', definition: 'Applies to a narrow list including domestic fuel and power and certain energy-saving installations.' },
+          { term: 'Zero rate, 0%', definition: 'A taxable supply charged at nothing: most food, children’s clothing, books and printed matter. Different from exempt, which is outside VAT and cannot be reclaimed against.' },
+          { term: 'Registration', definition: 'Compulsory once taxable turnover passes the threshold in a rolling twelve months, and available voluntarily below it. You cannot issue a VAT invoice or charge VAT before you are registered.' },
+        ],
+      },
+      {
+        heading: 'Before you send it',
+        paragraphs: [
+          'Check the VAT number is your own and correctly formatted, that the invoice number continues your sequence without gaps, and that each line carries the rate you actually intend. Invoice Workshop does the arithmetic and the layout; which rate applies to a particular supply is a question about your business, and HMRC guidance or your accountant is the right source for it.',
+        ],
+      },
+    ],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'The general-purpose invoice workspace.' }, { href: '/invoice-template/', label: 'Invoice Template', text: 'A plain invoice layout without VAT fields.' }, { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Quote before the work starts.' }],
+  },
+  gstInvoiceIndia: {
+    path: '/gst-invoice-format-india/', kind: 'invoice', locale: 'in', dynamic: true,
+    title: 'Free GST Invoice Format India — Tax Invoice Generator | Invoice Workshop',
+    description: 'Create a GST tax invoice free: GSTIN, HSN/SAC per line, CGST + SGST or IGST, 5/12/18/28% slabs, INR. No signup, nothing uploaded.',
+    h1: 'GST Invoice Format (India)', eyebrow: 'Tax invoice with GSTIN and HSN/SAC',
+    intro: 'Create a GST tax invoice with both parties’ GSTIN, per-line rates from the GST slabs and totals in rupees, then download a PDF.',
+    reassurance: 'Your business and customer details stay in this browser.',
+    sections: [
+      {
+        heading: 'What a GST tax invoice must carry',
+        paragraphs: [
+          'A tax invoice under GST is prescribed in some detail, and a customer claiming input tax credit needs every part of it. The two fields most often missing are the place of supply and the HSN or SAC code.',
+        ],
+        bullets: [
+          'The words “Tax Invoice”',
+          'Supplier name, address and GSTIN',
+          'A consecutive invoice number and the date of issue',
+          'Recipient name, address and GSTIN where registered',
+          'Place of supply, with the state and state code',
+          'HSN code for goods or SAC code for services, per line',
+          'Taxable value per line after any discount',
+          'Rate and amount of CGST, SGST/UTGST or IGST',
+          'Whether the tax is payable on reverse charge',
+          'Signature or digital signature of the supplier',
+        ],
+      },
+      {
+        heading: 'A worked GST invoice',
+        paragraphs: [
+          'This is an intra-state supply, so the 18% splits into CGST 9% and SGST 9%. The same supply to another state would carry IGST 18% instead — one line rather than two, at the same total.',
+        ],
+        table: {
+          caption: 'Tax Invoice INV/2026-27/0142 — intra-state supply, Maharashtra',
+          columns: ['Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable value'],
+          rows: [
+            ['Management consulting services', 'SAC 998311', '10 hrs', '₹2,500.00', '₹25,000.00'],
+            ['Software licence, annual', 'HSN 8523', '2', '₹7,500.00', '₹15,000.00'],
+          ],
+          total: [['Total taxable value', '₹40,000.00'], ['CGST at 9%', '₹3,600.00'], ['SGST at 9%', '₹3,600.00'], ['Total GST', '₹7,200.00'], ['Invoice total', '₹47,200.00']],
+          note: 'The two halves are each 9% of ₹40,000.00, and together they are the same ₹7,200.00 that a single 18% IGST line would carry on an inter-state supply. Place of supply is what decides which of the two you issue, which is why it is a required field rather than a note.',
+        },
+      },
+      {
+        heading: 'CGST, SGST and IGST',
+        paragraphs: [
+          'One rate, split two ways or charged as one, depending on where the supply lands.',
+        ],
+        terms: [
+          { term: 'CGST + SGST', definition: 'Intra-state supply: the rate is halved between the centre and the state. An 18% supply becomes 9% CGST and 9% SGST on the invoice.' },
+          { term: 'IGST', definition: 'Inter-state supply, and exports and imports: the full rate is charged as a single integrated tax.' },
+          { term: 'Place of supply', definition: 'The rule that decides which of the two applies. It is not always the customer’s address, which is why it is stated on the invoice rather than inferred.' },
+          { term: 'HSN and SAC', definition: 'HSN classifies goods, SAC classifies services. How many digits you must show depends on your turnover.' },
+        ],
+      },
+      {
+        heading: 'Before you file it',
+        paragraphs: [
+          'Check that the GSTIN of both parties is the full 15 characters, that the invoice number is unique within the financial year and unbroken, and that each line’s HSN or SAC is the one you actually use in your returns. Invoice Workshop formats the document and computes the totals; classification, place-of-supply determination and your GSTR filings are matters for you or your chartered accountant.',
+        ],
+      },
+    ],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'The general-purpose invoice workspace.' }, { href: '/proforma-invoice-generator/', label: 'Proforma Invoice Generator', text: 'Issue a proforma before the supply.' }, { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Quote a price before work begins.' }],
+  },
+  taxInvoiceAustralia: {
+    path: '/tax-invoice-template-australia/', kind: 'invoice', locale: 'au', dynamic: true,
+    title: 'Free Australian Tax Invoice Template & Generator | Invoice Workshop',
+    description: 'Create an ATO-style tax invoice free: the words Tax Invoice, your ABN, GST at 10% shown separately, AUD and DD/MM/YYYY. No signup.',
+    h1: 'Australian Tax Invoice Template', eyebrow: 'Set up for ATO requirements',
+    intro: 'Create a tax invoice with your ABN, GST at 10% shown as its own figure and Australian date and currency formatting, then download a PDF.',
+    reassurance: 'Your business and customer details stay in this browser.',
+    sections: [
+      {
+        heading: 'What the ATO asks a tax invoice to show',
+        paragraphs: [
+          'For a sale under $1,000 the list is short, and the single most common omission is the phrase itself: the document has to say “Tax invoice”. Above $1,000 the buyer’s identity is required as well.',
+        ],
+        bullets: [
+          'The words “Tax invoice”',
+          'Your business name and ABN',
+          'The date the invoice was issued',
+          'A description of the items sold, with quantity and price',
+          'The GST amount, or a statement that the total includes GST',
+          'The extent to which each sale is taxable',
+          'The buyer’s identity or ABN, for sales of $1,000 or more',
+        ],
+      },
+      {
+        heading: 'A worked Australian tax invoice',
+        paragraphs: [
+          'GST is a flat 10%, which makes the arithmetic easy to check: the GST is exactly one tenth of the GST-exclusive amount, and the total is eleven tenths of it.',
+        ],
+        table: {
+          caption: 'Tax invoice TI-2026-0087 — building consultancy',
+          columns: ['Description', 'Qty', 'Rate', 'GST', 'Amount'],
+          rows: [
+            ['Site inspection and photographic record', '1', 'A$450.00', '10%', 'A$450.00'],
+            ['Condition report preparation', '6 hrs', 'A$140.00', '10%', 'A$840.00'],
+          ],
+          total: [['Total excluding GST', 'A$1,290.00'], ['GST at 10%', 'A$129.00'], ['Total including GST', 'A$1,419.00']],
+          note: 'Because every line here is taxable, the invoice can also state “Total price includes GST” instead of showing the A$129.00 separately. Where a sale is partly GST-free, the extent of the taxable part has to be shown, so keeping GST on its own line is the safer habit.',
+        },
+      },
+      {
+        heading: 'ABN, GST registration and the threshold',
+        paragraphs: [
+          'These three are related but not the same, and only one of them is about the invoice.',
+        ],
+        terms: [
+          { term: 'ABN', definition: 'An eleven-digit business number. Without one on the invoice, a business customer may be required to withhold tax from your payment at the top rate.' },
+          { term: 'GST registration', definition: 'Separate from having an ABN. Compulsory once turnover reaches the registration threshold, and optional below it. You only charge GST once registered.' },
+          { term: 'GST-free vs input-taxed', definition: 'GST-free supplies carry no GST but you can still claim credits on their inputs. Input-taxed supplies carry no GST and you cannot.' },
+        ],
+      },
+      {
+        heading: 'Before you send it',
+        paragraphs: [
+          'Confirm the ABN is right, that the document says “Tax invoice”, and that a sale of $1,000 or more names the buyer. Invoice Workshop lays the document out and does the arithmetic; whether a particular supply is taxable, GST-free or input-taxed depends on what you sell, and the ATO or your accountant is the place to settle it.',
+        ],
+      },
+    ],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'The general-purpose invoice workspace.' }, { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Quote a defined scope first.' }, { href: '/work-order-generator/', label: 'Work Order Generator', text: 'Record authorised work at a site.' }],
+  },
+  gstHstInvoiceCanada: {
+    path: '/gst-hst-invoice-template-canada/', kind: 'invoice', locale: 'ca', dynamic: true,
+    title: 'Free Canadian GST/HST Invoice Template & Generator | Invoice Workshop',
+    description: 'Create a GST/HST invoice free: CRA business number, provincial rates from 5% GST to 15% HST, CAD, and tax shown separately. No signup.',
+    h1: 'Canadian GST/HST Invoice Template', eyebrow: 'Provincial rates, handled per line',
+    intro: 'Create an invoice with your CRA business number and the GST or HST rate for the province of supply, then download a PDF.',
+    reassurance: 'Your business and customer details stay in this browser.',
+    sections: [
+      {
+        heading: 'What a GST/HST invoice needs',
+        paragraphs: [
+          'The CRA sets out what a customer needs in order to claim an input tax credit, and the requirements grow with the size of the sale. Your business number is the item most often left off.',
+        ],
+        bullets: [
+          'Your business name and the date of the invoice',
+          'The total amount payable',
+          'Your GST/HST registration number, for sales of $30 or more',
+          'The amount of GST/HST charged, or a statement that it is included and at what rate',
+          'The buyer’s name, for sales of $150 or more',
+          'A description sufficient to identify each item',
+          'Terms of payment',
+        ],
+      },
+      {
+        heading: 'A worked GST/HST invoice',
+        paragraphs: [
+          'This one is billed in Ontario, where GST and the provincial component are combined into a single 13% HST. The same work billed in Alberta would carry 5% GST, and in British Columbia 5% GST with PST handled separately outside the GST system.',
+        ],
+        table: {
+          caption: 'Invoice 2026-0231 — consulting, place of supply Ontario',
+          columns: ['Description', 'Qty', 'Rate', 'HST', 'Amount'],
+          rows: [
+            ['Advisory work', '8 hrs', 'C$125.00', '13%', 'C$1,000.00'],
+            ['Materials and printing', '1', 'C$340.00', '13%', 'C$340.00'],
+          ],
+          total: [['Total before tax', 'C$1,340.00'], ['HST at 13%', 'C$174.20'], ['Total', 'C$1,514.20']],
+          note: 'C$130.00 on the advisory line plus C$44.20 on materials is C$174.20, which is also 13% of the C$1,340.00 subtotal. The rate follows the place of supply rather than where your business is based, which is the rule that catches out contractors working across provincial lines.',
+        },
+      },
+      {
+        heading: 'GST, HST, PST and QST',
+        paragraphs: [
+          'Canada runs more than one sales tax system at once, and which you charge depends on the province of supply.',
+        ],
+        terms: [
+          { term: 'GST at 5%', definition: 'The federal tax, charged alone in provinces that have not harmonised.' },
+          { term: 'HST at 13% or 15%', definition: 'Federal and provincial combined into one tax in the participating provinces, administered by the CRA.' },
+          { term: 'PST', definition: 'A separate provincial tax in provinces such as British Columbia, Saskatchewan and Manitoba, registered for and reported separately from GST.' },
+          { term: 'QST', definition: 'Quebec’s own tax, administered by Revenu Québec alongside the federal GST.' },
+        ],
+      },
+      {
+        heading: 'Before you send it',
+        paragraphs: [
+          'Check that the rate matches the province of supply rather than your own, that your business number appears once the sale is $30 or more, and that the buyer is named at $150 or more. Invoice Workshop formats the document and does the arithmetic; place-of-supply rules and any PST or QST obligations are for you or your accountant to determine.',
+        ],
+      },
+    ],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'The general-purpose invoice workspace.' }, { href: '/estimate-generator/', label: 'Estimate Generator', text: 'Price the work before committing.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Bill independent contract work.' }],
   },
   invoiceTemplate: {
     path: '/invoice-template/', kind: 'invoice', title: 'Free Invoice Template Online | Invoice Workshop',

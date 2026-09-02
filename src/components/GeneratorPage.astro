@@ -27,7 +27,7 @@ const software = {
     <ul class="hero-features" aria-label="Key benefits"><li>No signup</li><li>Remembers your details</li><li>Saves clients and items</li><li>Download PDF</li></ul>
     {content.path === '/' && <p class="hero-workflow">Turn quotations, estimates, work orders and proformas into invoices without retyping.</p>}
   </section>
-  <DocumentWorkspace client:idle={{ timeout: 1000 }} initialKind={content.kind} vertical={content.vertical} />
+  <DocumentWorkspace client:idle={{ timeout: 1000 }} initialKind={content.kind} vertical={content.vertical} locale={content.locale} />
   <div class="content-shell">
     {content.sections.map((section) => (
       <section class="content-section">

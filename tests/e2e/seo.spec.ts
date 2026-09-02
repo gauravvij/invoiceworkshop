@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const publicUrls = ['/', '/proforma-invoice-generator/', '/quotation-generator/', '/work-order-generator/', '/purchase-order-generator/', '/estimate-generator/', '/construction-invoice-template/', '/contractor-invoice-template/', '/invoice-template/', '/about/', '/privacy/', '/terms/', '/contact/'];
+const publicUrls = ['/', '/proforma-invoice-generator/', '/quotation-generator/', '/work-order-generator/', '/purchase-order-generator/', '/estimate-generator/', '/construction-invoice-template/', '/contractor-invoice-template/', '/invoice-template/', '/vat-invoice-template-uk/', '/gst-invoice-format-india/', '/tax-invoice-template-australia/', '/gst-hst-invoice-template-canada/', '/about/', '/privacy/', '/terms/', '/contact/'];
 
 test('every canonical page has complete, unique static SEO', async ({ page, request }) => {
   const titles = new Set<string>();
@@ -57,7 +57,11 @@ test('canonical pages have no broken internal links or images and are internally
       .filter((url) => url.origin === window.location.origin)
       .map((url) => `${url.pathname}${url.search}`));
     for (const href of links) {
-      discovered.add(new URL(href, 'https://invoiceworkshop.com').pathname);
+      const target = new URL(href, 'https://invoiceworkshop.com').pathname;
+      // A page linking to itself proves nothing about whether anything else
+      // links to it, and four country pages shipped as orphans because this
+      // assertion counted self-links as discovery.
+      if (target !== path) discovered.add(target);
       const response = await request.get(href);
       expect(response.status(), `${path} links to ${href}`).toBeLessThan(400);
       expect(new URL(response.url()).hostname).toBe(expectedHost);

@@ -160,6 +160,70 @@ naming the user need you served or why you declined, and `files_changed`.
 """
 
 
+def build_surface_prompt(page: dict) -> str:
+    """Prompt for creating one new page in an already-admitted family.
+
+    The family passed the admission gate before this ran, which means the tool
+    genuinely behaves differently on this route. The job here is to write the
+    page that explains that difference accurately -- not to invent a reason for
+    the page to exist.
+    """
+    return f"""You are adding one page to InvoiceWorkshop, a free browser-based
+invoice and business-document generator.
+
+## The page
+
+{json.dumps(page, indent=2, sort_keys=True, default=str)}
+
+## Why this page is allowed to exist
+
+The family it belongs to passed an admission gate that required at least two
+FUNCTIONAL differences in what the tool produces -- not wording, but computation,
+fields, validation, structure or output. Those differences are listed above. The
+product change that delivers them is: {page.get('product_change')}
+
+Your job is to write the page around a difference that already exists. If, having
+read the code, the difference does NOT already exist, return NO_ACTION and say so.
+Do not write a page describing behaviour the tool does not have.
+
+## How pages are built here
+
+Page content lives in `src/content/generators.ts`. A country page is an entry
+with `path`, `kind`, `locale`, `dynamic: true`, `title`, `description`, `h1`,
+`eyebrow`, `intro`, `reassurance`, `sections[]` and `related[]`. The shared
+`src/pages/[slug]/index.astro` route builds every entry with `dynamic: true`, so
+no new route file is needed and the sitemap follows automatically. Read
+`src/lib/documents/locales.ts` for the presets and copy the shape of an existing
+country entry exactly.
+
+## The standard
+
+Everything factual on the page must be correct for that jurisdiction: the tax
+label, the standard rate, what the registration number is called, and what the
+tax authority requires on the face of the document. If you are not certain of a
+figure, leave it out rather than guess -- a wrong rate on an invoice template is
+worse than a missing one.
+
+Every number in a worked example must reconcile. Tax is computed per line and
+summed (see `src/lib/documents/money.ts`), so a worked example must add up the
+same way the tool does.
+
+Do not pad. A page that says the same thing as the other country pages with the
+tax renamed is the failure mode this whole system exists to prevent.
+
+## Constraints
+
+You have Read, Edit, Grep and Glob. No shell, no build, no commit, no deploy: a
+wrapper runs the gates afterwards and reverts everything if any of them fail.
+Edit only `src/content/generators.ts`. At most {policy.MAX_DIFF_LINES} changed
+lines.
+
+Return the JSON result: `decision` CHANGED or NO_ACTION, a one-line `summary`, a
+`rationale` naming the functional difference this page is built on, and
+`files_changed`.
+"""
+
+
 def gather_evidence(connection, opportunity: dict) -> dict:
     url = opportunity.get("target_url")
     queries = [dict(row) for row in connection.execute(
@@ -293,6 +357,11 @@ def local_validation() -> dict:
     return results
 
 
+def opportunities_canonical() -> tuple:
+    import growth_opportunities
+    return growth_opportunities.canonical_routes()
+
+
 def verify_production(url: str) -> dict:
     """Confirm the deployed page is the page we meant to deploy."""
     checks: dict[str, object] = {}
@@ -308,9 +377,14 @@ def verify_production(url: str) -> dict:
                                headers={"User-Agent": "invoiceworkshop-growth"}), timeout=30
     ) as response:
         checks["sitemap_urls"] = len(re.findall(r"<loc>", response.read().decode("utf-8")))
+    # The sitemap grows as the experiment adds pages, so the check is that it
+    # did not SHRINK -- a page silently disappearing is the failure worth
+    # catching, and a fixed count would have blocked every new page instead.
+    expected = len(opportunities_canonical()) + 4  # tool pages plus about/privacy/terms/contact
+    checks["sitemap_urls_expected_min"] = expected
     checks["passed"] = (checks["status"] == 200 and checks["canonical_correct"]
                         and checks["single_h1"] and checks["has_title"]
-                        and checks["sitemap_urls"] == 13)
+                        and int(checks["sitemap_urls"]) >= expected)
     return checks
 
 
@@ -375,6 +449,8 @@ def _record(connection, run: dict) -> dict:
 
 
 def _mark_attempt(connection, opportunity: dict, outcome: str) -> None:
+    """Surface pages live in page_candidates, not growth_opportunities; the
+    UPDATE simply matches nothing for them, which is the intended no-op."""
     connection.execute(
         """UPDATE growth_opportunities
               SET attempt_count=attempt_count+1, last_attempted_at=?,
@@ -385,7 +461,8 @@ def _mark_attempt(connection, opportunity: dict, outcome: str) -> None:
     connection.commit()
 
 
-def execute(connection, opportunity: dict, *, fixture: bool = False) -> dict:
+def execute(connection, opportunity: dict, *, fixture: bool = False,
+            surface_page: dict | None = None) -> dict:
     started = utc_now()
     base = {"started_at": started, "run_type": "fixture" if fixture else "auto_opportunity",
             "opportunity_key": opportunity.get("opportunity_key"),
@@ -400,8 +477,10 @@ def execute(connection, opportunity: dict, *, fixture: bool = False) -> dict:
         return run
 
     before_sha = _git("rev-parse", "HEAD")
-    evidence = gather_evidence(connection, opportunity)
-    prompt = build_prompt(opportunity, evidence)
+    if surface_page:
+        prompt = build_surface_prompt(surface_page)
+    else:
+        prompt = build_prompt(opportunity, gather_evidence(connection, opportunity))
     if fixture:
         prompt = (prompt + "\n\n## FIXTURE RUN\n\nThis is a rehearsal of the unattended "
                   "path. Do not edit any file. Return NO_ACTION with a rationale that "
@@ -553,9 +632,19 @@ def execute(connection, opportunity: dict, *, fixture: bool = False) -> dict:
         baseline={"impressions": int(baseline["i"]), "clicks": int(baseline["k"]),
                   "position": baseline["p"], "commit": sha[:12]},
         expected=verdict.get("user_value", "")[:500] or "unstated", days=45)
-    connection.execute(
-        """UPDATE growth_opportunities SET state='done', updated_at=? WHERE opportunity_key=?""",
-        (utc_now(), opportunity["opportunity_key"]))
+    if surface_page:
+        connection.execute(
+            """UPDATE page_candidates SET status='shipped', shipped_at=?, commit_sha=?,
+                   updated_at=? WHERE slug=?""",
+            (utc_now(), sha, utc_now(), surface_page["slug"]))
+        connection.execute(
+            "UPDATE page_families SET status='built', updated_at=? WHERE family_key=?",
+            (utc_now(), surface_page["slug"]))
+    else:
+        connection.execute(
+            """UPDATE growth_opportunities SET state='done', updated_at=?
+                WHERE opportunity_key=?""",
+            (utc_now(), opportunity["opportunity_key"]))
     connection.commit()
     _mark_attempt(connection, opportunity, "changed")
 
@@ -682,7 +771,8 @@ def main() -> None:
                 _record_run(connection, started, summary)
                 print(json.dumps(summary, indent=2, sort_keys=True))
                 return
-            result = execute(connection, candidate["opportunity"])
+            result = execute(connection, candidate["opportunity"],
+                             surface_page=candidate.get("surface_page"))
         _record_run(connection, started,
                     {"decision": "claude_invoked", "reason": result["outcome"],
                      "claude_invoked": True, "outcome": result["outcome"]},

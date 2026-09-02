@@ -37,9 +37,11 @@ from pathlib import Path
 
 from growth_common import apply_schema, connect_db, database_path, utc_now
 
-# Canonical routes. The architecture is frozen, so an opportunity may only ever
-# point at one of these.
-CANONICAL = (
+# Canonical routes, read from the page data rather than restated here.
+# The site now adds pages by adding entries to `generators`, so a hardcoded list
+# would silently stop measuring every page added after it was written.
+_GENERATORS = Path(__file__).resolve().parents[1] / "src" / "content" / "generators.ts"
+_FALLBACK = (
     "https://invoiceworkshop.com/",
     "https://invoiceworkshop.com/invoice-template/",
     "https://invoiceworkshop.com/construction-invoice-template/",
@@ -50,6 +52,27 @@ CANONICAL = (
     "https://invoiceworkshop.com/work-order-generator/",
     "https://invoiceworkshop.com/purchase-order-generator/",
 )
+
+
+def canonical_routes() -> tuple[str, ...]:
+    """Every tool page, taken from the source of truth for what exists."""
+    try:
+        text = _GENERATORS.read_text(encoding="utf-8")
+    except OSError:
+        return _FALLBACK
+    paths = re.findall(r"^\s*path:\s*'(/[a-z0-9/-]*)'", text, re.M)
+    if not paths:
+        return _FALLBACK
+    seen, routes = set(), []
+    for path in paths:
+        url = "https://invoiceworkshop.com" + path
+        if url not in seen:
+            seen.add(url)
+            routes.append(url)
+    return tuple(routes)
+
+
+CANONICAL = canonical_routes()
 
 # Which allocation channel each opportunity type belongs to. The weekly
 # reallocation moves weight between these, and the weight is applied here, so a

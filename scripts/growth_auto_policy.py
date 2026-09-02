@@ -194,6 +194,9 @@ CLAUDE_ELIGIBLE_TYPES = (
     "INTERNAL_LINKING", "TECHNICAL_SEO",
 )
 
+# Baseline only. The live figure comes from the experiment's intensity, so
+# falling behind the trajectory actually buys more production rather than
+# producing a note about needing more production.
 MAX_RUNS_PER_DAY = 1
 MAX_ATTEMPTS_PER_OPPORTUNITY = 2
 # A page that was just changed needs time to be recrawled before it is worth
@@ -205,6 +208,53 @@ MIN_EXPECTED_VALUE = 3.0
 
 def _today() -> str:
     return datetime.now(timezone.utc).date().isoformat()
+
+
+def daily_run_budget(connection: sqlite3.Connection) -> int:
+    """Reasoning runs allowed today, set by the experiment's current intensity."""
+    try:
+        import growth_trajectory
+        return int(growth_trajectory.intensity(connection)["claude_runs_per_day"])
+    except Exception:
+        return MAX_RUNS_PER_DAY
+
+
+def pages_this_week(connection: sqlite3.Connection) -> int:
+    since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    try:
+        return int(connection.execute(
+            "SELECT COUNT(*) FROM page_candidates WHERE status='shipped' AND shipped_at >= ?",
+            (since,)).fetchone()[0])
+    except sqlite3.Error:
+        return 0
+
+
+def weekly_page_quota(connection: sqlite3.Connection) -> int:
+    try:
+        import growth_trajectory
+        return int(growth_trajectory.intensity(connection)["pages_per_week"])
+    except Exception:
+        return 2
+
+
+def next_surface_page(connection: sqlite3.Connection) -> dict | None:
+    """A queued page from an admitted family, if this week's quota allows one.
+
+    New surface area outranks improving an existing page while the experiment is
+    behind: nine pages cannot reach the target however good they are.
+    """
+    if pages_this_week(connection) >= weekly_page_quota(connection):
+        return None
+    try:
+        row = connection.execute(
+            """SELECT c.slug, c.title, c.route, c.differentiators, f.dimension,
+                      f.product_change, f.demand_evidence
+                 FROM page_candidates c JOIN page_families f ON f.family_key=c.family_key
+                WHERE c.status='queued' AND f.status IN ('admitted','built')
+                ORDER BY c.demand_score DESC, c.slug LIMIT 1""").fetchone()
+    except sqlite3.Error:
+        return None
+    return dict(row) if row else None
 
 
 def runs_today(connection: sqlite3.Connection) -> int:
@@ -255,9 +305,32 @@ def disqualify(connection: sqlite3.Connection, row: dict) -> str | None:
 
 def select_candidate(connection: sqlite3.Connection) -> dict:
     """The one opportunity worth an unattended run today, or a reason there is none."""
-    if runs_today(connection) >= MAX_RUNS_PER_DAY:
-        return {"eligible": False, "reason": "daily Claude run budget already used",
+    budget = daily_run_budget(connection)
+    used = runs_today(connection)
+    if used >= budget:
+        return {"eligible": False,
+                "reason": f"today's run budget is used ({used}/{budget} at the current intensity)",
                 "code": "budget_exhausted"}
+
+    # Surface area first while the experiment is behind: improving one of nine
+    # pages cannot reach a target that needs hundreds of them.
+    page = next_surface_page(connection)
+    if page:
+        return {
+            "eligible": True, "surface_page": page,
+            "opportunity": {
+                "opportunity_key": f"surface:{page['slug']}",
+                "opportunity_type": "NEW_SEARCH_LANDING_ASSET",
+                "title": f"Build {page['route']} ({page['title']})",
+                "target_url": "https://invoiceworkshop.com" + page["route"],
+                "evidence": page["demand_evidence"],
+                "priority_band": 1, "expected_growth_value": 50.0,
+                "attempt_count": 0, "state": "open", "execution_tier": "AUTO",
+            },
+            "reason": (f"surface expansion: {page['route']} from an admitted family "
+                       f"({pages_this_week(connection)}/{weekly_page_quota(connection)} "
+                       "pages shipped this week)"),
+        }
     rows = [dict(row) for row in connection.execute(
         """SELECT * FROM growth_opportunities WHERE state='open'
             ORDER BY priority_band ASC, expected_growth_value DESC LIMIT 40"""

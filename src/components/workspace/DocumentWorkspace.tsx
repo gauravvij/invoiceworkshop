@@ -3,6 +3,8 @@ import { trackEvent } from '@/lib/analytics';
 import { allowedConversions, convertDocument } from '@/lib/documents/conversions';
 import { createDocument, documentLabels, emptyLineItem } from '@/lib/documents/factory';
 import { calculateDocument, calculateLine, formatMoney, moneyInputValue, parseMoney } from '@/lib/documents/money';
+import { formatLocaleDate, localeFor } from '@/lib/documents/locales';
+import type { LocalePreset } from '@/lib/documents/locales';
 import { nextDocumentNumber } from '@/lib/documents/numbering';
 import type {
   CatalogItem,
@@ -28,6 +30,9 @@ import './workspace-a11y.css';
 interface Props {
   initialKind: DocumentKind;
   vertical?: 'construction' | 'contractor';
+  /** Country preset key from locales.ts. Changes tax label, default rate, the
+   *  registration-number field, required wording, currency and date format. */
+  locale?: string;
 }
 
 type SaveState = 'loading' | 'saved' | 'saving' | 'error';
@@ -39,7 +44,8 @@ const displayAddress = (client: Client | DocumentRecord['business']) =>
   [client.address.line1, client.address.line2, [client.address.city, client.address.region, client.address.postalCode].filter(Boolean).join(', '), client.address.country]
     .filter(Boolean);
 
-export default function DocumentWorkspace({ initialKind, vertical }: Props) {
+export default function DocumentWorkspace({ initialKind, vertical, locale }: Props) {
+  const preset = localeFor(locale);
   const [document, setDocument] = useState<DocumentRecord>(() => createDocument(initialKind));
   const [numbering, setNumbering] = useState<NumberingSettings | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -67,6 +73,10 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
         if (vertical && !next.projectName) {
           next.projectName = vertical === 'construction' ? 'Construction project' : 'Contract project';
         }
+        if (preset && !recent) {
+          next.currency = preset.currency;
+          next.lineItems = next.lineItems.map((line) => ({ ...line, taxBps: preset.defaultTaxBps }));
+        }
         knownDocumentIds.current = new Set(workspace.documents.map((item) => item.id));
         setDocument(next);
         setNumbering(workspace.numbering);
@@ -90,7 +100,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
     return () => {
       active = false;
     };
-  }, [initialKind, vertical]);
+  }, [initialKind, vertical, preset]);
 
   useEffect(() => {
     if (!hydrated.current || !numbering) return;
@@ -348,7 +358,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
               <Field label="Business name" required value={document.business.name} onChange={(value) => updateBusiness('name', value)} placeholder="Acme Studio LLC" />
               <Field label="Email" type="email" value={document.business.email} onChange={(value) => updateBusiness('email', value)} placeholder="billing@example.com" />
               <Field label="Phone" type="tel" value={document.business.phone} onChange={(value) => updateBusiness('phone', value)} />
-              <Field label="Tax / business ID" value={document.business.taxId} onChange={(value) => updateBusiness('taxId', value)} />
+              <Field label={preset ? preset.businessTaxIdLabel : 'Tax / business ID'} value={document.business.taxId} onChange={(value) => updateBusiness('taxId', value)} />
               <Field label="Street address" value={document.business.address.line1} onChange={(value) => updateBusinessAddress('line1', value)} />
               <Field label="City" value={document.business.address.city} onChange={(value) => updateBusinessAddress('city', value)} />
               <Field label="State / region" value={document.business.address.region} onChange={(value) => updateBusinessAddress('region', value)} />
@@ -374,7 +384,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
               <Field label="Name" required value={document.client.name} onChange={(value) => updateClient('name', value)} placeholder="Customer or company" />
               <Field label="Email" type="email" value={document.client.email} onChange={(value) => updateClient('email', value)} />
               <Field label="Phone" type="tel" value={document.client.phone} onChange={(value) => updateClient('phone', value)} />
-              <Field label="Tax ID" value={document.client.taxId} onChange={(value) => updateClient('taxId', value)} />
+              <Field label={preset ? preset.clientTaxIdLabel : 'Tax ID'} value={document.client.taxId} onChange={(value) => updateClient('taxId', value)} />
               <Field label="Street address" value={document.client.address.line1} onChange={(value) => updateClientAddress('line1', value)} />
               <Field label="City" value={document.client.address.city} onChange={(value) => updateClientAddress('city', value)} />
               <Field label="State / region" value={document.client.address.region} onChange={(value) => updateClientAddress('region', value)} />
@@ -413,6 +423,15 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
             )}
           </EditorSection>
 
+          {preset && (
+            <>
+              <datalist id="locale-rates">
+                {preset.rateOptions.map((bps) => <option key={bps} value={String(bps / 100)} />)}
+              </datalist>
+              <p className="locale-requirement">{preset.requirement}</p>
+            </>
+          )}
+
           <EditorSection title="Items" hint="Totals, taxes and discounts are calculated automatically.">
             {catalog.length > 0 && (
               <label className="field catalog-picker">
@@ -439,7 +458,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
                     <Field label="Unit" value={line.unit} onChange={(value) => updateLine(line.id, { unit: value })} />
                     <MoneyField label="Unit price" minor={line.unitPriceMinor} currency={document.currency} onChange={(value) => updateLine(line.id, { unitPriceMinor: value })} />
                     <Field label="Discount %" inputMode="decimal" value={String(line.discountBps / 100)} onChange={(value) => updateLine(line.id, { discountBps: Math.max(0, Math.round(Number(value || 0) * 100)) })} />
-                    <Field label="Tax %" inputMode="decimal" value={String(line.taxBps / 100)} onChange={(value) => updateLine(line.id, { taxBps: Math.max(0, Math.round(Number(value || 0) * 100)) })} />
+                    <Field label={preset ? `${preset.taxLabel} %` : 'Tax %'} inputMode="decimal" list={preset ? 'locale-rates' : undefined} value={String(line.taxBps / 100)} onChange={(value) => updateLine(line.id, { taxBps: Math.max(0, Math.round(Number(value || 0) * 100)) })} />
                     <div className="line-total"><span>Line total</span><strong>{formatMoney(calculateLine(line).totalMinor, document.currency)}</strong></div>
                   </div>
                 </div>
@@ -487,7 +506,7 @@ export default function DocumentWorkspace({ initialKind, vertical }: Props) {
           </EditorSection>
         </div>
 
-        <DocumentPreview document={document} totals={totals} />
+        <DocumentPreview document={document} totals={totals} preset={preset} />
       </div>
       <div className="mobile-output-bar no-print">
         <span>Ready to finish?</span>
@@ -502,7 +521,7 @@ function EditorSection({ title, hint, children }: { title: string; hint?: string
   return <fieldset className="editor-section"><legend>{title}</legend>{hint && <p className="section-hint">{hint}</p>}{children}</fieldset>;
 }
 
-function Field({ label, value, onChange, type = 'text', required, placeholder, inputMode }: {
+function Field({ label, value, onChange, type = 'text', required, placeholder, inputMode, list }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -510,15 +529,16 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, i
   required?: boolean;
   placeholder?: string;
   inputMode?: 'text' | 'email' | 'tel' | 'url' | 'numeric' | 'decimal' | 'search' | 'none';
+  list?: string;
 }) {
-  return <label className="field"><span>{label}{required && <em aria-hidden="true"> *</em>}</span><input type={type} value={value} required={required} placeholder={placeholder} inputMode={inputMode} onChange={(event) => onChange(event.target.value)} /></label>;
+  return <label className="field"><span>{label}{required && <em aria-hidden="true"> *</em>}</span><input type={type} value={value} required={required} placeholder={placeholder} inputMode={inputMode} list={list} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
 function MoneyField({ label, minor, currency, onChange }: { label: string; minor: number; currency: string; onChange: (minor: number) => void }) {
   return <label className="field"><span>{label} <small>{currency}</small></span><input type="text" inputMode="decimal" value={moneyInputValue(minor, currency)} onChange={(event) => onChange(parseMoney(event.target.value, currency))} /></label>;
 }
 
-function DocumentPreview({ document, totals }: { document: DocumentRecord; totals: ReturnType<typeof calculateDocument> }) {
+function DocumentPreview({ document, totals, preset }: { document: DocumentRecord; totals: ReturnType<typeof calculateDocument>; preset?: LocalePreset }) {
   return (
     <aside className="preview-wrap" aria-label="Live document preview">
       <div className="preview-sticky">
@@ -533,26 +553,26 @@ function DocumentPreview({ document, totals }: { document: DocumentRecord; total
               {document.business.phone && <span>{document.business.phone}</span>}
             </div>
             <div className="document-identity">
-              <h2>{documentLabels[document.kind]}</h2>
+              <h2>{preset?.documentTitle && document.kind === 'invoice' ? preset.documentTitle : documentLabels[document.kind]}</h2>
               <strong>{document.number}</strong>
               <span className={`status-chip status-chip--${document.status}`}>{document.status}</span>
             </div>
           </header>
           <div className="document-parties">
             <div><small>{document.kind === 'purchaseOrder' ? 'SUPPLIER' : 'BILL TO'}</small><strong>{document.client.name || 'Customer name'}</strong>{displayAddress(document.client).map((line) => <span key={line}>{line}</span>)}{document.client.email && <span>{document.client.email}</span>}</div>
-            <dl><div><dt>Issue date</dt><dd>{document.issueDate}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : 'Due / valid until'}</dt><dd>{document.dueDate}</dd></div>{document.reference && <div><dt>Reference</dt><dd>{document.reference}</dd></div>}</dl>
+            <dl><div><dt>Issue date</dt><dd>{formatLocaleDate(document.issueDate, preset)}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : 'Due / valid until'}</dt><dd>{formatLocaleDate(document.dueDate, preset)}</dd></div>{document.reference && <div><dt>Reference</dt><dd>{document.reference}</dd></div>}</dl>
           </div>
           {(document.projectName || document.jobsite) && <div className="project-strip"><span><small>PROJECT</small>{document.projectName}</span><span><small>JOBSITE</small>{document.jobsite}</span></div>}
           <div className="preview-table-scroll">
             <table className="preview-table">
-              <thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Tax</th><th>Amount</th></tr></thead>
+              <thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>{preset ? preset.taxLabel : 'Tax'}</th><th>Amount</th></tr></thead>
               <tbody>{document.lineItems.map((line) => <tr key={line.id}><td>{line.description || 'Item description'}{line.discountBps > 0 && <small>{percentage(line.discountBps)} discount</small>}</td><td>{line.quantity} {line.unit}</td><td>{formatMoney(line.unitPriceMinor, document.currency)}</td><td>{percentage(line.taxBps)}</td><td>{formatMoney(calculateLine(line).totalMinor, document.currency)}</td></tr>)}</tbody>
             </table>
           </div>
           <div className="preview-totals">
             <div><span>Subtotal</span><strong>{formatMoney(totals.subtotalMinor, document.currency)}</strong></div>
             {totals.discountMinor > 0 && <div><span>Discount</span><strong>−{formatMoney(totals.discountMinor, document.currency)}</strong></div>}
-            <div><span>Tax</span><strong>{formatMoney(totals.taxMinor, document.currency)}</strong></div>
+            <div><span>{preset ? preset.taxLabel : 'Tax'}</span><strong>{formatMoney(totals.taxMinor, document.currency)}</strong></div>
             {totals.shippingMinor !== 0 && <div><span>Shipping</span><strong>{formatMoney(totals.shippingMinor, document.currency)}</strong></div>}
             {totals.adjustmentMinor !== 0 && <div><span>Adjustment</span><strong>{formatMoney(totals.adjustmentMinor, document.currency)}</strong></div>}
             <div className="grand-total"><span>Total</span><strong>{formatMoney(totals.totalMinor, document.currency)}</strong></div>
