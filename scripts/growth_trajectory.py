@@ -308,6 +308,27 @@ def attainment(connection: sqlite3.Connection, week: int | None = None) -> dict:
             "detail": detail}
 
 
+def structural_floor(connection: sqlite3.Connection) -> tuple[int, str]:
+    """Minimum intensity implied by how far the site is from the surface area
+    the target needs.
+
+    The weekly curve is exponential, so early weeks are easy to "meet" while
+    still being nowhere near the destination: thirteen pages against a plan that
+    needs nine hundred scores full marks in week one and tells you nothing. This
+    floor looks at the destination directly, so a structural shortfall raises
+    production immediately instead of after a month of passing weeks.
+    """
+    published = float(connection.execute(
+        "SELECT COUNT(DISTINCT url) FROM page_content_stats").fetchone()[0] or 0)
+    share = published / TERMINAL["published_pages"]
+    for threshold, level in ((0.25, 4), (0.50, 3), (0.75, 2)):
+        if share < threshold:
+            return level, (f"{published:.0f} of the ~{TERMINAL['published_pages']} pages the "
+                           f"target implies ({share:.1%}). Structural shortfall, so "
+                           f"intensity floors at {level} regardless of the weekly curve.")
+    return 1, "surface area is broadly where the target needs it"
+
+
 def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> dict:
     """Weekly: measure, compare, and move intensity. This is the escalation."""
     week = current_week() if week is None else week
@@ -319,6 +340,10 @@ def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> di
         if result["attainment"] < threshold:
             wanted = level
             break
+    floor, floor_reason = structural_floor(connection)
+    if floor > wanted:
+        wanted = floor
+        result["structural_floor"] = floor_reason
     # Rises immediately when behind; falls one step at a time, because changing
     # the quota every week produces worse work than holding a level.
     after = wanted if wanted > before else max(wanted, before - 1)
@@ -336,6 +361,8 @@ def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> di
     else:
         verdict = (f"{result['attainment']:.0%} of the week {week} plan. Holding "
                    f"intensity {after} ({INTENSITY[after]['name']}).")
+    if result.get("structural_floor"):
+        verdict += " " + result["structural_floor"]
 
     if after != before:
         _set_intensity(connection, after, verdict)
@@ -354,6 +381,26 @@ def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> di
 
     # Escalating to the ceiling and still being far behind is not a quota
     # problem, and quietly running at maximum forever would hide that.
+    queued = 0
+    try:
+        queued = int(connection.execute(
+            """SELECT COUNT(*) FROM page_candidates c JOIN page_families f
+                    ON f.family_key=c.family_key
+                WHERE c.status='queued' AND f.status IN ('admitted','built')"""
+        ).fetchone()[0])
+    except sqlite3.Error:
+        pass
+    if queued < INTENSITY[after]["pages_per_week"]:
+        record_escalation(
+            connection, kind="surface_queue_short", severity="info",
+            subject=f"Qualified page queue ({queued}) is below the weekly quota "
+                    f"({INTENSITY[after]['pages_per_week']})",
+            detail=("Production capacity now exceeds the supply of families that can "
+                    "pass the admission gate. The response is more research into "
+                    "genuinely differentiated families, never admitting weaker ones: "
+                    "a page family whose only difference is wording costs the domain "
+                    "more than its pages could ever earn."),
+            fingerprint="surface_queue_short")
     if after >= 5 and result["attainment"] < 0.15 and week >= 4:
         record_escalation(
             connection, kind="trajectory_structural_gap", severity="warning",

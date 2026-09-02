@@ -134,6 +134,48 @@ class EscalationTests(Fixture):
             "SELECT COUNT(*) FROM trajectory_checkpoints").fetchone()[0], 1)
 
 
+class StructuralFloorTests(Fixture):
+    def _pages(self, count: int):
+        for n in range(count):
+            self.connection.execute(
+                """INSERT INTO page_content_stats (url, measured_at, words)
+                   VALUES (?, '2026-09-02T00:00:00+00:00', 800)""",
+                (f"https://invoiceworkshop.com/page-{n}/",))
+        self.connection.commit()
+
+    def test_far_short_of_the_needed_surface_area_floors_intensity_high(self):
+        """The weekly curve is easy to meet early; the destination is not."""
+        self._pages(13)
+        level, reason = trajectory.structural_floor(self.connection)
+        self.assertGreaterEqual(level, 4)
+        self.assertIn("Structural shortfall", reason)
+
+    def test_enough_pages_removes_the_floor(self):
+        self._pages(int(trajectory.TERMINAL["published_pages"] * 0.8))
+        level, _ = trajectory.structural_floor(self.connection)
+        self.assertEqual(level, 1)
+
+    def test_the_floor_applies_even_when_the_week_is_met(self):
+        self._pages(13)
+        self.organic(sessions=10_000_000)
+        trajectory.plan(self.connection)
+        result = trajectory.checkpoint(self.connection, week=1)
+        # Sessions are wildly ahead of the curve and it changes nothing: the
+        # surface area the target needs still does not exist.
+        self.assertEqual(result["detail"]["daily_sessions"]["ratio"], 1.5)
+        self.assertGreaterEqual(result["intensity_after"], 4)
+        self.assertIn("Structural shortfall", result["verdict"])
+
+    def test_a_short_queue_asks_for_research_not_a_lower_bar(self):
+        self._pages(13)
+        trajectory.plan(self.connection)
+        trajectory.checkpoint(self.connection, week=1)
+        row = self.connection.execute(
+            "SELECT detail FROM escalations WHERE kind='surface_queue_short'").fetchone()
+        self.assertIsNotNone(row)
+        self.assertIn("never admitting weaker ones", row["detail"])
+
+
 class SurfaceFirstTests(Fixture):
     def test_a_queued_page_outranks_improving_an_existing_one(self):
         import growth_surface
