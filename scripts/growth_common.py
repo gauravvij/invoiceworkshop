@@ -135,6 +135,31 @@ def apply_schema(connection: sqlite3.Connection) -> None:
         connection.execute(
             "ALTER TABLE level1a_inbound_audit ADD COLUMN authentication_state TEXT NOT NULL DEFAULT 'unverified'"
         )
+    page_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(page_content_stats)")
+    }
+    for column, definition in (
+        ("internal_in", "INTEGER NOT NULL DEFAULT 0"),
+        ("features_json", "TEXT NOT NULL DEFAULT '{}'"),
+    ):
+        if page_columns and column not in page_columns:
+            connection.execute(
+                f"ALTER TABLE page_content_stats ADD COLUMN {column} {definition}"
+            )
+    growth_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(growth_opportunities)")
+    }
+    for column, definition in (
+        ("value_low", "REAL NOT NULL DEFAULT 0"),
+        ("value_high", "REAL NOT NULL DEFAULT 0"),
+        ("priority_band", "INTEGER NOT NULL DEFAULT 3"),
+        ("basis", "TEXT NOT NULL DEFAULT 'prior'"),
+        ("channel", "TEXT NOT NULL DEFAULT 'unassigned'"),
+    ):
+        if growth_columns and column not in growth_columns:
+            connection.execute(
+                f"ALTER TABLE growth_opportunities ADD COLUMN {column} {definition}"
+            )
     audit_sql_row = connection.execute(
         "SELECT sql FROM sqlite_master WHERE type='table' AND name='level1a_action_audit'"
     ).fetchone()

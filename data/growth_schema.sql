@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '15')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '16')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -853,9 +853,12 @@ CREATE TABLE IF NOT EXISTS policy_admissions (
 CREATE INDEX IF NOT EXISTS idx_policy_admissions_action
   ON policy_admissions(action_id, recorded_at DESC);
 
--- Measured content depth per canonical page, taken from the built output rather
--- than estimated. Thin pages are an indexing and ranking liability on a young
--- domain, so this is evidence the opportunity model needs.
+-- Measured structure per canonical page, taken from the built output rather than
+-- estimated. `words` is DIAGNOSTIC ONLY: Google states no preferred length, and
+-- a page is never improved here because it is short. What the model acts on is
+-- the feature set -- whether the page carries a worked example, a comparison of
+-- the documents users confuse it with, and whether it answers the queries it
+-- already surfaces for.
 CREATE TABLE IF NOT EXISTS page_content_stats (
   url          TEXT NOT NULL,
   measured_at  TEXT NOT NULL,
@@ -863,7 +866,99 @@ CREATE TABLE IF NOT EXISTS page_content_stats (
   headings     INTEGER NOT NULL DEFAULT 0,
   bytes        INTEGER NOT NULL DEFAULT 0,
   internal_out INTEGER NOT NULL DEFAULT 0,
+  internal_in  INTEGER NOT NULL DEFAULT 0,
+  features_json TEXT NOT NULL DEFAULT '{}',
   PRIMARY KEY (url, measured_at)
 );
 CREATE INDEX IF NOT EXISTS idx_page_content_stats_url ON page_content_stats(url, measured_at DESC);
 
+
+
+-- Diagnosis of why a canonical URL is not earning traffic. The four index states
+-- have genuinely different causes and only one of them implicates content:
+--
+--   indexed               nothing to do here
+--   discovered_not_crawled  Google knows the URL and has never fetched it, so
+--                         the page content cannot be the reason. Rewriting it
+--                         is churn. The constraint is crawl scheduling.
+--   crawled_not_indexed   Google read it and declined to index. This is the one
+--                         state where differentiation is genuinely implicated.
+--   unknown               Google has no record of the URL at all: a discovery
+--                         problem (sitemap, internal links, external signals).
+--
+-- `blocking_checks` lists readiness checks that actually failed. When it is
+-- empty the correct action is to wait, and that is recorded rather than turned
+-- into another rewrite.
+CREATE TABLE IF NOT EXISTS index_diagnosis (
+  url              TEXT NOT NULL,
+  diagnosed_at     TEXT NOT NULL,
+  index_state      TEXT NOT NULL CHECK (index_state IN (
+                     'indexed', 'discovered_not_crawled', 'crawled_not_indexed', 'unknown')),
+  coverage_state   TEXT NOT NULL DEFAULT '',
+  last_crawl_time  TEXT,
+  constraint_kind  TEXT NOT NULL CHECK (constraint_kind IN (
+                     'none', 'crawl_scheduling', 'discovery_signals', 'content_quality')),
+  ready_json       TEXT NOT NULL DEFAULT '{}',
+  blocking_checks  TEXT NOT NULL DEFAULT '',
+  recommended      TEXT NOT NULL DEFAULT '',
+  first_seen_state TEXT,
+  days_in_state    INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (url, diagnosed_at)
+);
+CREATE INDEX IF NOT EXISTS idx_index_diagnosis_url ON index_diagnosis(url, diagnosed_at DESC);
+
+-- Effort allocation across growth channels. The weekly job moves these weights
+-- on observed outcomes and the weights feed straight back into ranking, so a
+-- channel that repeatedly fails genuinely loses ground instead of being
+-- described as failing in a report nobody acts on.
+CREATE TABLE IF NOT EXISTS channel_allocation (
+  channel        TEXT PRIMARY KEY CHECK (channel IN (
+                   'product_led_seo', 'page_improvement', 'technical_seo', 'distribution',
+                   'linkable_assets', 'utility_development', 'ctr')),
+  weight         REAL NOT NULL DEFAULT 1.0 CHECK (weight BETWEEN 0.2 AND 1.6),
+  attempts       INTEGER NOT NULL DEFAULT 0,
+  wins           INTEGER NOT NULL DEFAULT 0,
+  consecutive_failures INTEGER NOT NULL DEFAULT 0,
+  min_sample     INTEGER NOT NULL DEFAULT 3,
+  last_reason    TEXT NOT NULL DEFAULT 'initial prior; no outcomes observed yet',
+  updated_at     TEXT NOT NULL
+);
+
+-- Every reallocation decision, including the decisions NOT to move a weight.
+-- "Insufficient evidence" is a result worth keeping: it is what stops a single
+-- impression from being read as a trend.
+CREATE TABLE IF NOT EXISTS allocation_decisions (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  decided_at     TEXT NOT NULL,
+  channel        TEXT NOT NULL,
+  previous_weight REAL NOT NULL,
+  new_weight     REAL NOT NULL,
+  attempts       INTEGER NOT NULL DEFAULT 0,
+  wins           INTEGER NOT NULL DEFAULT 0,
+  evidence       TEXT NOT NULL DEFAULT '',
+  decision       TEXT NOT NULL CHECK (decision IN ('increase', 'reduce', 'hold', 'insufficient_evidence')),
+  rationale      TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_allocation_decisions ON allocation_decisions(decided_at DESC);
+
+-- Outcome of the fixed-size outreach calibration cohort. Written once the
+-- approved prospects have completed their initial and follow-up cycle, so the
+-- decision to widen, narrow or stop the email channel rests on delivery, reply
+-- and placement rates rather than on how many messages were sent.
+CREATE TABLE IF NOT EXISTS outreach_calibration (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  evaluated_at        TEXT NOT NULL,
+  cohort_size         INTEGER NOT NULL,
+  completed           INTEGER NOT NULL,
+  sent                INTEGER NOT NULL,
+  delivered           INTEGER NOT NULL,
+  bounced             INTEGER NOT NULL,
+  replies             INTEGER NOT NULL,
+  positive_replies    INTEGER NOT NULL,
+  placements          INTEGER NOT NULL,
+  by_class_json       TEXT NOT NULL DEFAULT '{}',
+  recommendation      TEXT NOT NULL CHECK (recommendation IN (
+                        'SIGN_POLICY_AND_AUTONOMIZE', 'MODIFY_POLICY_TEMPLATES',
+                        'REDUCE_EMAIL_ALLOCATION', 'STOP_CHANNEL', 'CONTINUE_CALIBRATION')),
+  rationale           TEXT NOT NULL DEFAULT ''
+);

@@ -31,6 +31,36 @@ export const generators: Record<string, GeneratorContent> = {
       { heading: 'Create an invoice online', paragraphs: ['Start with the working editor above. Add your business and customer, list the products or services supplied, set tax and discounts, then review the live preview before downloading or printing. Your draft saves automatically on this device.'] },
       { heading: 'What should an invoice include?', paragraphs: ['A clear invoice normally identifies the seller and customer, uses a unique invoice number, states issue and due dates, itemizes the work or goods, and shows the currency, taxes, discounts and amount due. Payment instructions and concise terms help the customer understand what to do next.'], bullets: ['Seller and customer contact details', 'Unique invoice number and dates', 'Item descriptions, quantities and rates', 'Subtotal, discounts, tax and total', 'Payment instructions and terms'] },
       { heading: 'No signup, but it remembers you', paragraphs: ['Return on the same browser and device to reuse your business profile, customers, common items and drafts. Invoice Workshop does not upload your document contents. Export a local backup whenever you want an extra copy.'] },
+      {
+        heading: 'A worked invoice',
+        paragraphs: [
+          'The order the editor applies a discount and tax in is the part most people want to check before trusting a total to a customer. Here it is, worked through.',
+        ],
+        table: {
+          caption: 'Invoice INV-2026-0117 — design services, one month',
+          columns: ['Description', 'Qty', 'Rate', 'Amount'],
+          rows: [
+            ['Brand identity design', '1', '$2,400.00', '$2,400.00'],
+            ['Website page templates', '6', '$310.00', '$1,860.00'],
+            ['Stock photography licences', '12', '$18.50', '$222.00'],
+          ],
+          total: [['Subtotal', '$4,482.00'], ['Discount 5%', '\u2212$224.10'], ['Taxable amount', '$4,257.90'], ['Tax at 7.5%', '$319.34'], ['Total', '$4,577.24'], ['Deposit paid', '\u2212$1,000.00'], ['Balance due', '$3,577.24']],
+          note: 'The discount comes off before tax, so tax is charged on $4,257.90 rather than on $4,482.00. Applying them the other way round overstates the tax by $16.81 and is the most common arithmetic error on a hand-built invoice.',
+        },
+      },
+      {
+        heading: 'Invoice, quotation, proforma or receipt?',
+        paragraphs: [
+          'These are routinely used as if they were interchangeable. They are not, and sending the wrong one is what leads to a customer treating a price as a bill or a bill as a price.',
+        ],
+        terms: [
+          { term: 'Invoice', definition: 'A request for payment for goods or services already supplied. It enters your accounts as revenue and starts the payment clock.' },
+          { term: 'Quotation', definition: 'An offer to do defined work at a stated price, sent before any commitment exists. Nothing is owed on a quotation.' },
+          { term: 'Proforma invoice', definition: 'A statement of what the buyer will be charged once the sale proceeds. It is used to obtain approval, release funds or clear customs, and it is not a demand for payment.' },
+          { term: 'Receipt', definition: 'Confirmation that payment was received. It comes after the money, not before it.' },
+          { term: 'Credit note', definition: 'A document that reverses part or all of an invoice already issued. Issue one rather than editing an invoice the customer has already received.' },
+        ],
+      },
       { heading: 'Invoice generator vs. invoice template', paragraphs: ['A static template gives you a layout to edit manually. This invoice maker calculates totals, maintains reusable records, previews the finished document and creates a PDF. It keeps the speed of a template while behaving more like persistent invoicing software—without an account.'] },
     ],
     related: [
@@ -126,8 +156,7 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'International shipments',
         paragraphs: [
-          'A proforma is frequently the document a customs broker asks for when goods cross a border, because it states a value before a commercial invoice exists. Requirements vary considerably by destination and by what is being shipped.',
-          'Invoice Workshop formats the document and performs the arithmetic. It does not determine customs, export-control or tax obligations, which depend on the goods, the countries involved and your own circumstances. Check with your freight forwarder or broker for what a specific shipment needs.',
+          'A proforma is frequently the document a customs broker asks for when goods cross a border, because it states a value before a commercial invoice exists. Invoice Workshop formats the document and does the arithmetic; what a specific shipment must declare depends on the goods and the destination, so check with your broker rather than assuming this layout satisfies them.',
         ],
       },
     ],
@@ -221,13 +250,6 @@ export const generators: Record<string, GeneratorContent> = {
         paragraphs: [
           'Start uncertain work as an estimate, convert the approved version into a work order, then convert the completed work order into an invoice. Each conversion keeps the customer and line items and gives the new document its own number, type and reference back to its source.',
           'Before billing, check actual hours and quantities against what the work order authorized rather than invoicing the plan. The two are rarely identical, and the difference is exactly what the customer will scrutinise.',
-        ],
-      },
-      {
-        heading: 'Scheduling and dispatch',
-        paragraphs: [
-          'For teams running several jobs a day, the work order doubles as the dispatch record. Keeping the jobsite, access notes and scheduled window on the document itself means the person doing the work is not dependent on a separate system or a phone call.',
-          'Invoice Workshop handles the document and the arithmetic. It does not schedule crews or track vehicles; if you need dispatch routing, keep using whatever system you already have and use the work order as the billing record.',
         ],
       },
     ],
@@ -329,6 +351,24 @@ export const generators: Record<string, GeneratorContent> = {
           'A deposit is money already received. Enter it in the deposit field and the document shows the full total and then the reduced balance due, so the amount originally billed remains on the record. Progress draws bill a defined portion of a larger contract; describe which draw and which period or stage it covers in the progress note, and keep your schedule of values with the project file. Retainage is a percentage the customer withholds until completion — if your contract provides for it, record it as a negative adjustment or its own negative line so the withheld amount is stated explicitly rather than quietly missing.',
           'Whether retainage applies, how much may be held and when it must be released are contract and jurisdiction questions. Check your contract and, where the amounts matter, take professional advice.',
         ],
+      },
+      {
+        heading: 'Retainage across a whole draw schedule',
+        paragraphs: [
+          'Retainage is easy on a single invoice and easy to get wrong across a project, because the withheld amount accumulates while the invoices do not. The table below runs a $120,000 contract at 10% retainage through four draws, so the figure you are owed at the end is visible from the first invoice rather than discovered at the last.',
+        ],
+        table: {
+          caption: 'Draw schedule — $120,000 contract, 10% retainage',
+          columns: ['Draw', 'Work this period', 'Retainage withheld', 'Net payable', 'Retainage held to date'],
+          rows: [
+            ['Draw 1 — site and foundations', '$30,000.00', '$3,000.00', '$27,000.00', '$3,000.00'],
+            ['Draw 2 — framing and rough-in', '$36,000.00', '$3,600.00', '$32,400.00', '$6,600.00'],
+            ['Draw 3 — finishes', '$34,000.00', '$3,400.00', '$30,600.00', '$10,000.00'],
+            ['Draw 4 — final', '$20,000.00', '$2,000.00', '$18,000.00', '$12,000.00'],
+          ],
+          total: [['Contract value billed', '$120,000.00'], ['Received across the four draws', '$108,000.00'], ['Retainage still held at completion', '$12,000.00']],
+          note: 'The release is billed as its own invoice once the contract conditions are met; it is not added to the final draw. Retainage held to date is the number to reconcile against, because each draw only shows the slice withheld that period.',
+        },
       },
       {
         heading: 'Handling change orders',

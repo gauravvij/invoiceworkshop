@@ -74,9 +74,17 @@ fi
 "$PYTHON" scripts/growth_backlink_engine.py cycle --mode daily --queries-per-channel 2
 
 # --- 5. growth intelligence -------------------------------------------------
-# Re-measure content depth and rebuild the opportunity ranking from current
-# evidence, so tomorrow's priorities follow the data rather than yesterday's
-# assumptions. Deterministic: no model is invoked to restate unchanged metrics.
-"$PYTHON" scripts/growth_opportunities.py measure
+# Re-measure page structure, classify why each URL is or is not indexed, and
+# rebuild the opportunity ranking from current evidence, so tomorrow's
+# priorities follow the data rather than yesterday's assumptions.
+# Deterministic: no model is invoked to restate unchanged metrics.
+#
+# `diagnose` is what stops indexing churn. A URL that is correctly published and
+# simply has not been crawled yet is recorded as waiting, not rewritten.
+"$PYTHON" scripts/growth_opportunities.py diagnose
 "$PYTHON" scripts/growth_opportunities.py refresh
 "$PYTHON" scripts/growth_opportunities.py top --limit 8
+
+# Where the outreach calibration cohort has got to. Recommends; approves
+# nothing. Only the owner's signature can widen the channel.
+"$PYTHON" scripts/growth_allocation.py outreach-calibration

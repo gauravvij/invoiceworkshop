@@ -68,6 +68,33 @@ class DailyOrderTests(unittest.TestCase):
             self.assertNotIn('source "$REPO/.env"', source, name)
             self.assertNotIn("source .env", source, name)
 
+    def test_indexing_is_diagnosed_before_priorities_are_rebuilt(self):
+        """Ranking must see today's index states, not yesterday's."""
+        body = "\n".join(
+            line for line in self.source.splitlines() if not line.lstrip().startswith("#")
+        )
+        self.assertLess(body.index("growth_opportunities.py diagnose"),
+                        body.index("growth_opportunities.py refresh"))
+
+    def test_the_weekly_job_reallocates_rather_than_only_reporting(self):
+        weekly = (SCRIPTS / "run_backlink_weekly.sh").read_text(encoding="utf-8")
+        self.assertIn("growth_allocation.py weekly", weekly)
+        # New weights must be applied to the ranking in the same run, otherwise
+        # the reallocation is a description of a decision rather than the
+        # decision itself.
+        body = "\n".join(
+            line for line in weekly.splitlines() if not line.lstrip().startswith("#")
+        )
+        self.assertLess(body.index("growth_allocation.py weekly"),
+                        body.index("growth_opportunities.py refresh"))
+
+    def test_no_scheduled_job_can_approve_or_sign_outreach(self):
+        for name in ("run_backlink_daily.sh", "run_backlink_deep.sh", "run_backlink_weekly.sh"):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            for forbidden in ("approve-action", "install-owner-key",
+                              "growth_outreach_policy.py activate"):
+                self.assertNotIn(forbidden, source, f"{name}: {forbidden}")
+
     def test_growth_jobs_serialise_on_a_lock(self):
         """Two jobs sharing the SQLite file must queue, not collide."""
         for name in ("run_backlink_daily.sh", "run_backlink_deep.sh", "run_backlink_weekly.sh"):

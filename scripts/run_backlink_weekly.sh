@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Weekly evaluation. Reports links acquired, replies, referrals, search movement
-# and which channels earn or lose effort. Reallocation is applied by the engine
-# during discovery; this step reports it. Read-only.
+# Weekly evaluation and reallocation. Reports links acquired, replies, referrals
+# and search movement, then MOVES effort between channels on what they actually
+# produced. The new weights feed straight into the opportunity ranking, so a
+# channel that repeatedly fails loses ground rather than being described as
+# failing in a report. Local writes only: nothing is sent, approved or published.
 set -euo pipefail
 
 # Growth jobs share one SQLite file and discovery holds a long write
@@ -29,3 +31,14 @@ fi
 
 "$PYTHON" scripts/growth_backlink_engine.py evaluate --period 7
 "$PYTHON" scripts/growth_backlink_engine.py report --limit 25
+
+# The decision, not a description of one. `weekly` concludes every experiment
+# whose evaluation window has closed, judges the outreach cohort, and then moves
+# the channel weights that ranking uses. A channel that keeps failing loses
+# ground here; nothing is approved, signed or sent.
+"$PYTHON" scripts/growth_allocation.py weekly
+
+# Re-rank immediately under the new weights so Monday's priorities reflect the
+# reallocation rather than waiting a day for the next daily run.
+"$PYTHON" scripts/growth_opportunities.py refresh
+"$PYTHON" scripts/growth_opportunities.py top --limit 10
