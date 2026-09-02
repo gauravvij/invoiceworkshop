@@ -39,7 +39,10 @@ const software = {
           {section.table && ((table) => (
             <figure class="doc-table-wrap">
               <figcaption>{table.caption}</figcaption>
-              <div class="doc-table-scroll">
+              {/* A region that scrolls must be reachable by keyboard, and named,
+                  or a keyboard or screen-reader user cannot see the columns that
+                  are off-screen at narrow widths. */}
+              <div class="doc-table-scroll" tabindex="0" role="region" aria-label={table.caption}>
                 <table class="doc-table">
                   <thead><tr>{table.columns.map((column, index) => <th scope="col" class={index === 0 ? '' : 'numeric'}>{column}</th>)}</tr></thead>
                   <tbody>{table.rows.map((row) => <tr>{row.map((cell, index) => (index === 0 ? <th scope="row">{cell}</th> : <td class="numeric">{cell}</td>))}</tr>)}</tbody>

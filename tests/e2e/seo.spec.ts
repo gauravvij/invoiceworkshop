@@ -85,3 +85,20 @@ test('production synonym routes redirect directly to the homepage', async ({ req
     expect(new URL(response.headers().location!, 'https://invoiceworkshop.com').href).toBe('https://invoiceworkshop.com/');
   }
 });
+
+test('no page scrolls sideways at mobile width', async ({ page }) => {
+  // Worked-example tables carry a min-width so their columns stay readable. The
+  // scroll container holds that width only if the grid column around it is
+  // allowed to shrink below its content; `1fr` is not, and three pages shipped
+  // a sideways-scrolling document before this was caught.
+  await page.setViewportSize({ width: 360, height: 780 });
+  for (const path of publicUrls) {
+    await page.goto(path);
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth, `${path} overflows: ${scrollWidth} > ${clientWidth}`)
+      .toBeLessThanOrEqual(clientWidth);
+  }
+});
