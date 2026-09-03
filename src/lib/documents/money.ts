@@ -89,6 +89,14 @@ export interface DocumentTotals {
   depositMinor: number;
   totalMinor: number;
   balanceDueMinor: number;
+  /**
+   * A receipt's own arithmetic. `amountPaidMinor` is what the receipt says was
+   * received; `balanceRemainingMinor` is what is still owed after it, which is
+   * the figure a part-payment receipt exists to state and the one a customer
+   * will check. Zero on every other document kind.
+   */
+  amountPaidMinor: number;
+  balanceRemainingMinor: number;
 }
 
 export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
@@ -98,6 +106,12 @@ export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
   const taxableMinor = lines.reduce((sum, line) => sum + line.taxableMinor, 0);
   const taxMinor = lines.reduce((sum, line) => sum + line.taxMinor, 0);
   const totalMinor = taxableMinor + taxMinor + document.shippingMinor + document.adjustmentMinor;
+  // A receipt with nothing entered acknowledges the whole total: that is the
+  // common case, and asking someone to retype the figure they can already see
+  // is how a receipt ends up disagreeing with its own line items.
+  const amountPaidMinor = document.kind === 'receipt'
+    ? (document.amountPaidMinor || totalMinor)
+    : 0;
   return {
     subtotalMinor,
     discountMinor,
@@ -108,5 +122,8 @@ export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
     depositMinor: document.depositMinor,
     totalMinor,
     balanceDueMinor: Math.max(0, totalMinor - document.depositMinor),
+    amountPaidMinor,
+    // Overpayment is a real thing and clamping it to zero would hide it.
+    balanceRemainingMinor: document.kind === 'receipt' ? totalMinor - amountPaidMinor : 0,
   };
 };

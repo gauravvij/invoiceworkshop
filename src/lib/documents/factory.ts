@@ -92,7 +92,9 @@ export const createDocument = (
   return {
     id: crypto.randomUUID(),
     kind,
-    status: 'draft',
+    // A receipt exists because money arrived. Starting one as a draft asks the
+    // user to mark a fact they already stated by choosing the document.
+    status: kind === 'receipt' ? 'paid' : 'draft',
     number: `${numbering.prefixes[kind]}${numbering.nextNumbers[kind]}`,
     issueDate: timestamp.slice(0, 10),
     dueDate: addDays(now, kind === 'receipt' ? 0 : 30),
@@ -110,6 +112,8 @@ export const createDocument = (
     reference: '',
     depositMinor: 0,
     progressBillingNote: '',
+    paymentMethod: '',
+    amountPaidMinor: 0,
     createdAt: timestamp,
     updatedAt: timestamp,
   };

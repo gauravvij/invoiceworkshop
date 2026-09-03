@@ -133,6 +133,11 @@ const normalizeDocument = (value: unknown): DocumentRecord | undefined => {
     reference: text(source.reference),
     depositMinor: amount(source.depositMinor),
     progressBillingNote: text(source.progressBillingNote),
+    // Documents saved before receipts had payment fields simply lack these, so
+    // they read back at their defaults rather than failing normalisation. That
+    // is the whole migration: everything here already tolerates a missing key.
+    paymentMethod: text(source.paymentMethod),
+    amountPaidMinor: amount(source.amountPaidMinor),
     convertedFrom: record(source.convertedFrom) as DocumentRecord['convertedFrom'] | undefined,
     createdAt: text(source.createdAt, fallback.createdAt),
     updatedAt: text(source.updatedAt, fallback.updatedAt),

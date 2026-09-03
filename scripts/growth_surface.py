@@ -51,6 +51,14 @@ PRESENTATIONAL_KINDS = frozenset({"heading", "description", "copy", "example"})
 MIN_DIFFERENTIATORS = 3
 MIN_FUNCTIONAL = 2
 
+# Build order. Expected growth value is usefulness x realistic traffic upside x
+# confidence, divided by effort -- so the crowded receipt SERP still leads,
+# because the document kind already exists end to end and the build is small,
+# while the weakest field (delivery notes) comes last because it needs a line
+# model the rest of the product does not have. A family without a score sorts
+# below the ones that have been ranked rather than jumping the queue.
+DEFAULT_VALUE = 1.0
+
 # Whether the product change a family depends on already exists.
 #
 #   content_only -- the capability is shipped, so the page is an entry in
@@ -209,9 +217,17 @@ LOCALES = [
 
 DOCUMENTS = [
     {
-        "key": "doc-receipt", "build_scope": "product", "name": "Receipt generator", "route": "/receipt-generator/",
-        "demand": "SERP for 'free receipt maker' is a crowded commercial market -- "
-                  "MakeReceipt, MakeMyReceipt, Portant -- which is evidence of real volume",
+        "key": "doc-receipt", "expected_value": 9.0,
+        "value_basis": "the kind already exists in the type union, factory, conversions, PDF and storage, so the build is fields and a page rather than a new document model; largest demand of the four", "build_scope": "product", "name": "Receipt generator", "route": "/receipt-generator/",
+        "demand": "SERP checked 3 September 2026. 'free receipt maker generator online' "
+                  "returns MakeMyReceipt, SimpleReceiptMaker (130+ templates), ReceiptMake, "
+                  "ReceiptBaker, ExpensesReceipt, InvoiceSimple, InvoiceFly and CraftMyPDF: "
+                  "heavy commercial competition, so real volume. Most of that page is "
+                  "till-receipt replication -- register and cashier fields, barcodes, "
+                  "'recreate a lost receipt' -- which is a different and worse product. The "
+                  "unserved intent is a business confirming a payment against an invoice, "
+                  "which the template libraries (Adobe, Docusign, bill.com) answer with a "
+                  "static download and the invoicing apps answer behind a login",
         "differentiators": [
             _d("document_structure", "A receipt records payment already taken: no due date, "
                                      "no payment terms, no balance due"),
@@ -225,9 +241,13 @@ DOCUMENTS = [
                           "has no page; give it payment fields and a paid-status total block",
     },
     {
-        "key": "doc-credit-note", "build_scope": "product", "name": "Credit note generator", "route": "/credit-note-generator/",
-        "demand": "SERP for 'credit note template free' returns dedicated generators from "
-                  "Zoho, SumUp and several template libraries",
+        "key": "doc-credit-note", "expected_value": 7.0,
+        "value_basis": "unambiguous B2B intent, the weakest incumbent tools of the three remaining, and it pairs with the existing invoice through the same conversion mechanism the receipt uses", "build_scope": "product", "name": "Credit note generator", "route": "/credit-note-generator/",
+        "demand": "SERP checked 3 September 2026. 'credit note generator template free' "
+                  "returns Billdu, PaidNice, InvoiceHome, invoice-generator.com, DepositFix, "
+                  "invoicegenerators.ai and Template.net. Several are static downloads rather "
+                  "than working generators, and the intent is unambiguous and B2B -- the same "
+                  "audience already using the invoice tool",
         "differentiators": [
             _d("document_structure", "References the original invoice it reverses, in full "
                                      "or in part"),
@@ -240,10 +260,15 @@ DOCUMENTS = [
                           "sign-inverted totals",
     },
     {
-        "key": "doc-delivery-note", "build_scope": "product", "name": "Delivery note / packing slip",
+        "key": "doc-delivery-note", "expected_value": 4.0,
+        "value_basis": "weakest field, which is the upside, against the largest build: totals are unit counts rather than money and no existing document behaves that way", "build_scope": "product", "name": "Delivery note / packing slip",
         "route": "/delivery-note-template/",
-        "demand": "SERP for 'delivery note template free' returns Word/Excel downloads and "
-                  "one or two generators -- a weakly served market",
+        "demand": "SERP checked 3 September 2026. 'delivery note template free online "
+                  "generator packing slip' returns DeliveryNote.io, FreeDocumentMaker, "
+                  "Edit.org, InvoiceProforma, SendInvoice, AIFormatter and Enerpize -- the "
+                  "weakest field of the four, several of them thin AI-generated shells. Also "
+                  "the largest build: a priceless line model where totals are unit counts "
+                  "rather than money, and the audience is fulfilment rather than freelancers",
         "differentiators": [
             _d("document_structure", "No prices at all: quantities shipped against "
                                      "quantities ordered"),
@@ -256,10 +281,14 @@ DOCUMENTS = [
                           "shipped/ordered quantity pair",
     },
     {
-        "key": "doc-timesheet-invoice", "build_scope": "product", "name": "Timesheet invoice",
+        "key": "doc-timesheet-invoice", "expected_value": 5.0,
+        "value_basis": "closest to the existing invoice and cheapest to build, but the head terms are held by QuickBooks and Wave, so the realistic traffic upside is the lowest", "build_scope": "product", "name": "Timesheet invoice",
         "route": "/timesheet-invoice-generator/",
-        "demand": "SERP for 'timesheet invoice template' returns contractor and agency "
-                  "templates; strong recurring intent among hourly workers",
+        "demand": "SERP checked 3 September 2026. 'timesheet invoice template contractor "
+                  "hours' is held by incumbents -- QuickBooks, Wave, InvoiceSimple, Billdu, "
+                  "eForms, MyHours -- with one small dedicated tool (GraphMaker). Strong "
+                  "recurring intent among hourly workers, but the head terms are the "
+                  "hardest of the four and the audience overlaps our existing users most",
         "differentiators": [
             _d("line_defaults", "Lines are dated work entries: date, hours, rate, description"),
             _d("extra_column", "Date column per line, which the invoice line model has no "
@@ -273,7 +302,8 @@ DOCUMENTS = [
 
 UTILITIES = [
     {
-        "key": "util-late-payment", "build_scope": "product", "name": "Late payment interest calculator",
+        "key": "util-late-payment", "expected_value": 6.0,
+        "value_basis": "a genuine calculator earns links that no template page does, but the jurisdiction rate table is real research", "build_scope": "product", "name": "Late payment interest calculator",
         "route": "/late-payment-interest-calculator/",
         "demand": "Statutory late-payment interest is the most cited freelancer problem in "
                   "the resource pages our own outreach research surfaced",
@@ -385,6 +415,8 @@ def check(family: dict, *, taken: set[str], facts: dict[str, dict] | None = None
         "functional": len(functional),
         "functional_kinds": sorted({d["kind"] for d in functional}),
         "product_change": family["product_change"],
+        "expected_value": family.get("expected_value", DEFAULT_VALUE),
+        "value_basis": family.get("value_basis", ""),
     }
     gate.update(sourcing)
     return gate
@@ -474,9 +506,10 @@ def evaluate(connection: sqlite3.Connection) -> dict:
                        VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?)
                        ON CONFLICT(slug) DO UPDATE SET
                          differentiators=excluded.differentiators,
+                         demand_score=excluded.demand_score,
                          updated_at=excluded.updated_at""",
                     (family["key"], family["key"], family["name"], family["route"],
-                     float(gate["functional"]),
+                     float(family.get("expected_value", DEFAULT_VALUE)),
                      json.dumps(family["differentiators"], sort_keys=True), now, now),
                 )
     connection.commit()

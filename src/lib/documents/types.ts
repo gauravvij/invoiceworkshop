@@ -86,6 +86,15 @@ export interface DocumentRecord {
   reference: string;
   depositMinor: number;
   progressBillingNote: string;
+  /**
+   * How the money arrived. Only a receipt uses these: an invoice asks for
+   * payment and a receipt records one, and that is the whole difference
+   * between the two documents. Stored on the shared record rather than in a
+   * separate receipt type so that converting an invoice keeps everything else.
+   */
+  paymentMethod: string;
+  /** What this receipt acknowledges. Below the total, a balance remains. */
+  amountPaidMinor: number;
   convertedFrom?: { id: string; kind: DocumentKind; number: string };
   createdAt: string;
   updatedAt: string;

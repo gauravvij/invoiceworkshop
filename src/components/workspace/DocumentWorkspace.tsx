@@ -38,6 +38,9 @@ interface Props {
 type SaveState = 'loading' | 'saved' | 'saving' | 'error';
 
 const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'INR', 'JPY', 'CHF', 'SGD', 'AED'];
+// Suggestions, not a closed list: the field is free text because a receipt that
+// cannot say "standing order" or "UPI" is worse than one with a shorter menu.
+const paymentMethods = ['Bank transfer', 'Card', 'Cash', 'Cheque', 'Direct debit', 'PayPal', 'Stripe', 'Other'];
 
 const percentage = (basisPoints: number) => `${basisPoints / 100}%`;
 const displayAddress = (client: Client | DocumentRecord['business']) =>
@@ -403,7 +406,9 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                   {currencies.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
               </label>
-              <Field label="Reference / PO" value={document.reference} onChange={(value) => updateDocument('reference', value)} />
+              {document.kind !== 'receipt' && (
+                <Field label="Reference / PO" value={document.reference} onChange={(value) => updateDocument('reference', value)} />
+              )}
               <label className="field">
                 <span>Status</span>
                 <select value={document.status} onChange={(event) => updateDocument('status', event.target.value as DocumentRecord['status'])}>
@@ -413,6 +418,35 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                 </select>
               </label>
             </div>
+            {document.kind === 'receipt' && (
+              <div className="form-grid section-subgrid">
+                <label className="field">
+                  <span>Payment method</span>
+                  <input
+                    list="payment-methods"
+                    value={document.paymentMethod}
+                    onChange={(event) => updateDocument('paymentMethod', event.target.value)}
+                    placeholder="Bank transfer"
+                  />
+                </label>
+                <MoneyField
+                  label="Amount received"
+                  minor={document.amountPaidMinor || totals.totalMinor}
+                  currency={document.currency}
+                  onChange={(value) => updateDocument('amountPaidMinor', value)}
+                />
+                <Field
+                  label="Transaction reference"
+                  value={document.reference}
+                  onChange={(value) => updateDocument('reference', value)}
+                />
+              </div>
+            )}
+            {document.kind === 'receipt' && (
+              <datalist id="payment-methods">
+                {paymentMethods.map((method) => <option key={method} value={method} />)}
+              </datalist>
+            )}
             {(vertical || ['workOrder', 'estimate'].includes(document.kind)) && (
               <div className="form-grid section-subgrid">
                 <Field label="Project / job" value={document.projectName} onChange={(value) => updateDocument('projectName', value)} />
@@ -556,11 +590,14 @@ function DocumentPreview({ document, totals, preset }: { document: DocumentRecor
               <h2>{preset?.documentTitle && document.kind === 'invoice' ? preset.documentTitle : documentLabels[document.kind]}</h2>
               <strong>{document.number}</strong>
               <span className={`status-chip status-chip--${document.status}`}>{document.status}</span>
+              {document.kind === 'receipt' && totals.balanceRemainingMinor <= 0 && (
+                <span className="paid-mark" aria-label="Paid in full">PAID</span>
+              )}
             </div>
           </header>
           <div className="document-parties">
             <div><small>{document.kind === 'purchaseOrder' ? 'SUPPLIER' : 'BILL TO'}</small><strong>{document.client.name || 'Customer name'}</strong>{displayAddress(document.client).map((line) => <span key={line}>{line}</span>)}{document.client.email && <span>{document.client.email}</span>}</div>
-            <dl><div><dt>Issue date</dt><dd>{formatLocaleDate(document.issueDate, preset)}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : 'Due / valid until'}</dt><dd>{formatLocaleDate(document.dueDate, preset)}</dd></div>{document.reference && <div><dt>Reference</dt><dd>{document.reference}</dd></div>}</dl>
+            <dl><div><dt>Issue date</dt><dd>{formatLocaleDate(document.issueDate, preset)}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : 'Due / valid until'}</dt><dd>{formatLocaleDate(document.dueDate, preset)}</dd></div>{document.reference && <div><dt>{document.kind === 'receipt' ? 'Transaction ref' : 'Reference'}</dt><dd>{document.reference}</dd></div>}{document.kind === 'receipt' && document.paymentMethod && <div><dt>Paid by</dt><dd>{document.paymentMethod}</dd></div>}</dl>
           </div>
           {(document.projectName || document.jobsite) && <div className="project-strip"><span><small>PROJECT</small>{document.projectName}</span><span><small>JOBSITE</small>{document.jobsite}</span></div>}
           <div className="preview-table-scroll">
@@ -577,6 +614,11 @@ function DocumentPreview({ document, totals, preset }: { document: DocumentRecor
             {totals.adjustmentMinor !== 0 && <div><span>Adjustment</span><strong>{formatMoney(totals.adjustmentMinor, document.currency)}</strong></div>}
             <div className="grand-total"><span>Total</span><strong>{formatMoney(totals.totalMinor, document.currency)}</strong></div>
             {totals.depositMinor > 0 && <><div><span>Deposit paid</span><strong>−{formatMoney(totals.depositMinor, document.currency)}</strong></div><div className="balance-due"><span>Balance due</span><strong>{formatMoney(totals.balanceDueMinor, document.currency)}</strong></div></>}
+            {document.kind === 'receipt' && <>
+              <div><span>Amount received</span><strong>{formatMoney(totals.amountPaidMinor, document.currency)}</strong></div>
+              {totals.balanceRemainingMinor > 0 && <div className="balance-due"><span>Balance remaining</span><strong>{formatMoney(totals.balanceRemainingMinor, document.currency)}</strong></div>}
+              {totals.balanceRemainingMinor < 0 && <div className="balance-due"><span>Overpaid</span><strong>{formatMoney(-totals.balanceRemainingMinor, document.currency)}</strong></div>}
+            </>}
           </div>
           {(document.notes || document.paymentInstructions || document.terms) && <footer className="document-notes">
             {document.notes && <div><strong>Notes</strong><p>{document.notes}</p></div>}

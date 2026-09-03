@@ -37,6 +37,14 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
   pdf.text(documentLabels[document.kind].toUpperCase(), pageWidth - margin, 55, { align: 'right' });
   pdf.setFontSize(11);
   pdf.text(`# ${document.number}`, pageWidth - margin, 75, { align: 'right' });
+  // The mark a customer looks for first, and the reason a receipt is not just an
+  // invoice with a different heading. Only where the money actually covers it.
+  if (document.kind === 'receipt' && totals.balanceRemainingMinor <= 0) {
+    pdf.setTextColor('#1a7f4b');
+    pdf.setFontSize(13);
+    pdf.text('PAID', pageWidth - margin, 93, { align: 'right' });
+    pdf.setTextColor(navy);
+  }
 
   pdf.setFontSize(14);
   const businessName = pdf.splitTextToSize(document.business.name || 'Your business', 245) as string[];
@@ -79,7 +87,15 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
   pdf.setTextColor(navy);
   pdf.text(`Issued: ${document.issueDate}`, pageWidth - margin, 204, { align: 'right' });
   pdf.text(`${document.kind === 'receipt' ? 'Paid' : 'Due'}: ${document.dueDate}`, pageWidth - margin, 220, { align: 'right' });
-  if (document.reference) pdf.text(`Reference: ${document.reference}`, pageWidth - margin, 236, { align: 'right' });
+  if (document.reference) {
+    pdf.text(
+      `${document.kind === 'receipt' ? 'Transaction ref' : 'Reference'}: ${document.reference}`,
+      pageWidth - margin, 236, { align: 'right' },
+    );
+  }
+  if (document.kind === 'receipt' && document.paymentMethod) {
+    pdf.text(`Paid by: ${document.paymentMethod}`, pageWidth - margin, 252, { align: 'right' });
+  }
 
   autoTable(pdf, {
     startY: 276,
@@ -114,13 +130,25 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
     ...(totals.adjustmentMinor ? ([['Adjustment', totals.adjustmentMinor]] as Array<[string, number]>) : []),
     ['Total', totals.totalMinor],
     ...(totals.depositMinor ? ([['Deposit paid', -totals.depositMinor], ['Balance due', totals.balanceDueMinor]] as Array<[string, number]>) : []),
+    // A receipt's point is the money received and what, if anything, is left.
+    ...(document.kind === 'receipt'
+      ? ([
+          ['Amount received', totals.amountPaidMinor],
+          ...(totals.balanceRemainingMinor > 0
+            ? ([['Balance remaining', totals.balanceRemainingMinor]] as Array<[string, number]>)
+            : []),
+          ...(totals.balanceRemainingMinor < 0
+            ? ([['Overpaid', -totals.balanceRemainingMinor]] as Array<[string, number]>)
+            : []),
+        ] as Array<[string, number]>)
+      : []),
   ];
   if (y + totalRows.length * 18 > pdf.internal.pageSize.getHeight() - 100) {
     pdf.addPage();
     y = 60;
   }
   for (const [label, value] of totalRows) {
-    const isTotal = label === 'Total' || label === 'Balance due';
+    const isTotal = label === 'Total' || label === 'Balance due' || label === 'Balance remaining';
     pdf.setFont('helvetica', isTotal ? 'bold' : 'normal');
     pdf.setFontSize(isTotal ? 11 : 9);
     pdf.setTextColor(navy);

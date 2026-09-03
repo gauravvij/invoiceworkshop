@@ -205,3 +205,32 @@ test('creates a realistic branded multi-page customer PDF', async ({ page, brows
     await download.saveAs(path.join(process.env.PDF_QA_OUTPUT, download.suggestedFilename()));
   }
 });
+
+test('a receipt records the payment rather than requesting one', async ({ page, isMobile }) => {
+  await page.goto('/receipt-generator/');
+  // The heading is the whole point: a receipt is not an invoice with a chip on it.
+  await expect(page.locator('.document-identity h2')).toHaveText('Receipt');
+  await expect(page.getByLabel('Paid date')).toBeVisible();
+  await expect(page.getByLabel('Due / valid until')).toHaveCount(0);
+  await expect(page.getByLabel('Payment method')).toBeVisible();
+  await expect(page.getByLabel('Transaction reference')).toBeVisible();
+
+  const rate = page.locator('.line-item').first().getByLabel('Unit price');
+  await rate.fill('100.00');
+  await rate.blur();
+  await expect(page.locator('.preview-totals')).toContainText('Amount received');
+  // Nothing was underpaid, so it marks itself paid without being asked. The
+  // preview is behind a toggle at mobile width, and a mark nobody can see is
+  // not a mark, so the check has to open it rather than settle for the DOM.
+  const showPaidMark = async () => {
+    if (isMobile) await page.getByRole('button', { name: 'Show preview' }).click();
+    await expect(page.locator('.paid-mark')).toBeVisible();
+    if (isMobile) await page.getByRole('button', { name: 'Show editor' }).click();
+  };
+  await showPaidMark();
+
+  await page.getByLabel('Amount received').fill('40.00');
+  await page.getByLabel('Amount received').blur();
+  await expect(page.locator('.preview-totals')).toContainText('Balance remaining');
+  await expect(page.locator('.paid-mark')).toHaveCount(0);
+});

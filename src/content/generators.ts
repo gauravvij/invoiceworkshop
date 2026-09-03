@@ -75,6 +75,7 @@ export const generators: Record<string, GeneratorContent> = {
       { href: '/purchase-order-generator/', label: 'Purchase Order Generator', text: 'Create purchasing paperwork for a supplier.' },
       { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Bill labor, materials, deposits and project work.' },
       { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Create a practical contractor-specific invoice.' },
+      { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm the payment once the invoice is settled.' },
     ],
   },
   proforma: {
@@ -720,6 +721,78 @@ export const generators: Record<string, GeneratorContent> = {
       },
       { heading: 'Keep records safely', paragraphs: ['Documents persist only in this browser, so export backups as part of your normal recordkeeping. Clearing browser site data removes the saved workspace. The generated PDF can be stored or shared wherever you normally manage business records.'] },
     ],
-    related: [{ href: '/', label: 'Invoice Generator', text: 'Use the primary invoice-generation page.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use project and deposit fields for contract work.' }, { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Itemize construction labor and materials.' }],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'Use the primary invoice-generation page.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use project and deposit fields for contract work.' }, { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Record the payment when it arrives.' }, { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Itemize construction labor and materials.' }],
+  },
+  receiptGenerator: {
+    path: '/receipt-generator/', kind: 'receipt', dynamic: true,
+    title: 'Free Receipt Generator | Payment Receipt Maker | Invoice Workshop',
+    description: 'Create a payment receipt free: amount received, payment method, transaction reference and the balance remaining. Marks PAID automatically. No signup, PDF download.',
+    h1: 'Free Receipt Generator', eyebrow: 'Confirm the payment, not just the bill',
+    intro: 'Record a payment you have received. Enter what was paid, how it arrived and against what, and the receipt marks itself PAID when the amount covers the total. A part payment shows the balance that is still outstanding.',
+    reassurance: 'Everything stays in this browser. Your business, customers and past receipts are saved on this device only.',
+    sections: [
+      {
+        heading: 'What a receipt does that an invoice does not',
+        paragraphs: [
+          'An invoice asks for money. A receipt confirms money arrived. They carry almost the same details, which is why the two are so often confused, but the fields that matter are different: a receipt has no due date and no payment terms, and it does have an amount received, a payment method and a date the money landed.',
+          'That distinction is not cosmetic. A customer who is sent an invoice marked "paid" has no record of how much was paid or when, and cannot use it to close their own books. A receipt states those things.',
+        ],
+        bullets: [
+          'Amount actually received, which may be less than the total',
+          'How it was paid — transfer, card, cash, cheque, direct debit',
+          'The date the money arrived, not a date it is due',
+          'A transaction reference the customer can match to their bank',
+          'The balance remaining, if the payment was partial',
+        ],
+      },
+      {
+        heading: 'A worked part payment',
+        paragraphs: [
+          'Most receipt tools assume the customer paid everything. Part payments are where a receipt earns its keep, and where the arithmetic is easiest to get wrong, so here it is worked through. Tax is calculated on each line and rounded there, then the lines are added — the same order the editor above uses.',
+        ],
+        table: {
+          caption: 'Receipt REC-1042 — part payment against invoice INV-2026-0208',
+          columns: ['Description', 'Qty', 'Rate', 'Amount'],
+          rows: [
+            ['Kitchen fit, labour', '38 hours', '$62.00', '$2,356.00'],
+            ['Worktop and fittings', '1', '$1,180.00', '$1,180.00'],
+          ],
+          total: [['Subtotal', '$3,536.00'], ['Tax at 8.25%', '$291.72'], ['Total', '$3,827.72'], ['Amount received', '$2,000.00'], ['Balance remaining', '$1,827.72']],
+          note: 'Tax is $194.37 on the labour line and $97.35 on the materials line, which add to $291.72. Taxing the $3,536.00 subtotal in one step gives $291.72 here as well, but the two methods diverge by a cent or two once more lines are involved, and it is the per-line figure that has to match what the customer sees.',
+        },
+      },
+      {
+        heading: 'Turn an invoice you already made into its receipt',
+        paragraphs: [
+          'If the invoice was created here, open it and convert it rather than retyping. The receipt keeps the customer, the line items and the totals, carries the invoice number across as the reference, sets the amount received to the invoice total and marks itself paid. Change the amount if only part of it arrived.',
+          'Both documents stay in your list, so the invoice and the receipt that settles it can be produced separately when either is asked for.',
+        ],
+      },
+      {
+        heading: 'Receipt, invoice, credit note or statement?',
+        paragraphs: [
+          'These four get sent in place of one another constantly, and each mistake creates a different problem for the person receiving it.',
+        ],
+        terms: [
+          { term: 'Receipt', definition: 'Confirms money has been received. Issued after payment, never before, and states the amount and method.' },
+          { term: 'Invoice', definition: 'Requests payment. Carries a due date and payment terms, which a receipt does not.' },
+          { term: 'Credit note', definition: 'Reverses an invoice in whole or in part, for a return, an overcharge or a cancellation. It reduces what is owed rather than recording a payment.' },
+          { term: 'Statement', definition: 'Lists every invoice and payment on an account over a period. It is a summary, not a demand, and is not evidence that any single payment was made.' },
+        ],
+      },
+      {
+        heading: 'Keeping the record',
+        paragraphs: [
+          'Receipts are saved in this browser alongside your invoices and can be exported as a backup. Clearing site data removes them, so download the PDF for anything you need to keep. Invoice Workshop does not upload your document contents and cannot recover a workspace you have cleared.',
+          'This tool produces a business receipt for a payment you have received. It is not a point-of-sale or till receipt, and it does not report anything to a tax authority. Whether a receipt is required, and what it must contain, depends on where you trade and how you are registered.',
+        ],
+      },
+    ],
+    related: [
+      { href: '/', label: 'Invoice Generator', text: 'Create the invoice this receipt settles.' },
+      { href: '/invoice-template/', label: 'Invoice Template', text: 'Start from a plain invoice layout.' },
+      { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Price the work before it is agreed.' },
+      { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Bill contract work with project and deposit fields.' },
+    ],
   },
 };
