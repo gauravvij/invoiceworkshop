@@ -250,9 +250,10 @@ class PolicyIntegrationTests(Fixture):
         self.assertIn("jurisdiction_layer", policy.POLICY)
 
 
-class ApprovedBodyTests(Fixture):
-    """Configuring the sender identity must never invalidate a message the owner
-    has already signed. It did, silently, until this was pinned."""
+class BothGatesTests(Fixture):
+    """A signature says the owner approved these words. It does not say the
+    message may lawfully go to this recipient today. Both gates, always, and
+    neither standing in for the other."""
 
     def _action_with_approved_hash(self):
         import growth_level1a as l
@@ -264,7 +265,6 @@ class ApprovedBodyTests(Fixture):
                        '{opening_value}', '{context_value}', '{fit_value}', '{close_value}',
                        900, ?)""", (utc_now(),))
         prospect = self.prospect()
-        # load_action joins the qualification record, so the fixture needs one.
         self.connection.execute(
             """INSERT INTO prospect_qualification
                  (prospect_id, channel, page_evidence, target_url, proposed_action,
@@ -294,31 +294,58 @@ class ApprovedBodyTests(Fixture):
         self.connection.commit()
         return rendered.message_hash
 
-    def test_a_signed_message_still_matches_after_identity_is_configured(self):
+    def test_a_valid_signature_does_not_bypass_the_compliance_gate(self):
+        """The defect this replaces: an old approved hash used as permission to
+        send a message the compliance layer would refuse."""
+        import growth_level1a as l
+        self._action_with_approved_hash()
+        action = l.load_action(self.connection, 900)
+        self.connection.execute(
+            """INSERT INTO outreach_compliance
+                 (prospect_id, domain, recipient, jurisdiction, verdict, reasons, assessed_at)
+               VALUES (?, 'example.com', 'hello@example.com', 'US', 'REVIEW',
+                       'postal address missing', ?)""",
+            (action["prospect_id"], utc_now()))
+        self.connection.commit()
+        with self.assertRaises(l.ValidationError) as caught:
+            l._require_compliance(self.connection, action)
+        self.assertIn("REVIEW for US", str(caught.exception))
+
+    def test_an_unassessed_recipient_is_not_permission(self):
+        import growth_level1a as l
+        self._action_with_approved_hash()
+        with self.assertRaises(l.ValidationError) as caught:
+            l._require_compliance(self.connection, l.load_action(self.connection, 900))
+        self.assertIn("no jurisdiction assessment", str(caught.exception))
+
+    def test_an_eligible_recipient_passes(self):
+        import growth_level1a as l
+        self._action_with_approved_hash()
+        action = l.load_action(self.connection, 900)
+        self.connection.execute(
+            """INSERT INTO outreach_compliance
+                 (prospect_id, domain, recipient, jurisdiction, verdict, reasons, assessed_at)
+               VALUES (?, 'example.com', 'hello@example.com', 'UK', 'ELIGIBLE', 'ok', ?)""",
+            (action["prospect_id"], utc_now()))
+        self.connection.commit()
+        l._require_compliance(self.connection, action)
+
+    def test_configuring_identity_changes_the_body_so_re_signing_is_required(self):
+        """Fail closed. The old signed body is never substituted to keep a hash
+        matching -- that substitution was the bypass."""
         import growth_level1a as l
         approved = self._action_with_approved_hash()
         self.complete_identity()
         rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
-        self.assertEqual(rendered.message_hash, approved)
-
-    def test_an_unapproved_action_gets_the_compliant_footer(self):
-        import growth_level1a as l
-        self._action_with_approved_hash()
-        self.connection.execute(
-            "UPDATE level1a_actions SET approved_message_hashes_json='[]' WHERE id=900")
-        self.connection.commit()
-        self.complete_identity()
-        rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
+        self.assertNotEqual(rendered.message_hash, approved)
         self.assertIn("1 Example Street", rendered.body)
         self.assertIn("Reply STOP", rendered.body)
 
-    def test_the_fallback_cannot_approve_anything_the_owner_did_not_sign(self):
-        """It only ever returns a body; the executor still refuses one whose
-        hash is not on the owner's list."""
-        import growth_level1a as l
-        self._action_with_approved_hash()
-        self.connection.execute(
-            "UPDATE level1a_actions SET approved_message_hashes_json='[\"deadbeef\"]' WHERE id=900")
-        self.connection.commit()
-        rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
-        self.assertNotEqual(rendered.message_hash, "deadbeef")
+    def test_the_renderer_has_no_approved_body_fallback_left(self):
+        source = Path(l_source()).read_text()
+        self.assertNotIn("_body_the_owner_approved", source)
+
+
+def l_source():
+    import growth_level1a
+    return growth_level1a.__file__

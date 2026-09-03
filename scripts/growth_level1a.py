@@ -786,38 +786,9 @@ def render_message(connection: sqlite3.Connection, action: sqlite3.Row, attempt_
         fit = str(action["fit_template"]).format_map(values).strip()
         close = str(action["close_template"]).format_map(values).strip()
         core = f"{opening}\n\n{context}\n\n{fit}\n\n{target}\n\n{close}"
-    body = _body_the_owner_approved(connection, action, subject, core)
+    body = f"{core}\n\n{_signature(connection)}"
     digest = _sha256(subject + "\n\n" + body)
     return RenderedMessage(int(action["id"]), attempt_number, subject, body, digest)
-
-
-def _body_the_owner_approved(
-    connection: sqlite3.Connection, action: sqlite3.Row, subject: str, core: str
-) -> str:
-    """The message body, preferring the exact text the owner signed.
-
-    The compliance footer is assembled from the owner-configured sender
-    identity, so configuring a postal address changes every rendered body --
-    and the executor refuses to send a body whose hash is not on the approved
-    list. That would silently block already-signed actions the moment the
-    address was filled in, which is the opposite of what configuring it is for.
-
-    So: render with the current footer, and if that is not what was approved
-    while the older footer IS, send the older one. Nothing is self-approved --
-    the message still has to match a hash the owner signed, and an action with
-    no approved hash at all is unaffected and gets the current footer.
-    """
-    current = f"{core}\n\n{_signature(connection)}"
-    try:
-        approved = json.loads(action["approved_message_hashes_json"] or "[]")
-    except (TypeError, ValueError, IndexError):
-        return current
-    if not approved:
-        return current
-    if _sha256(subject + "\n\n" + current) in approved:
-        return current
-    legacy = f"{core}\n\nInvoiceWorkshop\n{FROM_ADDRESS}"
-    return legacy if legacy != current else current
 
 
 def _signature(connection: sqlite3.Connection) -> str:
@@ -1040,6 +1011,7 @@ def validate_action(
         approved_hashes = json.loads(action["approved_message_hashes_json"])
         if rendered.message_hash not in approved_hashes:
             raise ValidationError("rendered message differs from the owner-approved message")
+        _require_compliance(connection, action)
         today = now.date().isoformat()
         total = connection.execute(
             "SELECT COUNT(*) FROM level1a_action_audit WHERE mode='live' AND validation_result='passed' AND substr(started_at,1,10)=?",
@@ -1053,6 +1025,30 @@ def validate_action(
         new_cap = int(connection.execute("SELECT value FROM level1a_settings WHERE key='daily_new_cap'").fetchone()[0])
         if total >= total_cap or (rendered.attempt_number == 0 and new >= new_cap):
             raise ValidationError("daily Level-1A cap reached")
+
+
+def _require_compliance(connection: sqlite3.Connection, action: sqlite3.Row) -> None:
+    """The jurisdiction gate applies to individually signed actions too.
+
+    A signature says the owner approved these words. It does not say the message
+    may lawfully be sent to this recipient today, and the two questions have
+    different answers as circumstances change -- a recipient publishes a refusal,
+    a jurisdiction is established, a required element is still missing. So both
+    gates must pass and neither may stand in for the other. An action with no
+    assessment on record fails: unassessed is not permission.
+    """
+    row = connection.execute(
+        "SELECT verdict, jurisdiction, reasons FROM outreach_compliance WHERE prospect_id=?",
+        (action["prospect_id"],),
+    ).fetchone()
+    if row is None:
+        raise ValidationError(
+            "no jurisdiction assessment on record for this recipient, so it is not "
+            "established that the message may be sent to them")
+    if row["verdict"] != "ELIGIBLE":
+        raise ValidationError(
+            f"compliance gate says {row['verdict']} for {row['jurisdiction']}: "
+            f"{row['reasons']}")
 
 
 def _record_audit(

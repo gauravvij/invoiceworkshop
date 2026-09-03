@@ -356,6 +356,15 @@ class Level1ATests(unittest.TestCase):
                  f"h-{number}", "passed", "submitted", "active", "email_sent"),
             )
         action = load_action(self.connection, action["id"])
+        # The compliance gate runs before the cap, so this fixture needs a
+        # verdict on record to reach the behaviour it is actually testing.
+        self.connection.execute(
+            """INSERT INTO outreach_compliance
+                 (prospect_id, domain, recipient, jurisdiction, verdict, reasons, assessed_at)
+               VALUES (?, 'example.com', ?, 'UK', 'ELIGIBLE', 'ok', ?)
+               ON CONFLICT(prospect_id) DO UPDATE SET verdict='ELIGIBLE'""",
+            (action["prospect_id"], action["recipient"], now.isoformat()))
+        self.connection.commit()
         with patch.dict(os.environ, {"LEVEL1_OUTBOUND_ENABLED": "true"}), self.assertRaisesRegex(ValidationError, "daily"):
             validate_action(self.connection, action, message, live=True, verify_page=False)
 
