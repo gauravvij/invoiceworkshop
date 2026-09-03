@@ -45,11 +45,16 @@ export const emptyClient = (): Client => {
   };
 };
 
-export const emptyLineItem = (taxBps = 0): LineItem => ({
+export const emptyLineItem = (taxBps = 0, kind?: DocumentKind): LineItem => ({
   id: crypto.randomUUID(),
   description: '',
+  // A timesheet line is an entry for a day's work, so it starts with today's
+  // date and an hour rather than "1 item" -- the two fields someone would
+  // otherwise change on every line they add.
+  serviceDate: kind === 'timesheet' ? new Date().toISOString().slice(0, 10) : undefined,
+  quantityOrdered: kind === 'deliveryNote' ? '1' : undefined,
   quantity: '1',
-  unit: 'item',
+  unit: kind === 'timesheet' ? 'hour' : 'item',
   unitPriceMinor: 0,
   taxBps,
   discountBps: 0,
@@ -65,6 +70,8 @@ export const defaultNumbering = (): NumberingSettings => ({
     purchaseOrder: 'PO-',
     receipt: 'REC-',
     creditNote: 'CN-',
+    timesheet: 'TS-',
+    deliveryNote: 'DN-',
   },
   nextNumbers: {
     invoice: 1001,
@@ -75,6 +82,8 @@ export const defaultNumbering = (): NumberingSettings => ({
     purchaseOrder: 1001,
     receipt: 1001,
     creditNote: 1001,
+    timesheet: 1001,
+    deliveryNote: 1001,
   },
 });
 
@@ -99,13 +108,16 @@ export const createDocument = (
     status: kind === 'receipt' ? 'paid' : 'draft',
     number: `${numbering.prefixes[kind]}${numbering.nextNumbers[kind]}`,
     issueDate: timestamp.slice(0, 10),
-    // Neither a receipt nor a credit note asks for money later, so neither has
-    // a payment date in the future to offer.
-    dueDate: addDays(now, kind === 'receipt' || kind === 'creditNote' ? 0 : 30),
+    // A receipt, a credit note and a delivery note all record something that has
+    // already happened, so none of them has a payment date in the future.
+    dueDate: addDays(
+      now,
+      ['receipt', 'creditNote', 'deliveryNote'].includes(kind) ? 0 : 30,
+    ),
     currency: business.defaultCurrency,
     business: structuredClone(business),
     client: emptyClient(),
-    lineItems: [emptyLineItem(business.defaultTaxBps)],
+    lineItems: [emptyLineItem(business.defaultTaxBps, kind)],
     shippingMinor: 0,
     adjustmentMinor: 0,
     notes: '',
@@ -119,6 +131,9 @@ export const createDocument = (
     paymentMethod: '',
     amountPaidMinor: 0,
     creditReason: '',
+    deliveryAddress: kind === 'deliveryNote' ? emptyAddress() : undefined,
+    carrier: '',
+    consignmentRef: '',
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -133,4 +148,6 @@ export const documentLabels: Record<DocumentKind, string> = {
   purchaseOrder: 'Purchase Order',
   receipt: 'Receipt',
   creditNote: 'Credit Note',
+  timesheet: 'Timesheet Invoice',
+  deliveryNote: 'Delivery Note',
 };

@@ -78,6 +78,8 @@ export const generators: Record<string, GeneratorContent> = {
       { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Create a practical contractor-specific invoice.' },
       { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm the payment once the invoice is settled.' },
       { href: '/credit-note-generator/', label: 'Credit Note Generator', text: 'Reverse an invoice already sent, in full or in part.' },
+      { href: '/timesheet-invoice-generator/', label: 'Timesheet Invoice Generator', text: 'Bill hours by date, with a total the client can check.' },
+      { href: '/delivery-note-template/', label: 'Delivery Note Generator', text: 'Say what was shipped, without prices on the paperwork.' },
     ],
   },
   proforma: {
@@ -867,6 +869,147 @@ export const generators: Record<string, GeneratorContent> = {
       { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm a payment that has been received.' },
       { href: '/proforma-invoice-generator/', label: 'Proforma Invoice Generator', text: 'Send a preliminary invoice before the final one.' },
       { href: '/invoice-template/', label: 'Invoice Template', text: 'Start from a plain invoice layout.' },
+    ],
+  },
+  timesheetInvoice: {
+    path: '/timesheet-invoice-generator/', kind: 'timesheet', dynamic: true,
+    title: 'Free Timesheet Invoice Generator | Hourly Billing | Invoice Workshop',
+    description: 'Bill hours by date: one line per day worked, hours and rate per line, a total hours figure that reconciles with the money. Free, no signup, PDF download.',
+    h1: 'Free Timesheet Invoice Generator', eyebrow: 'Bill the hours, not a lump sum',
+    intro: 'One line per day worked, with the date, the hours and the rate. The invoice totals the hours as well as the money, so a client can check the time before they check the amount.',
+    reassurance: 'Everything stays in this browser. Your business, clients and past timesheets are saved on this device only.',
+    sections: [
+      {
+        heading: 'Why an hourly invoice is a different document',
+        paragraphs: [
+          'An ordinary invoice line is a thing supplied. A timesheet line is a thing supplied on a date, and the date is what the client checks it against — their own record of when you were there, or the agency system that approved the hours.',
+          'That is why an invoice with "Consulting — 38 hours — $2,356.00" gets queried and a dated breakdown does not. The amount is the same. The difference is whether the client can verify it without emailing you.',
+        ],
+        bullets: [
+          'A date on every line, not just an invoice period',
+          'Hours as the unit, in quarter-hour steps',
+          'The rate per line, so a different rate for a different task is visible',
+          'A total hours figure alongside the money total',
+          'Expenses can sit on the same invoice without inflating the hours',
+        ],
+      },
+      {
+        heading: 'The hours and the money have to agree',
+        paragraphs: [
+          'The most common defect in a timesheet invoice is a total-hours figure that does not match the lines it is supposedly summing. It happens when the hours are re-derived from the money, or typed by hand into a footer, and it is the first thing an accounts-payable clerk finds.',
+          'Here the hours total is summed from the lines at quarter-hour precision, and only lines actually booked in hours are counted. Put a travel expense or a fixed fee on the same invoice and it bills correctly without moving the hours figure.',
+        ],
+      },
+      {
+        heading: 'A worked week',
+        paragraphs: [
+          'Three days at a single rate, with an expense line that is billed but is not time.',
+        ],
+        table: {
+          caption: 'Timesheet TS-1004 — week ending 4 September 2026, $60.00 per hour',
+          columns: ['Date', 'Work', 'Hours', 'Amount'],
+          rows: [
+            ['2026-09-01', 'Discovery calls', '7.5', '$450.00'],
+            ['2026-09-02', 'Schema work', '8', '$480.00'],
+            ['2026-09-03', 'Review and handover', '6.25', '$375.00'],
+            ['2026-09-03', 'Site visit mileage', '—', '$45.00'],
+          ],
+          total: [['Total hours', '21.75'], ['Subtotal', '$1,350.00'], ['Total', '$1,350.00']],
+          note: 'The hours total is 21.75, not 22.75: the mileage line is billed but is not time, so it stays out of the hours figure. 21.75 hours at $60.00 is $1,305.00, and the remaining $45.00 is the expense — the two numbers reconcile, which is the whole point of showing both.',
+        },
+      },
+      {
+        heading: 'Timesheet, hourly invoice or retainer?',
+        paragraphs: [
+          'These get used interchangeably and describe different agreements.',
+        ],
+        terms: [
+          { term: 'Timesheet invoice', definition: 'Bills specific hours on specific dates. The client can verify each line against their own record before paying.' },
+          { term: 'Hourly invoice', definition: 'Bills a quantity of hours for a period without dating them. Faster to produce, harder for the client to check.' },
+          { term: 'Retainer invoice', definition: 'Bills an agreed amount per period regardless of hours worked. Hours may be reported alongside, but they are not what is being charged.' },
+          { term: 'Fixed-fee invoice', definition: 'Bills an agreed price for a defined deliverable. Hours are irrelevant to the amount and listing them invites a negotiation you already had.' },
+        ],
+      },
+      {
+        heading: 'Keeping the record',
+        paragraphs: [
+          'Timesheets are saved in this browser alongside your invoices, receipts and credit notes, and can be exported as a backup. Clearing site data removes them, so download the PDF for anything you need to keep.',
+          'This produces an invoice. It is not a time-tracking system, does not run a timer, and does not connect to an agency or payroll system. Whether hours must be approved before invoicing, and in what format, is set by your contract.',
+        ],
+      },
+    ],
+    related: [
+      { href: '/', label: 'Invoice Generator', text: 'Bill a fixed fee or a mixed invoice.' },
+      { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm the payment when the hours are paid.' },
+      { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Project and deposit fields for contract work.' },
+      { href: '/work-order-generator/', label: 'Work Order Generator', text: 'Document the work that was authorized.' },
+    ],
+  },
+  deliveryNoteTemplate: {
+    path: '/delivery-note-template/', kind: 'deliveryNote', dynamic: true,
+    title: 'Free Delivery Note Template & Packing Slip Generator | Invoice Workshop',
+    description: 'Create a delivery note free: quantity ordered against quantity delivered, back-ordered items, delivery address, carrier and consignment reference. No prices. No signup.',
+    h1: 'Free Delivery Note Generator', eyebrow: 'Say what was in the box',
+    intro: 'A delivery note lists what was shipped against what was ordered, with the shortfall shown per line. No prices appear on it at all, and the delivery address is separate from the billing address.',
+    reassurance: 'Everything stays in this browser. Your business, customers and past documents are saved on this device only.',
+    sections: [
+      {
+        heading: 'A delivery note has no prices on it',
+        paragraphs: [
+          'This is the part most templates get wrong. A delivery note travels with the goods and is read by whoever signs for them — a warehouse hand, a site foreman, a receptionist. Putting prices on it shows your commercial terms to people who have no business seeing them, and it invites the document to be treated as a bill.',
+          'What the person signing needs is the opposite: what was ordered, what is physically in front of them, and the difference. That difference is the entire reason the document exists, and it is what a dispute three weeks later turns on.',
+        ],
+        bullets: [
+          'Quantity ordered and quantity delivered, side by side',
+          'The back-order per line, shown rather than left to be worked out',
+          'A delivery address separate from the billing address',
+          'Carrier and consignment reference for tracing the shipment',
+          'The order reference, so it can be matched to the purchase order',
+          'No unit prices, no tax, no total — and it says it is not a request for payment',
+        ],
+      },
+      {
+        heading: 'A worked part delivery',
+        paragraphs: [
+          'A partial shipment against a purchase order, which is the common case and the one that generates the phone call.',
+        ],
+        table: {
+          caption: 'Delivery note DN-1012 against order PO-4417',
+          columns: ['Item', 'Ordered', 'Delivered', 'Back-ordered'],
+          rows: [
+            ['Oak dining chair', '6', '4', '2'],
+            ['Dining table, 1800mm', '1', '1', '—'],
+            ['Felt floor protectors, pack of 24', '2', '3', '+1'],
+          ],
+          total: [['Units ordered', '9'], ['Units delivered', '8'], ['Back-ordered', '1']],
+          note: 'The protectors line shows +1 because three packs were sent against two ordered. Over-delivery is shown rather than hidden: the recipient is signing for what is actually there, and a document that quietly omits an extra item is one they cannot use to check the pallet.',
+        },
+      },
+      {
+        heading: 'Delivery note, packing slip, invoice or proof of delivery?',
+        paragraphs: [
+          'Four documents, routinely used as if they were one.',
+        ],
+        terms: [
+          { term: 'Delivery note', definition: 'Travels with the goods and states what was sent against what was ordered. Usually signed by the recipient. Carries no prices.' },
+          { term: 'Packing slip', definition: 'In practice the same document, or the copy that goes inside the box rather than in the driver\u2019s hand. The terms are used interchangeably in most trades.' },
+          { term: 'Invoice', definition: 'Requests payment. Follows the delivery, carries prices and tax, and goes to accounts rather than to the loading bay.' },
+          { term: 'Proof of delivery', definition: 'The signed and returned copy, evidencing that the goods arrived and in what condition. It is the delivery note after it has been signed, not a different form.' },
+        ],
+      },
+      {
+        heading: 'Keeping the record',
+        paragraphs: [
+          'Delivery notes are saved in this browser alongside your invoices, receipts, credit notes and timesheets, and can be exported as a backup. Clearing site data removes them, so download the PDF for anything you need to keep.',
+          'This produces a document. It does not book a carrier, generate a tracking number, print a shipping label or connect to a courier. Whether a delivery note is required, and what it must contain, depends on the trade and the contract.',
+        ],
+      },
+    ],
+    related: [
+      { href: '/', label: 'Invoice Generator', text: 'Bill the goods once they have been delivered.' },
+      { href: '/purchase-order-generator/', label: 'Purchase Order Generator', text: 'Create the order this delivery is against.' },
+      { href: '/credit-note-generator/', label: 'Credit Note Generator', text: 'Credit an invoice when goods come back.' },
+      { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm the payment when it arrives.' },
     ],
   },
 };

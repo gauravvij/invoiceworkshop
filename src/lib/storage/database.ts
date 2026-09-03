@@ -14,7 +14,7 @@ export const DB_VERSION = 2;
 
 type StoreName = 'profiles' | 'clients' | 'catalog' | 'documents' | 'settings';
 
-const documentKinds = new Set(['invoice', 'proforma', 'quotation', 'estimate', 'workOrder', 'purchaseOrder', 'receipt', 'creditNote']);
+const documentKinds = new Set(['invoice', 'proforma', 'quotation', 'estimate', 'workOrder', 'purchaseOrder', 'receipt', 'creditNote', 'timesheet', 'deliveryNote']);
 const documentStatuses = new Set(['draft', 'completed', 'paid']);
 const record = (value: unknown): Record<string, unknown> | undefined =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
@@ -103,6 +103,12 @@ const normalizeDocument = (value: unknown): DocumentRecord | undefined => {
       return [{
         id: text(line.id, crypto.randomUUID()),
         description: text(line.description),
+        // Absent on every kind but a timesheet, and absent on documents saved
+        // before timesheets existed, so it reads back undefined rather than ''.
+        serviceDate: typeof line.serviceDate === 'string' && line.serviceDate
+          ? line.serviceDate : undefined,
+        quantityOrdered: typeof line.quantityOrdered === 'string' && line.quantityOrdered
+          ? line.quantityOrdered : undefined,
         quantity: text(line.quantity, '1'),
         unit: text(line.unit, 'item'),
         unitPriceMinor: amount(line.unitPriceMinor),
@@ -139,6 +145,9 @@ const normalizeDocument = (value: unknown): DocumentRecord | undefined => {
     paymentMethod: text(source.paymentMethod),
     amountPaidMinor: amount(source.amountPaidMinor),
     creditReason: text(source.creditReason),
+    deliveryAddress: source.deliveryAddress ? normalizeAddress(source.deliveryAddress) : undefined,
+    carrier: text(source.carrier),
+    consignmentRef: text(source.consignmentRef),
     convertedFrom: record(source.convertedFrom) as DocumentRecord['convertedFrom'] | undefined,
     createdAt: text(source.createdAt, fallback.createdAt),
     updatedAt: text(source.updatedAt, fallback.updatedAt),

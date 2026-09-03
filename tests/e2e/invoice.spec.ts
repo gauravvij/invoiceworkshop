@@ -254,3 +254,48 @@ test('a credit note reverses an invoice instead of asking for money', async ({ p
   await expect(page.locator('.document-parties')).toContainText('Credits invoice');
   await expect(page.locator('.document-parties')).toContainText('INV-2026-0311');
 });
+
+test('a timesheet bills dated hours and totals them separately from the money', async ({ page }) => {
+  await page.goto('/timesheet-invoice-generator/');
+  await expect(page.locator('.document-identity h2')).toHaveText('Timesheet Invoice');
+  // A dated line is the difference between this and an ordinary invoice.
+  await expect(page.getByLabel('Date worked')).toBeVisible();
+  await expect(page.getByLabel('Hourly rate')).toBeVisible();
+  await expect(page.locator('.preview-table thead')).toContainText('Hours');
+
+  await page.getByLabel('Quantity').first().fill('7.5');
+  await page.getByLabel('Hourly rate').first().fill('60.00');
+  await page.getByLabel('Hourly rate').first().blur();
+  await expect(page.locator('.preview-totals')).toContainText('Total hours');
+  await expect(page.locator('.preview-totals')).toContainText('7.5');
+
+  // An expense on the same invoice bills but is not time.
+  await page.getByRole('button', { name: '+ Add line item' }).click();
+  await page.getByLabel('Unit').nth(1).fill('item');
+  await page.getByLabel('Hourly rate').nth(1).fill('45.00');
+  await page.getByLabel('Hourly rate').nth(1).blur();
+  await expect(page.locator('.preview-totals')).toContainText('7.5');
+  await expect(page.locator('.preview-totals')).toContainText('$495.00');
+});
+
+test('a delivery note shows quantities and never a price', async ({ page }) => {
+  await page.goto('/delivery-note-template/');
+  await expect(page.locator('.document-identity h2')).toHaveText('Delivery Note');
+  await expect(page.getByLabel('Carrier')).toBeVisible();
+  await expect(page.getByLabel('Consignment / tracking ref')).toBeVisible();
+  await expect(page.getByLabel('Deliver to — street')).toBeVisible();
+  await expect(page.locator('.document-parties')).toContainText('DELIVER TO');
+
+  await page.getByLabel('Qty ordered').first().fill('6');
+  await page.getByLabel('Qty delivered').first().fill('4');
+  await page.getByLabel('Qty delivered').first().blur();
+  await expect(page.locator('.preview-totals')).toContainText('Units delivered');
+  await expect(page.locator('.preview-totals')).toContainText('Back-ordered');
+  await expect(page.locator('.preview-totals')).toContainText('not a request for payment');
+
+  // The whole point: a price on this document is a defect, not a feature.
+  const preview = await page.locator('#document-preview').innerText();
+  expect(preview).not.toMatch(/\$\d/);
+  expect(preview).not.toContain('Subtotal');
+  expect(preview).not.toContain('Total');
+});

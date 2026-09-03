@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { trackEvent } from '@/lib/analytics';
 import { allowedConversions, convertDocument } from '@/lib/documents/conversions';
-import { createDocument, documentLabels, emptyLineItem } from '@/lib/documents/factory';
-import { calculateDocument, calculateLine, formatMoney, moneyInputValue, parseMoney } from '@/lib/documents/money';
+import { createDocument, documentLabels, emptyAddress, emptyLineItem } from '@/lib/documents/factory';
+import { calculateDocument, calculateLine, formatHours, formatMoney, formatUnits, moneyInputValue, parseMoney } from '@/lib/documents/money';
 import { formatLocaleDate, localeFor } from '@/lib/documents/locales';
 import type { LocalePreset } from '@/lib/documents/locales';
 import { nextDocumentNumber } from '@/lib/documents/numbering';
@@ -162,6 +162,12 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
 
   const updateClientAddress = (key: keyof Client['address'], value: string) =>
     mutate((current) => ({ ...current, client: { ...current.client, address: { ...current.client.address, [key]: value } } }));
+
+  const updateDeliveryAddress = (key: keyof Client['address'], value: string) =>
+    mutate((current) => ({
+      ...current,
+      deliveryAddress: { ...(current.deliveryAddress ?? emptyAddress()), [key]: value },
+    }));
 
   const updateLine = (id: string, changes: Partial<DocumentRecord['lineItems'][number]>) =>
     mutate((current) => ({
@@ -409,7 +415,7 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                   {currencies.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
               </label>
-              {!['receipt', 'creditNote'].includes(document.kind) && (
+              {!['receipt', 'creditNote', 'deliveryNote'].includes(document.kind) && (
                 <Field label="Reference / PO" value={document.reference} onChange={(value) => updateDocument('reference', value)} />
               )}
               <label className="field">
@@ -421,6 +427,16 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                 </select>
               </label>
             </div>
+            {document.kind === 'deliveryNote' && (
+              <div className="form-grid section-subgrid">
+                <Field label="Carrier" value={document.carrier} onChange={(value) => updateDocument('carrier', value)} placeholder="Own vehicle" />
+                <Field label="Consignment / tracking ref" value={document.consignmentRef} onChange={(value) => updateDocument('consignmentRef', value)} />
+                <Field label="Order reference" value={document.reference} onChange={(value) => updateDocument('reference', value)} />
+                <Field label="Deliver to — street" value={document.deliveryAddress?.line1 ?? ''} onChange={(value) => updateDeliveryAddress('line1', value)} />
+                <Field label="Deliver to — city" value={document.deliveryAddress?.city ?? ''} onChange={(value) => updateDeliveryAddress('city', value)} />
+                <Field label="Deliver to — postal code" value={document.deliveryAddress?.postalCode ?? ''} onChange={(value) => updateDeliveryAddress('postalCode', value)} />
+              </div>
+            )}
             {document.kind === 'creditNote' && (
               <div className="form-grid section-subgrid">
                 <Field
@@ -513,9 +529,20 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                   </div>
                   <Field label="Description" value={line.description} onChange={(value) => updateLine(line.id, { description: value })} placeholder={vertical === 'construction' ? 'Labor, materials, equipment…' : 'Product or service'} />
                   <div className="line-item-grid">
-                    <Field label="Quantity" inputMode="decimal" value={line.quantity} onChange={(value) => updateLine(line.id, { quantity: value })} />
+                    {document.kind === 'deliveryNote' && (
+                      <Field label="Qty ordered" inputMode="decimal" value={line.quantityOrdered ?? ''} onChange={(value) => updateLine(line.id, { quantityOrdered: value })} />
+                    )}
+                    <Field label={document.kind === 'deliveryNote' ? 'Qty delivered' : 'Quantity'} inputMode="decimal" value={line.quantity} onChange={(value) => updateLine(line.id, { quantity: value })} />
                     <Field label="Unit" value={line.unit} onChange={(value) => updateLine(line.id, { unit: value })} />
-                    <MoneyField label="Unit price" minor={line.unitPriceMinor} currency={document.currency} onChange={(value) => updateLine(line.id, { unitPriceMinor: value })} />
+                    {document.kind === 'timesheet' && (
+                      <Field
+                        label="Date worked"
+                        type="date"
+                        value={line.serviceDate ?? ''}
+                        onChange={(value) => updateLine(line.id, { serviceDate: value })}
+                      />
+                    )}
+                    <MoneyField label={document.kind === 'timesheet' ? 'Hourly rate' : 'Unit price'} minor={line.unitPriceMinor} currency={document.currency} onChange={(value) => updateLine(line.id, { unitPriceMinor: value })} />
                     <Field label="Discount %" inputMode="decimal" value={String(line.discountBps / 100)} onChange={(value) => updateLine(line.id, { discountBps: Math.max(0, Math.round(Number(value || 0) * 100)) })} />
                     <Field label={preset ? `${preset.taxLabel} %` : 'Tax %'} inputMode="decimal" list={preset ? 'locale-rates' : undefined} value={String(line.taxBps / 100)} onChange={(value) => updateLine(line.id, { taxBps: Math.max(0, Math.round(Number(value || 0) * 100)) })} />
                     <div className="line-total"><span>Line total</span><strong>{formatMoney(calculateLine(line).totalMinor, document.currency)}</strong></div>
@@ -523,7 +550,7 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                 </div>
               ))}
             </div>
-            <button type="button" className="button button--add" onClick={() => mutate((current) => ({ ...current, lineItems: [...current.lineItems, emptyLineItem(current.business.defaultTaxBps)] }))}>+ Add line item</button>
+            <button type="button" className="button button--add" onClick={() => mutate((current) => ({ ...current, lineItems: [...current.lineItems, emptyLineItem(current.business.defaultTaxBps, current.kind)] }))}>+ Add line item</button>
             <div className="form-grid totals-inputs">
               <MoneyField label="Shipping" minor={document.shippingMinor} currency={document.currency} onChange={(value) => updateDocument('shippingMinor', value)} />
               <MoneyField label="Adjustment (+/−)" minor={document.adjustmentMinor} currency={document.currency} onChange={(value) => updateDocument('adjustmentMinor', value)} />
@@ -580,6 +607,15 @@ function EditorSection({ title, hint, children }: { title: string; hint?: string
   return <fieldset className="editor-section"><legend>{title}</legend>{hint && <p className="section-hint">{hint}</p>}{children}</fieldset>;
 }
 
+/** Ordered minus delivered on one line, shown the way the totals show it. */
+function backOrdered(line: DocumentRecord['lineItems'][number]): string {
+  const asked = Number.parseFloat(line.quantityOrdered ?? line.quantity) || 0;
+  const shipped = Number.parseFloat(line.quantity) || 0;
+  const gap = asked - shipped;
+  if (gap === 0) return '—';
+  return gap > 0 ? `${+gap.toFixed(3)}` : `+${+Math.abs(gap).toFixed(3)}`;
+}
+
 function Field({ label, value, onChange, type = 'text', required, placeholder, inputMode, list }: {
   label: string;
   value: string;
@@ -621,17 +657,38 @@ function DocumentPreview({ document, totals, preset }: { document: DocumentRecor
             </div>
           </header>
           <div className="document-parties">
-            <div><small>{document.kind === 'purchaseOrder' ? 'SUPPLIER' : 'BILL TO'}</small><strong>{document.client.name || 'Customer name'}</strong>{displayAddress(document.client).map((line) => <span key={line}>{line}</span>)}{document.client.email && <span>{document.client.email}</span>}</div>
+            <div><small>{document.kind === 'purchaseOrder' ? 'SUPPLIER' : document.kind === 'deliveryNote' ? 'DELIVER TO' : 'BILL TO'}</small><strong>{document.client.name || 'Customer name'}</strong>{displayAddress(document.client).map((line) => <span key={line}>{line}</span>)}{document.client.email && <span>{document.client.email}</span>}</div>
             <dl><div><dt>Issue date</dt><dd>{formatLocaleDate(document.issueDate, preset)}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : document.kind === 'creditNote' ? 'Credit date' : 'Due / valid until'}</dt><dd>{formatLocaleDate(document.dueDate, preset)}</dd></div>{document.reference && <div><dt>{document.kind === 'receipt' ? 'Transaction ref' : document.kind === 'creditNote' ? 'Credits invoice' : 'Reference'}</dt><dd>{document.reference}</dd></div>}{document.kind === 'creditNote' && document.creditReason && <div><dt>Reason</dt><dd>{document.creditReason}</dd></div>}{document.kind === 'receipt' && document.paymentMethod && <div><dt>Paid by</dt><dd>{document.paymentMethod}</dd></div>}</dl>
           </div>
           {(document.projectName || document.jobsite) && <div className="project-strip"><span><small>PROJECT</small>{document.projectName}</span><span><small>JOBSITE</small>{document.jobsite}</span></div>}
           <div className="preview-table-scroll">
             <table className="preview-table">
-              <thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>{preset ? preset.taxLabel : 'Tax'}</th><th>Amount</th></tr></thead>
-              <tbody>{document.lineItems.map((line) => <tr key={line.id}><td>{line.description || 'Item description'}{line.discountBps > 0 && <small>{percentage(line.discountBps)} discount</small>}</td><td>{line.quantity} {line.unit}</td><td>{formatMoney(line.unitPriceMinor, document.currency)}</td><td>{percentage(line.taxBps)}</td><td>{formatMoney(calculateLine(line).totalMinor, document.currency)}</td></tr>)}</tbody>
+              <thead>{document.kind === 'deliveryNote'
+                ? <tr><th>Description</th><th>Ordered</th><th>Delivered</th><th>Back-ordered</th></tr>
+                : <tr>{document.kind === 'timesheet' && <th>Date</th>}<th>Description</th><th>{document.kind === 'timesheet' ? 'Hours' : 'Qty'}</th><th>Rate</th><th>{preset ? preset.taxLabel : 'Tax'}</th><th>Amount</th></tr>}</thead>
+              <tbody>{document.lineItems.map((line) => (document.kind === 'deliveryNote'
+                ? <tr key={line.id}>
+                    <td>{line.description || 'Item description'}</td>
+                    <td>{line.quantityOrdered || line.quantity} {line.unit}</td>
+                    <td>{line.quantity} {line.unit}</td>
+                    <td>{backOrdered(line)}</td>
+                  </tr>
+                : <tr key={line.id}>{document.kind === 'timesheet' && <td>{line.serviceDate ? formatLocaleDate(line.serviceDate, preset) : '—'}</td>}<td>{line.description || 'Item description'}{line.discountBps > 0 && <small>{percentage(line.discountBps)} discount</small>}</td><td>{line.quantity} {line.unit}</td><td>{formatMoney(line.unitPriceMinor, document.currency)}</td><td>{percentage(line.taxBps)}</td><td>{formatMoney(calculateLine(line).totalMinor, document.currency)}</td></tr>))}</tbody>
             </table>
           </div>
+          {document.kind === 'deliveryNote' ? (
+            <div className="preview-totals">
+              <div><span>Units ordered</span><strong>{formatUnits(totals.unitsOrderedMilli)}</strong></div>
+              <div className="grand-total"><span>Units delivered</span><strong>{formatUnits(totals.unitsDeliveredMilli)}</strong></div>
+              {totals.unitsBackOrderedMilli > 0 && <div className="balance-due"><span>Back-ordered</span><strong>{formatUnits(totals.unitsBackOrderedMilli)}</strong></div>}
+              {totals.unitsBackOrderedMilli < 0 && <div className="balance-due"><span>Over-delivered</span><strong>{formatUnits(-totals.unitsBackOrderedMilli)}</strong></div>}
+              <p className="delivery-disclaimer">This is a delivery note. It states what was shipped and is not a request for payment.</p>
+            </div>
+          ) : (
           <div className="preview-totals">
+            {document.kind === 'timesheet' && totals.totalHoursMilli > 0 && (
+              <div><span>Total hours</span><strong>{formatHours(totals.totalHoursMilli)}</strong></div>
+            )}
             <div><span>Subtotal</span><strong>{formatMoney(totals.subtotalMinor, document.currency)}</strong></div>
             {totals.discountMinor > 0 && <div><span>Discount</span><strong>−{formatMoney(totals.discountMinor, document.currency)}</strong></div>}
             <div><span>{preset ? preset.taxLabel : 'Tax'}</span><strong>{formatMoney(totals.taxMinor, document.currency)}</strong></div>
@@ -645,6 +702,7 @@ function DocumentPreview({ document, totals, preset }: { document: DocumentRecor
               {totals.balanceRemainingMinor < 0 && <div className="balance-due"><span>Overpaid</span><strong>{formatMoney(-totals.balanceRemainingMinor, document.currency)}</strong></div>}
             </>}
           </div>
+          )}
           {(document.notes || document.paymentInstructions || document.terms) && <footer className="document-notes">
             {document.notes && <div><strong>Notes</strong><p>{document.notes}</p></div>}
             {document.paymentInstructions && <div><strong>Payment instructions</strong><p>{document.paymentInstructions}</p></div>}

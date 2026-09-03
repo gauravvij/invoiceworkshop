@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const publicUrls = ['/', '/proforma-invoice-generator/', '/quotation-generator/', '/work-order-generator/', '/purchase-order-generator/', '/estimate-generator/', '/construction-invoice-template/', '/contractor-invoice-template/', '/invoice-template/', '/receipt-generator/', '/credit-note-generator/', '/progress-draw-schedule/', '/vat-invoice-template-uk/', '/gst-invoice-format-india/', '/tax-invoice-template-australia/', '/gst-hst-invoice-template-canada/', '/about/', '/privacy/', '/terms/', '/contact/'];
+const publicUrls = ['/', '/proforma-invoice-generator/', '/quotation-generator/', '/work-order-generator/', '/purchase-order-generator/', '/estimate-generator/', '/construction-invoice-template/', '/contractor-invoice-template/', '/invoice-template/', '/receipt-generator/', '/credit-note-generator/', '/timesheet-invoice-generator/', '/delivery-note-template/', '/progress-draw-schedule/', '/vat-invoice-template-uk/', '/gst-invoice-format-india/', '/tax-invoice-template-australia/', '/gst-hst-invoice-template-canada/', '/about/', '/privacy/', '/terms/', '/contact/'];
 
 test('every canonical page has complete, unique static SEO', async ({ page, request }) => {
   const titles = new Set<string>();

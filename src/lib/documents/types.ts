@@ -6,7 +6,9 @@ export type DocumentKind =
   | 'workOrder'
   | 'purchaseOrder'
   | 'receipt'
-  | 'creditNote';
+  | 'creditNote'
+  | 'timesheet'
+  | 'deliveryNote';
 
 export type DocumentStatus = 'draft' | 'completed' | 'paid';
 
@@ -59,6 +61,18 @@ export interface CatalogItem {
 export interface LineItem {
   id: string;
   description: string;
+  /**
+   * The day the work was done. Only a timesheet uses it: an invoice line is a
+   * thing supplied and a timesheet line is a thing supplied ON A DATE, and that
+   * is the difference a client checks a timesheet against. Empty elsewhere.
+   */
+  serviceDate?: string;
+  /**
+   * What was ordered, where that differs from what is in the box. Only a
+   * delivery note carries it: `quantity` is what is actually being delivered,
+   * and the gap between the two is the back-order the recipient signs for.
+   */
+  quantityOrdered?: string;
   quantity: string;
   unit: string;
   unitPriceMinor: number;
@@ -102,6 +116,15 @@ export interface DocumentRecord {
    * reason, and it is what stops the document being mistaken for a discount.
    */
   creditReason: string;
+  /**
+   * Where the goods physically went, which is routinely not where the invoice
+   * goes. A delivery note sent to a billing address is the single most common
+   * reason a delivery is disputed.
+   */
+  deliveryAddress?: Address;
+  /** Carrier and consignment reference: how the recipient traces the shipment. */
+  carrier: string;
+  consignmentRef: string;
   convertedFrom?: { id: string; kind: DocumentKind; number: string };
   createdAt: string;
   updatedAt: string;

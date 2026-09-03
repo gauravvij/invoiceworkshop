@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '21')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '22')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1205,3 +1205,88 @@ CREATE TABLE IF NOT EXISTS breakout_results (
 
 CREATE INDEX IF NOT EXISTS idx_breakout_rank
   ON breakout_destinations(gate_status, execution_class, score DESC);
+
+-- Creator and newsletter distribution prospects. Deliberately a separate table
+-- from `prospects`: the resource-page cohort is a calibration experiment with
+-- its own volume limit and its own reporting, and merging the two would let one
+-- borrow the other's evidence.
+CREATE TABLE IF NOT EXISTS creator_prospects (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  domain              TEXT NOT NULL,
+  page_url            TEXT NOT NULL UNIQUE,
+  name                TEXT NOT NULL DEFAULT '',
+  segment             TEXT NOT NULL,
+  discovered_at       TEXT NOT NULL,
+  fetched_at          TEXT,
+  http_status         INTEGER,
+  -- Verified signals. Each is a fact read off the page, not an inference.
+  last_activity_date  TEXT,
+  audience_estimate   INTEGER,
+  audience_evidence   TEXT NOT NULL DEFAULT '',
+  recommends_tools    INTEGER NOT NULL DEFAULT 0 CHECK (recommends_tools IN (0,1)),
+  -- Whether their coverage reads editorial, sponsored or affiliate. Sponsored
+  -- and affiliate are not disqualifying in themselves, but an unpaid editorial
+  -- suggestion to a site that only runs paid placements wastes both sides' time.
+  coverage_kind       TEXT NOT NULL DEFAULT 'unknown'
+                        CHECK (coverage_kind IN ('editorial', 'sponsored', 'affiliate',
+                                                 'mixed', 'unknown')),
+  contact_url         TEXT,
+  contact_kind        TEXT NOT NULL DEFAULT 'unknown',
+  recipient           TEXT,
+  contact_verified_at TEXT,
+  -- Which live capability their audience would actually care about.
+  product_angle       TEXT NOT NULL DEFAULT '',
+  target_url          TEXT NOT NULL DEFAULT '',
+  fit_score           REAL NOT NULL DEFAULT 0,
+  status              TEXT NOT NULL DEFAULT 'discovered'
+                        CHECK (status IN ('discovered', 'fetched', 'qualified',
+                                          'rejected', 'staged', 'contacted',
+                                          'replied', 'placed', 'suppressed')),
+  rejection_reason    TEXT,
+  notes               TEXT NOT NULL DEFAULT '',
+  updated_at          TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_creator_status ON creator_prospects(status, fit_score DESC);
+CREATE INDEX IF NOT EXISTS idx_creator_domain ON creator_prospects(domain);
+
+-- The sign-once authorization for unpaid creator/newsletter suggestions. Kept
+-- apart from `outreach_policy` so that signing one never widens the other.
+CREATE TABLE IF NOT EXISTS creator_policy (
+  version            INTEGER PRIMARY KEY,
+  policy_json        TEXT NOT NULL,
+  policy_hash        TEXT NOT NULL,
+  signed             INTEGER NOT NULL DEFAULT 0 CHECK (signed IN (0, 1)),
+  signer_fingerprint TEXT,
+  signed_at          TEXT,
+  active             INTEGER NOT NULL DEFAULT 0 CHECK (active IN (0, 1)),
+  created_at         TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS creator_admissions (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  prospect_id    INTEGER NOT NULL REFERENCES creator_prospects(id),
+  policy_version INTEGER NOT NULL,
+  policy_hash    TEXT NOT NULL,
+  admitted       INTEGER NOT NULL CHECK (admitted IN (0, 1)),
+  checks_json    TEXT NOT NULL DEFAULT '{}',
+  refusal_reason TEXT,
+  recorded_at    TEXT NOT NULL
+);
+
+-- Launch instrumentation. One row per tracked distribution event, so a launch
+-- is measured on what it sent rather than on how it felt.
+CREATE TABLE IF NOT EXISTS launch_events (
+  key            TEXT PRIMARY KEY,
+  destination    TEXT NOT NULL,
+  utm_source     TEXT NOT NULL,
+  planned_for    TEXT,
+  launched_at    TEXT,
+  status         TEXT NOT NULL DEFAULT 'planned'
+                   CHECK (status IN ('planned', 'blocked', 'live', 'complete', 'cancelled')),
+  eligibility    TEXT NOT NULL DEFAULT '',
+  blocking_note  TEXT NOT NULL DEFAULT '',
+  metrics_json   TEXT NOT NULL DEFAULT '{}',
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);

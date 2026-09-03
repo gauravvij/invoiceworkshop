@@ -57,6 +57,54 @@ const roundedDivide = (numerator: bigint, denominator: bigint): bigint => {
   return (numerator + denominator / 2n) / denominator;
 };
 
+/**
+ * Hours on one line, in thousandths. Only quantities booked in hours count: a
+ * timesheet may still carry an expense or a fixed-fee line, and adding those
+ * into an hours total would make it disagree with the timesheet it came from.
+ */
+export const hoursMilli = (line: LineItem): number => {
+  if (!/^h(ou)?rs?$/i.test(line.unit.trim())) return 0;
+  return Number(roundedDivide(parseQuantityMicros(line.quantity), 1_000n));
+};
+
+/**
+ * Ordered against delivered. A line with no ordered quantity was not on the
+ * order at all -- an extra, a replacement -- and counts as delivered without
+ * inflating what was supposedly ordered.
+ */
+export const deliveryCounts = (document: DocumentRecord) => {
+  if (document.kind !== 'deliveryNote') {
+    return { unitsOrderedMilli: 0, unitsDeliveredMilli: 0, unitsBackOrderedMilli: 0 };
+  }
+  let ordered = 0n;
+  let delivered = 0n;
+  for (const line of document.lineItems) {
+    const shipped = roundedDivide(parseQuantityMicros(line.quantity), 1_000n);
+    const asked = line.quantityOrdered
+      ? roundedDivide(parseQuantityMicros(line.quantityOrdered), 1_000n)
+      : shipped;
+    ordered += asked;
+    delivered += shipped;
+  }
+  return {
+    unitsOrderedMilli: Number(ordered),
+    unitsDeliveredMilli: Number(delivered),
+    // Over-delivery is a real event and shows as a negative back-order rather
+    // than being clamped away.
+    unitsBackOrderedMilli: Number(ordered - delivered),
+  };
+};
+
+export const formatUnits = (milli: number): string => {
+  const units = milli / 1000;
+  return Number.isInteger(units) ? `${units}` : units.toFixed(3).replace(/0+$/, '');
+};
+
+export const formatHours = (milli: number): string => {
+  const hours = milli / 1000;
+  return Number.isInteger(hours) ? `${hours}` : hours.toFixed(2).replace(/0$/, '');
+};
+
 export interface LineCalculation {
   grossMinor: number;
   discountMinor: number;
@@ -105,6 +153,22 @@ export interface DocumentTotals {
    * Zero on every other kind.
    */
   creditedMinor: number;
+  /**
+   * Total hours on a timesheet, in thousandths of an hour so quarter-hours are
+   * exact. A timesheet is checked twice -- once against the money and once
+   * against the hours -- and the two have to reconcile, which they cannot if
+   * the hours are re-derived from a rounded money figure.
+   */
+  totalHoursMilli: number;
+  /**
+   * A delivery note's totals are counts, not money. Ordered, delivered and the
+   * difference, in thousandths so a part-unit quantity survives. Zero on every
+   * other kind, and a delivery note's money totals are never shown: a document
+   * that states a price is a document the recipient may be asked to pay.
+   */
+  unitsOrderedMilli: number;
+  unitsDeliveredMilli: number;
+  unitsBackOrderedMilli: number;
 }
 
 export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
@@ -134,5 +198,9 @@ export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
     // Overpayment is a real thing and clamping it to zero would hide it.
     balanceRemainingMinor: document.kind === 'receipt' ? totalMinor - amountPaidMinor : 0,
     creditedMinor: document.kind === 'creditNote' ? -totalMinor : 0,
+    totalHoursMilli: document.kind === 'timesheet'
+      ? document.lineItems.reduce((sum, line) => sum + hoursMilli(line), 0)
+      : 0,
+    ...deliveryCounts(document),
   };
 };

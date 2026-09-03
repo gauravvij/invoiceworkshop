@@ -1,5 +1,5 @@
 import type { DocumentRecord } from './types';
-import { calculateDocument, calculateLine, formatMoney } from './money';
+import { calculateDocument, calculateLine, formatHours, formatMoney, formatUnits } from './money';
 import { documentLabels } from './factory';
 
 const safeFilename = (value: string) => value.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '');
@@ -66,19 +66,25 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
   pdf.setTextColor(navy);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
-  pdf.text(document.kind === 'purchaseOrder' ? 'SUPPLIER' : 'BILL TO', margin, 204);
+  pdf.text(
+    document.kind === 'purchaseOrder' ? 'SUPPLIER'
+      : document.kind === 'deliveryNote' ? 'DELIVER TO' : 'BILL TO',
+    margin, 204,
+  );
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(muted);
+  const shipTo = document.kind === 'deliveryNote' && document.deliveryAddress
+    ? document.deliveryAddress : document.client.address;
   pdf.text(
     [
       document.client.name || 'Customer',
-      document.client.address.line1,
-      document.client.address.line2,
-      [document.client.address.city, document.client.address.region, document.client.address.postalCode].filter(Boolean).join(', '),
-      document.client.address.country,
-      document.client.email,
-      document.client.phone,
-      document.client.taxId ? `Tax ID: ${document.client.taxId}` : '',
+      shipTo.line1,
+      shipTo.line2,
+      [shipTo.city, shipTo.region, shipTo.postalCode].filter(Boolean).join(', '),
+      shipTo.country,
+      ...(document.kind === 'deliveryNote' ? [] : [document.client.email, document.client.phone]),
+      document.kind === 'deliveryNote' ? '' :
+        (document.client.taxId ? `Tax ID: ${document.client.taxId}` : ''),
     ].filter(Boolean),
     margin,
     220,
@@ -101,14 +107,34 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
   if (document.kind === 'creditNote' && document.creditReason) {
     pdf.text(`Reason: ${document.creditReason}`, pageWidth - margin, 252, { align: 'right' });
   }
+  if (document.kind === 'deliveryNote') {
+    if (document.carrier) pdf.text(`Carrier: ${document.carrier}`, pageWidth - margin, 252, { align: 'right' });
+    if (document.consignmentRef) pdf.text(`Consignment: ${document.consignmentRef}`, pageWidth - margin, 268, { align: 'right' });
+  }
 
   autoTable(pdf, {
     startY: 276,
     margin: { left: margin, right: margin, bottom: 120 },
-    head: [['Description', 'Qty', 'Rate', 'Disc.', 'Tax', 'Amount']],
+    head: [document.kind === 'deliveryNote'
+      ? ['Description', 'Ordered', 'Delivered', 'Back-ordered']
+      : document.kind === 'timesheet'
+        ? ['Date', 'Description', 'Hours', 'Rate', 'Disc.', 'Tax', 'Amount']
+        : ['Description', 'Qty', 'Rate', 'Disc.', 'Tax', 'Amount']],
     body: document.lineItems.map((line) => {
+      if (document.kind === 'deliveryNote') {
+        const asked = Number.parseFloat(line.quantityOrdered ?? line.quantity) || 0;
+        const shipped = Number.parseFloat(line.quantity) || 0;
+        const gap = asked - shipped;
+        return [
+          line.description || 'Item',
+          `${line.quantityOrdered ?? line.quantity} ${line.unit}`,
+          `${line.quantity} ${line.unit}`,
+          gap === 0 ? '—' : gap > 0 ? `${+gap.toFixed(3)}` : `+${+Math.abs(gap).toFixed(3)}`,
+        ];
+      }
       const calculation = calculateLine(line);
       return [
+        ...(document.kind === 'timesheet' ? [line.serviceDate || '—'] : []),
         line.description || 'Item',
         `${line.quantity} ${line.unit}`,
         formatMoney(line.unitPriceMinor, document.currency),
@@ -121,13 +147,46 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
     rowPageBreak: 'avoid',
     headStyles: { fillColor: navy, textColor: '#ffffff', fontStyle: 'bold' },
     styles: { font: 'helvetica', fontSize: 8, cellPadding: 7, lineColor: '#dbe3ea', lineWidth: 0.5 },
-    columnStyles: { 0: { cellWidth: 190 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+    columnStyles: document.kind === 'deliveryNote'
+      ? { 0: { cellWidth: 240 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } }
+      : document.kind === 'timesheet'
+      ? { 0: { cellWidth: 62 }, 1: { cellWidth: 150 }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } }
+      : { 0: { cellWidth: 190 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
     showHead: 'everyPage',
   });
 
   const finalY = (pdf as typeof pdf & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 400;
   let y = finalY + 20;
-  const totalRows: Array<[string, number]> = [
+
+  // A delivery note's totals are counts, and it says in as many words that it
+  // is not a request for payment. Then it stops: no subtotal, no tax, no total.
+  if (document.kind === 'deliveryNote') {
+    pdf.setTextColor(navy);
+    for (const [label, value] of [
+      ['Units ordered', formatUnits(totals.unitsOrderedMilli)],
+      ['Units delivered', formatUnits(totals.unitsDeliveredMilli)],
+      ...(totals.unitsBackOrderedMilli > 0
+        ? [['Back-ordered', formatUnits(totals.unitsBackOrderedMilli)]] as Array<[string, string]>
+        : []),
+      ...(totals.unitsBackOrderedMilli < 0
+        ? [['Over-delivered', formatUnits(-totals.unitsBackOrderedMilli)]] as Array<[string, string]>
+        : []),
+    ] as Array<[string, string]>) {
+      const strong = label === 'Units delivered';
+      pdf.setFont('helvetica', strong ? 'bold' : 'normal');
+      pdf.setFontSize(strong ? 11 : 9);
+      pdf.text(label, pageWidth - 190, y);
+      pdf.text(value, pageWidth - margin, y, { align: 'right' });
+      y += strong ? 22 : 16;
+    }
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(muted);
+    pdf.text('This is a delivery note. It states what was shipped and is not a request for payment.',
+             margin, y + 8);
+    y += 26;
+  }
+  const totalRows: Array<[string, number]> = document.kind === 'deliveryNote' ? [] : [
     ['Subtotal', totals.subtotalMinor],
     ...(totals.discountMinor ? ([['Discount', -totals.discountMinor]] as Array<[string, number]>) : []),
     ['Tax', totals.taxMinor],
@@ -153,6 +212,17 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
   if (y + totalRows.length * 18 > pdf.internal.pageSize.getHeight() - 100) {
     pdf.addPage();
     y = 60;
+  }
+  // Hours are certified separately from the money and are not a currency
+  // amount, so they are printed above the money rows rather than formatted as
+  // one. A timesheet whose hours are shown as "$38.00" is worse than useless.
+  if (document.kind === 'timesheet' && totals.totalHoursMilli > 0) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(navy);
+    pdf.text('Total hours', pageWidth - 190, y);
+    pdf.text(formatHours(totals.totalHoursMilli), pageWidth - margin, y, { align: 'right' });
+    y += 18;
   }
   for (const [label, value] of totalRows) {
     const isTotal = ['Total', 'Total credited', 'Balance due', 'Balance remaining'].includes(label);

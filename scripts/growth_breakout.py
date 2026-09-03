@@ -84,12 +84,17 @@ DESTINATIONS = [
                     "shares. Fit is real but not perfect: the audience skews technical "
                     "rather than to the tradespeople the construction pages serve.",
        evidence="Checked 3 September 2026. Submission is free and featuring is free. "
-                "The maker account should be 30+ days old with genuine activity; new "
-                "zero-activity accounts are down-weighted. Assets required: 240x240 "
-                "icon, 3-5 gallery images or a 30-90s demo video, tagline under 60 "
-                "characters, 2-3 paragraph description, and a maker comment. Posts go "
-                "live at 12:01am PST; Tuesday to Thursday is the usual advice.",
-       source_url="https://www.producthunt.com/launch",
+                "ELIGIBILITY: the personal account must be at least ONE WEEK old, and "
+                "joining earlier is recommended. An earlier version of this record said "
+                "30 days; that figure came from a third-party launch guide rather than "
+                "from Product Hunt, and it was wrong. A personal account is required to "
+                "post, and a hunter is explicitly unnecessary -- posting yourself gives "
+                "full control. Product Hunt removes products whose makers spam their "
+                "audience or pay for upvotes, and paying anyone to hunt or send traffic "
+                "can get an account permanently banned. Assets: 240x240 thumbnail, "
+                "tagline, description (260 characters), topics, pricing tag, and "
+                "optional gallery images or video. Posts go live at 12:01am PST.",
+       source_url="https://help.producthunt.com/en/articles/479557-how-to-post-a-product",
        requires_account=True, requires_personal_identity=True,
        reach=2000, intent=0.55, speed_days=1, confidence=0.55, effort=3.0),
 
@@ -439,6 +444,115 @@ MAKER_COMMENT = (
 )
 
 
+# The one launch with a date. Recorded here rather than left in a plan, so the
+# eligibility rule and the target date are checkable and the bundle can refuse
+# to say "ready" before the account is old enough.
+PRODUCT_HUNT_LAUNCH = {
+    "key": "ph-2026-09-15",
+    "destination": "Product Hunt",
+    "utm_source": "producthunt",
+    "planned_for": "2026-09-15",       # a Tuesday
+    "alternatives": ["2026-09-16", "2026-09-17"],
+    "account_min_age_days": 7,
+    "go_live": "12:01am PST",
+}
+
+# What the launch is judged on. Upvotes are deliberately absent: they are the
+# thing a launch optimises for when nobody is measuring whether anyone stayed.
+LAUNCH_METRICS = (
+    "landing_sessions", "tool_starts", "pdf_downloads", "pageviews_per_session",
+    "returning_or_direct_after_launch", "referring_domains_gained",
+    "branded_search_impressions",
+)
+
+
+def launch_plan(connection: sqlite3.Connection, *, account_created_on: str | None = None) -> dict:
+    """Record the launch, and say plainly whether the date is actually reachable.
+
+    `account_created_on` is the only input the system cannot observe: the owner
+    holds the Product Hunt account. Without it the launch is recorded as blocked
+    on an unverified eligibility date rather than assumed ready.
+    """
+    from datetime import date, timedelta
+    now = utc_now()
+    plan = dict(PRODUCT_HUNT_LAUNCH)
+    target = date.fromisoformat(plan["planned_for"])
+    if account_created_on:
+        eligible_on = (date.fromisoformat(account_created_on)
+                       + timedelta(days=plan["account_min_age_days"]))
+        ready = eligible_on <= target
+        eligibility = (f"account created {account_created_on}, eligible from "
+                       f"{eligible_on.isoformat()}: "
+                       + ("clear for the target date" if ready else
+                          f"NOT eligible on {plan['planned_for']}; earliest is "
+                          f"{eligible_on.isoformat()}"))
+        status, blocking = ("planned", "") if ready else (
+            "blocked", f"account is not one week old until {eligible_on.isoformat()}")
+    else:
+        eligibility = ("account creation date not recorded, so eligibility cannot be "
+                       "verified. Product Hunt requires the personal account to be at "
+                       "least one week old.")
+        status, blocking = "blocked", "owner has not recorded the account creation date"
+    connection.execute(
+        """INSERT INTO launch_events
+             (key, destination, utm_source, planned_for, status, eligibility,
+              blocking_note, metrics_json, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(key) DO UPDATE SET
+             planned_for=excluded.planned_for, status=excluded.status,
+             eligibility=excluded.eligibility, blocking_note=excluded.blocking_note,
+             updated_at=excluded.updated_at""",
+        (plan["key"], plan["destination"], plan["utm_source"], plan["planned_for"],
+         status, eligibility, blocking, json.dumps({"tracked": list(LAUNCH_METRICS)}),
+         now, now))
+    connection.commit()
+    return {**plan, "status": status, "eligibility": eligibility,
+            "blocking_note": blocking,
+            "tracked_urls": {
+                "home": tracked_url("/", plan["utm_source"]),
+                "receipt": tracked_url("/receipt-generator/", plan["utm_source"]),
+                "credit_note": tracked_url("/credit-note-generator/", plan["utm_source"]),
+                "progress_draw": tracked_url("/progress-draw-schedule/", plan["utm_source"]),
+            },
+            "judged_on": list(LAUNCH_METRICS),
+            "not_judged_on": "upvotes, which measure a morning rather than a product"}
+
+
+def launch_results(connection: sqlite3.Connection, key: str = PRODUCT_HUNT_LAUNCH["key"]) -> dict:
+    """What the launch actually sent, from analytics rather than from the platform.
+
+    Attribution is by utm_source on our own domain: the sessions are ours to
+    measure, and a platform's own dashboard measures its page, not our product.
+    """
+    row = connection.execute("SELECT * FROM launch_events WHERE key=?", (key,)).fetchone()
+    if row is None:
+        return {"error": f"no launch event {key!r}"}
+    since = row["launched_at"] or row["planned_for"] or "1970-01-01"
+    totals = connection.execute(
+        """SELECT COALESCE(SUM(sessions), 0) sessions,
+                  COALESCE(SUM(pageviews), 0) pageviews,
+                  COALESCE(SUM(tool_starts), 0) tool_starts,
+                  COALESCE(SUM(pdf_downloads), 0) pdf_downloads
+             FROM ga4_acquisition
+            WHERE snapshot_date=(SELECT MAX(snapshot_date) FROM ga4_acquisition)
+              AND date >= ?
+              AND (lower(source) LIKE ? OR lower(source_medium) LIKE ?)""",
+        (since[:10], f"%{row['utm_source']}%", f"%{row['utm_source']}%")).fetchone()
+    sessions = int(totals["sessions"] or 0)
+    return {
+        "launch": key, "status": row["status"], "utm_source": row["utm_source"],
+        "landing_sessions": sessions,
+        "pageviews": int(totals["pageviews"] or 0),
+        "tool_starts": int(totals["tool_starts"] or 0),
+        "pdf_downloads": int(totals["pdf_downloads"] or 0),
+        "pageviews_per_session": round(int(totals["pageviews"] or 0) / sessions, 2) if sessions else 0,
+        "completion_rate": round(int(totals["pdf_downloads"] or 0) / sessions, 3) if sessions else 0,
+        "note": ("judged on useful users and downstream distribution, not on upvotes. "
+                 "A launch that sends a thousand people who never make a document has "
+                 "produced a good morning and nothing else."),
+    }
+
+
 def tracked_url(path: str, destination_key: str) -> str:
     """One tracked URL per destination, so a referral can be attributed.
 
@@ -645,6 +759,10 @@ def main() -> None:
     top.add_argument("--limit", type=int, default=20)
     commands.add_parser("report", help="Everything, including what was refused")
     commands.add_parser("traffic-mix", help="Sessions split by where they came from")
+    launch = commands.add_parser("launch-plan", help="Record and check the Product Hunt launch")
+    launch.add_argument("--account-created-on",
+                        help="ISO date the owner's Product Hunt account was created")
+    commands.add_parser("launch-results", help="What the launch actually sent")
     prep = commands.add_parser("prepare", help="Write the submission bundles")
     prep.add_argument("--limit", type=int, default=10)
     show = commands.add_parser("bundle", help="Print one prepared submission")
@@ -663,6 +781,10 @@ def main() -> None:
         result = bundle(connection, args.key)
     elif args.command == "traffic-mix":
         result = traffic_mix(connection)
+    elif args.command == "launch-plan":
+        result = launch_plan(connection, account_created_on=args.account_created_on)
+    elif args.command == "launch-results":
+        result = launch_results(connection)
     else:
         result = report(connection)
     print(json.dumps(result, indent=2, sort_keys=True, default=str))
