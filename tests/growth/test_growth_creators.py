@@ -39,7 +39,7 @@ class Fixture(unittest.TestCase):
             "recipient": "hello@example.org", "contact_verified_at": utc_now(),
             "product_angle": "the free invoice-to-receipt workflow",
             "target_url": policy.APPROVED_ANGLES["freelancer_newsletter"],
-            "status": "qualified",
+            "status": "qualified", "contact_route": "email",
         }
         row.update(over)
         columns = ", ".join(row)
@@ -114,13 +114,14 @@ class QualificationTests(Fixture):
         self.assertEqual(status, "rejected")
         self.assertIn("no business email published on their own site", reason)
 
-    def test_a_form_only_target_is_rejected_at_qualification_not_at_send(self):
-        """Qualifying a target the policy can never admit builds a backlog that
-        looks like progress and is not. The two gates now agree."""
-        pid = self._fetched(contact_kind="form", recipient=None)
+    def test_a_form_that_could_not_be_verified_is_rejected_not_assumed_usable(self):
+        """The two gates agree: qualification admits exactly what the policy can
+        admit, so the backlog never fills with prospects that can never be used."""
+        pid = self._fetched(contact_kind="form", recipient=None,
+                            contact_form_url=None, form_checks_json="{}")
         status, reason = self._judge(pid)
         self.assertEqual(status, "rejected")
-        self.assertIn("sit in the backlog forever", reason)
+        self.assertIn("no verified contact route", reason)
 
     def test_a_domain_named_after_an_invoicing_product_is_a_competitor(self):
         vendor, why = creators._is_vendor("https://invoiceace.app/blog/x", "Freelance tips", "")
@@ -192,7 +193,8 @@ class PolicyTests(Fixture):
 
     def test_a_personal_local_part_is_refused(self):
         self._sign()
-        result = policy.admit(self.connection, self.prospect(recipient="founder@example.org"))
+        result = policy.admit(self.connection, self.prospect(
+            recipient="founder@example.org", contact_route="email"))
         self.assertFalse(result["admitted"])
         self.assertIn("recipient_not_personal_local_part", result["reason"])
 
@@ -267,3 +269,156 @@ class VendorTests(Fixture):
         source = Path(creators.__file__).read_text()
         self.assertIn("from growth_backlink_policy import BLOCKED_DOMAINS, COMPETITORS", source)
         self.assertIn("from growth_backlink_engine import _is_vendor_content", source)
+
+
+class FormRouteTests(Fixture):
+    """A contact form is a route the organization published for this purpose.
+    Every condition below is a fact on the form's own page."""
+
+    def _verify(self, body: str, url: str = "https://example.org/contact"):
+        import growth_backlink_engine as engine
+        original = engine.fetch
+        engine.fetch = lambda _u: (200, body)
+        try:
+            return creators.verify_form(url)
+        finally:
+            engine.fetch = original
+
+    GOOD = ('<html><body><h1>Contact us</h1>'
+            '<p>Get in touch about editorial or partnership enquiries.</p>'
+            '<form action="/send"><textarea name="message"></textarea></form>'
+            '</body></html>')
+
+    def test_a_public_editorial_contact_form_is_usable(self):
+        verdict = self._verify(self.GOOD)
+        self.assertTrue(verdict["usable"], verdict["blockers"])
+
+    def test_a_captcha_ends_the_assessment_and_is_never_worked_around(self):
+        verdict = self._verify(self.GOOD.replace("<form", '<div class="g-recaptcha"></div><form'))
+        self.assertFalse(verdict["usable"])
+        self.assertIn("anti-bot control", " ".join(verdict["blockers"]))
+        # The module must contain no bypass machinery at all.
+        source = Path(creators.__file__).read_text().lower()
+        for forbidden in ("2captcha", "anticaptcha", "solve_captcha", "captcha_solver"):
+            self.assertNotIn(forbidden, source)
+
+    def test_a_form_behind_a_login_is_not_a_public_route(self):
+        verdict = self._verify(self.GOOD.replace(
+            "<textarea", '<input type="password" name="p"><textarea'))
+        self.assertFalse(verdict["usable"])
+        self.assertIn("behind a login", " ".join(verdict["blockers"]))
+
+    def test_a_complaint_or_ticket_form_is_not_repurposed(self):
+        for wrong in ("File a complaint", "Submit a ticket", "GDPR request"):
+            verdict = self._verify(self.GOOD.replace("Get in touch about editorial", wrong))
+            self.assertFalse(verdict["usable"], wrong)
+            self.assertIn("different purpose", " ".join(verdict["blockers"]), wrong)
+
+    def test_a_site_that_says_no_is_believed(self):
+        verdict = self._verify(self.GOOD.replace(
+            "</form>", "</form><p>No unsolicited pitches, please.</p>"))
+        self.assertFalse(verdict["usable"])
+        self.assertIn("says in writing", " ".join(verdict["blockers"]))
+
+    def test_a_form_asking_for_payment_is_refused(self):
+        verdict = self._verify(self.GOOD.replace("</form>", "</form><p>Submission fee applies.</p>"))
+        self.assertFalse(verdict["usable"])
+
+    def test_a_page_that_is_not_a_contact_route_is_refused(self):
+        verdict = self._verify('<html><body><h1>Blog</h1><form><textarea></textarea></form></body></html>')
+        self.assertFalse(verdict["usable"])
+        self.assertIn("does not identify itself", " ".join(verdict["blockers"]))
+
+    def test_a_mandatory_personal_name_escalates_rather_than_being_invented(self):
+        verdict = self._verify(self.GOOD.replace(
+            "<textarea", '<input type="text" name="first_name" required><textarea'))
+        self.assertFalse(verdict["usable"])
+        self.assertTrue(verdict["review"])
+        self.assertIn("cannot be answered truthfully as an organization",
+                      verdict["review_reason"])
+
+    def test_an_unreadable_form_page_is_not_assumed_fine(self):
+        import growth_backlink_engine as engine
+        original = engine.fetch
+        engine.fetch = lambda _u: (404, "")
+        try:
+            verdict = creators.verify_form("https://example.org/contact")
+        finally:
+            engine.fetch = original
+        self.assertFalse(verdict["usable"])
+        self.assertIn("could not be read", " ".join(verdict["blockers"]))
+
+
+class RouteQualificationTests(Fixture):
+    def test_a_prospect_with_a_verified_form_qualifies_on_the_form_route(self):
+        pid = self.prospect(status="fetched", contact_kind="form", recipient=None,
+                            contact_form_url="https://example.org/contact",
+                            form_checks_json='{"has_form": true, "no_captcha": true}',
+                            form_blockers="")
+        creators.qualify(self.connection)
+        row = self.connection.execute(
+            "SELECT status, contact_route FROM creator_prospects WHERE id=?", (pid,)).fetchone()
+        self.assertEqual(row["status"], "qualified")
+        self.assertEqual(row["contact_route"], "form")
+
+    def test_a_blocked_form_does_not_qualify(self):
+        pid = self.prospect(status="fetched", contact_kind="form", recipient=None,
+                            contact_form_url="https://example.org/contact",
+                            form_checks_json='{"has_form": true}',
+                            form_blockers="protected by an anti-bot control (recaptcha)")
+        creators.qualify(self.connection)
+        row = self.connection.execute(
+            "SELECT status, rejection_reason FROM creator_prospects WHERE id=?", (pid,)).fetchone()
+        self.assertEqual(row["status"], "rejected")
+        self.assertIn("anti-bot control", row["rejection_reason"])
+
+    def test_an_email_still_outranks_a_form_but_only_slightly(self):
+        by_email = self.connection.execute(
+            "SELECT * FROM creator_prospects WHERE id=?",
+            (self.prospect(status="fetched"),)).fetchone()
+        by_form = dict(by_email)
+        by_form["contact_kind"], by_form["recipient"] = "form", None
+        self.assertGreater(creators.fit_score(by_email), creators.fit_score(by_form))
+        self.assertLess(creators.fit_score(by_email) - creators.fit_score(by_form),
+                        creators.fit_score(by_email) * 0.3)
+
+
+class PolicyV2Tests(Fixture):
+    def test_the_policy_offers_exactly_the_two_owner_approved_routes(self):
+        self.assertEqual(policy.POLICY_VERSION, 2)
+        self.assertEqual(set(policy.POLICY["contact_routes"]), {"email", "form"})
+
+    def test_captcha_bypass_is_forbidden_in_the_signed_text(self):
+        form = policy.POLICY["contact_routes"]["form"]
+        self.assertTrue(form["captcha_bypass_forbidden_absolutely"])
+        self.assertTrue(form["no_captcha_to_bypass"])
+        self.assertTrue(form["support_ticket_forms_forbidden"])
+        self.assertTrue(form["legal_privacy_or_complaint_forms_forbidden"])
+        self.assertTrue(form["site_instruction_forbidding_contact_is_honoured"])
+
+    def test_a_form_is_never_followed_up(self):
+        self.assertFalse(policy.POLICY["form_behaviour"]["automated_followup"])
+        self.assertEqual(policy.POLICY["form_behaviour"]["max_initial_submissions"], 1)
+        self.assertTrue(policy.POLICY["followups"]["forms_never_followed_up"])
+
+    def test_an_unverified_submission_is_recorded_unknown_and_never_retried(self):
+        self.assertTrue(policy.POLICY["form_behaviour"][
+            "unverified_submission_recorded_as_unknown_never_retried"])
+
+    def test_the_daily_ceiling_is_shared_across_both_routes(self):
+        volume = policy.POLICY["volume"]
+        self.assertEqual(volume["max_new_organizations_per_day"], 5)
+        self.assertTrue(volume["shared_across_email_and_form"])
+        self.assertTrue(volume["is_a_ceiling_not_a_quota"])
+
+    def test_the_payload_shows_both_routes_and_the_form_rules(self):
+        payload = policy.signing_payload()
+        self.assertIn("CONTACT ROUTES", payload)
+        self.assertIn("captcha_bypass_forbidden_absolutely=True", payload)
+        self.assertIn("FORM BEHAVIOUR", payload)
+        self.assertIn("SHARED across the email and form routes", payload)
+
+    def test_v2_has_a_different_hash_from_v1(self):
+        v1 = {**policy.POLICY, "policy_version": 1}
+        del v1["contact_routes"]
+        self.assertNotEqual(policy.policy_hash(), policy.policy_hash(v1))

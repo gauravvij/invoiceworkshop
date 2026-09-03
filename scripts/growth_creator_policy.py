@@ -34,7 +34,7 @@ from pathlib import Path
 from growth_common import apply_schema, connect_db, database_path, utc_now
 from growth_level1a_admin import APPROVAL_DIR, NAMESPACE, ApprovalError, verify_signature
 
-POLICY_VERSION = 1
+POLICY_VERSION = 2
 
 # The angles a message may take, and the live page each points at. A prospect
 # whose angle is not on this list cannot be admitted, which is what stops the
@@ -52,8 +52,45 @@ POLICY: dict = {
     "policy_version": POLICY_VERSION,
     "policy_family": "creator_newsletter_unpaid_editorial",
     "separate_from": "resource_page_outreach_policy",
-    "channel": "verified_public_business_or_editorial_email",
+    "channel": "verified_public_business_or_editorial_email_or_contact_form",
     "purpose": "unpaid suggestion of one specific, live, free InvoiceWorkshop tool",
+    # Two routes, both verified against the target's own pages. A form is a
+    # route the organization published for this purpose; it is not a workaround
+    # for not having an address, and everything below is checked before use.
+    "contact_routes": {
+        "email": {
+            "must_be_published_on_target_own_site": True,
+            "must_be_business_or_editorial_address": True,
+            "guessed_or_inferred_addresses_forbidden": True,
+        },
+        "form": {
+            "must_be_publicly_linked_from_the_site": True,
+            "must_be_general_editorial_resources_partnership_or_contact_route": True,
+            "organization_and_page_already_qualified": True,
+            "no_login_or_account": True,
+            "no_captcha_to_bypass": True,
+            "captcha_bypass_forbidden_absolutely": True,
+            "no_payment": True,
+            "no_personal_identity_required": True,
+            "support_ticket_forms_forbidden": True,
+            "legal_privacy_or_complaint_forms_forbidden": True,
+            "site_instruction_forbidding_contact_is_honoured": True,
+            "mandatory_personal_name_escalates_to_review": True,
+        },
+    },
+    # Form behaviour is deliberately more conservative than email: a form goes
+    # into a queue we cannot see, so a second submission is indistinguishable
+    # from pestering.
+    "form_behaviour": {
+        "max_initial_submissions": 1,
+        "automated_followup": False,
+        "organization_level_deduplication": True,
+        "stop_permanently_on": ["response", "decline", "suppression"],
+        "sender_is_the_organization_not_a_person": True,
+        "unverified_submission_recorded_as_unknown_never_retried": True,
+        "attachments": False,
+        "exactly_one_canonical_url": True,
+    },
     "recipient_requirements": {
         "must_be_published_on_target_own_site": True,
         "must_be_business_or_editorial_address": True,
@@ -89,8 +126,16 @@ POLICY: dict = {
                                   "commission", "partnership deal"],
         "payment_or_reciprocal_offers": False,
     },
-    "volume": {"max_new_organizations_per_day": 5, "max_total_messages_per_day": 8},
+    # One ceiling across both routes, not five of each. It is a maximum, never
+    # a quota: on a day with two worthwhile organizations, two are contacted.
+    "volume": {
+        "max_new_organizations_per_day": 5,
+        "shared_across_email_and_form": True,
+        "max_total_messages_per_day": 8,
+        "is_a_ceiling_not_a_quota": True,
+    },
     "followups": {"maximum": 1, "wait_business_days": 5,
+                  "email_only": True, "forms_never_followed_up": True,
                   "stop_on": ["reply", "bounce", "decline", "unsubscribe",
                               "suppression", "placement"]},
     # Deliverability and complaint thresholds that stop the channel by
@@ -112,6 +157,8 @@ POLICY: dict = {
     "attachments": False,
     "mass_generic_email": False,
     "escalate_instead": [
+        "a form requiring a personal first or last name",
+        "a form behind a login, a CAPTCHA or a payment",
         "sponsorship", "payment of any kind", "affiliate economics", "interview",
         "founder participation", "contractual partnership", "account creation",
         "community identity or posting", "direct message", "anything requiring a "
@@ -140,7 +187,8 @@ def signing_payload(policy: dict | None = None) -> str:
         "Signing it does not widen the resource-page outreach policy, and signing",
         "that one does not authorise anything here. The two are reported separately.",
         "",
-        f"max_new_organizations_per_day={policy['volume']['max_new_organizations_per_day']}",
+        f"max_new_organizations_per_day={policy['volume']['max_new_organizations_per_day']}"
+        " (SHARED across the email and form routes, and a ceiling rather than a quota)",
         f"max_total_messages_per_day={policy['volume']['max_total_messages_per_day']}",
         f"followups_maximum={policy['followups']['maximum']}",
         f"followup_wait_business_days={policy['followups']['wait_business_days']}",
@@ -154,6 +202,14 @@ def signing_payload(policy: dict | None = None) -> str:
         lines.append(f"  {flag}={policy[flag]}")
     lines += ["", "AUTO-STOP (no owner action needed to halt the channel):"]
     for key, value in sorted(policy["auto_stop"].items()):
+        lines.append(f"  {key}={value}")
+    lines += ["", "CONTACT ROUTES (a prospect must satisfy one of these, fully):"]
+    for name, rules in sorted(policy["contact_routes"].items()):
+        lines.append(f"  [{name}]")
+        for key, value in sorted(rules.items()):
+            lines.append(f"    {key}={value}")
+    lines += ["", "FORM BEHAVIOUR (stricter than email, because a form queue is invisible):"]
+    for key, value in sorted(policy["form_behaviour"].items()):
         lines.append(f"  {key}={value}")
     lines += ["", "APPROVED ANGLES (one per message, pointing at a live page):"]
     for segment, url in sorted(APPROVED_ANGLES.items()):
@@ -270,15 +326,36 @@ def admit(connection: sqlite3.Connection, prospect_id: int) -> dict:
     suppressed = connection.execute(
         "SELECT 1 FROM level1a_suppressions WHERE suppression_key=?", (recipient,)).fetchone()
 
+    route = row["contact_route"] or (
+        "email" if (row["contact_kind"] == "email" and recipient) else "none")
+    form_checks = json.loads(row["form_checks_json"] or "{}")
+    verified_at = row["form_verified_at"] if route == "form" else row["contact_verified_at"]
+
     checks = {
         "prospect_qualified": row["status"] == "qualified",
-        "recipient_is_email": bool(recipient) and "@" in recipient,
-        "recipient_published_on_own_site": bool(row["contact_url"]) and row["contact_kind"] == "email",
+        "route_is_verified": route in ("email", "form"),
+        # --- email route ---------------------------------------------------
+        "recipient_is_email": route != "email" or (bool(recipient) and "@" in recipient),
+        "recipient_published_on_own_site":
+            route != "email" or (bool(row["contact_url"]) and row["contact_kind"] == "email"),
         "recipient_not_personal_local_part":
-            local not in policy["recipient_requirements"]["forbidden_local_parts"],
+            route != "email"
+            or local not in policy["recipient_requirements"]["forbidden_local_parts"],
+        # --- form route. Every one was read off the form's own page. --------
+        "form_url_recorded": route != "form" or bool(row["contact_form_url"]),
+        "form_has_no_blockers": route != "form" or not row["form_blockers"],
+        "form_is_a_real_form": route != "form" or bool(form_checks.get("has_form")),
+        "form_has_no_captcha": route != "form" or bool(form_checks.get("no_captcha")),
+        "form_has_no_login": route != "form" or bool(form_checks.get("no_login")),
+        "form_is_the_right_purpose": route != "form" or bool(form_checks.get("right_purpose")),
+        "form_is_not_a_complaint_or_ticket_route":
+            route != "form" or bool(form_checks.get("not_wrong_purpose")),
+        "form_requires_no_payment": route != "form" or bool(form_checks.get("no_payment")),
+        "site_does_not_forbid_contact":
+            route != "form" or bool(form_checks.get("not_forbidden")),
+        "form_not_previously_submitted": True,   # replaced below for the form route
         "contact_verification_current": bool(
-            row["contact_verified_at"]
-            and row["contact_verified_at"] >= _days_ago(
+            verified_at and verified_at >= _days_ago(
                 policy["recipient_requirements"]["max_verification_age_days"])),
         "recent_activity_verified": bool(row["last_activity_date"]),
         "recommends_tools": bool(row["recommends_tools"]),
@@ -286,13 +363,24 @@ def admit(connection: sqlite3.Connection, prospect_id: int) -> dict:
         "angle_recorded": bool(row["product_angle"]),
         "angle_target_is_approved": row["target_url"] == APPROVED_ANGLES.get(row["segment"]),
         "domain_not_previously_contacted": not contacted,
-        "recipient_not_suppressed": not suppressed,
+        "recipient_not_suppressed": route != "email" or not suppressed,
         "daily_organization_limit":
             sent_today < policy["volume"]["max_new_organizations_per_day"],
         "deliverability_healthy": health["healthy"],
     }
+    # A form goes into a queue we cannot see, so one submission is the whole
+    # allowance: a second is indistinguishable from pestering.
+    if route == "form":
+        submitted = connection.execute(
+            """SELECT 1 FROM level1a_action_audit aa
+                 JOIN creator_prospects c ON c.contact_form_url = aa.recipient_or_route
+                WHERE aa.mode='live' AND lower(c.domain)=lower(?) LIMIT 1""",
+            (row["domain"],)).fetchone()
+        checks["form_not_previously_submitted"] = not submitted
+
     failed = [name for name, ok in checks.items() if not ok]
     result = {
+        "route": route,
         "admitted": not failed,
         "reason": None if not failed else "failed policy checks: " + ", ".join(failed),
         "checks": checks, "deliverability": health,

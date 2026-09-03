@@ -22,6 +22,8 @@ def family(**overrides) -> dict:
             surface._d("currency", "different currency"),
         ],
         "product_change": "locale preset", "build_scope": "content_only",
+        "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "the authority's own particulars, checked",
     }
     base.update(overrides)
     return base
@@ -163,6 +165,8 @@ class CountrySourcingTests(unittest.TestCase):
                 surface._d("currency", "a currency"),
             ],
             "product_change": "locale preset",
+            "distribution_audiences": ["resource_pages"],
+            "distribution_angle": "the authority's own particulars, checked",
         }
         family.update(overrides)
         return family
@@ -221,7 +225,9 @@ class CountrySourcingTests(unittest.TestCase):
              "differentiators": [surface._d("totals_logic", "a"),
                                  surface._d("required_field", "b"),
                                  surface._d("heading", "c")],
-             "product_change": "new document kind"},
+             "product_change": "new document kind",
+             "distribution_audiences": ["freelancer_newsletter"],
+             "distribution_angle": "a specific reason someone would mention it"},
             taken=set(), facts={})
         self.assertEqual(gate["sourced"], "not_applicable")
 
@@ -233,3 +239,59 @@ class CountrySourcingTests(unittest.TestCase):
         self.assertNotIn("ATO requires the words", source)
         for abolished in ("5/12/18/28", "12/18/28"):
             self.assertNotIn(abolished, source)
+
+
+class DistributionGateTests(unittest.TestCase):
+    """A family must name who besides Google would carry it, before the
+    development effort is committed. Thirteen surfaces shipped into silence
+    before this was a condition rather than an intention."""
+
+    def _family(self, **over):
+        base = {
+            "key": "doc-thing", "build_scope": "product", "name": "Thing",
+            "route": "/thing/", "demand": "measured demand",
+            "differentiators": [
+                surface._d("totals_logic", "a"), surface._d("required_field", "b"),
+                surface._d("heading", "c")],
+            "product_change": "new document kind",
+            "distribution_audiences": ["freelancer_newsletter"],
+            "distribution_angle": "a specific reason someone would mention it",
+        }
+        base.update(over)
+        return base
+
+    def test_a_family_with_no_named_audience_is_refused(self):
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._family(distribution_audiences=[]), taken=set(), facts={})
+        self.assertIn("Search is not a distribution plan on its own", str(caught.exception))
+
+    def test_the_refusal_says_it_is_not_asking_for_a_link_first(self):
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._family(distribution_audiences=[]), taken=set(), facts={})
+        self.assertIn("does not need a link yet", str(caught.exception))
+
+    def test_a_family_with_no_linkable_angle_is_refused(self):
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._family(distribution_angle=""), taken=set(), facts={})
+        self.assertIn("not a reason for anyone to mention it", str(caught.exception))
+
+    def test_an_invented_audience_is_refused(self):
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._family(distribution_audiences=["everyone"]),
+                          taken=set(), facts={})
+        self.assertIn("unrecognised distribution audience", str(caught.exception))
+
+    def test_a_family_that_answers_the_question_is_admitted(self):
+        gate = surface.check(self._family(), taken=set(), facts={})
+        self.assertEqual(gate["distribution_audiences"], ["freelancer_newsletter"])
+        self.assertTrue(gate["distribution_angle"])
+
+    def test_every_catalogued_family_that_can_ship_answers_it(self):
+        for dimension, families in surface.CATALOG.items():
+            for family in families:
+                if dimension == "trade":       # deliberately refused elsewhere
+                    continue
+                self.assertTrue(family.get("distribution_audiences"),
+                                f"{family['key']} names no audience")
+                self.assertTrue(family.get("distribution_angle"),
+                                f"{family['key']} has no linkable angle")

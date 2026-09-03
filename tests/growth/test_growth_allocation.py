@@ -96,8 +96,23 @@ class ReallocationTests(Fixture):
     def test_no_evidence_moves_no_weight(self):
         result = allocation.reallocate(self.connection)
         for decision in result["decisions"]:
+            # A supply-starved channel is reduced on a measurement of its
+            # inventory rather than on outcomes, so it is exempt from this rule.
+            if decision["channel"] in allocation.SUPPLY_STARVED:
+                continue
             self.assertEqual(decision["decision"], "insufficient_evidence", decision["channel"])
             self.assertEqual(decision["new_weight"], 1.0)
+
+    def test_a_channel_with_almost_no_reachable_supply_is_reduced_without_sending(self):
+        """Exploration budget exists to survive early noise, not to protect a
+        channel whose inventory has already been counted."""
+        result = allocation.reallocate(self.connection)
+        creator = next(d for d in result["decisions"] if d["channel"] == "creator_newsletter")
+        self.assertEqual(creator["decision"], "reduce")
+        self.assertTrue(creator["supply_starved"])
+        self.assertEqual(creator["new_weight"], allocation.SUPPLY_STARVED_WEIGHT)
+        self.assertIn("405 candidates researched", creator["rationale"])
+        self.assertLess(allocation.SUPPLY_STARVED_WEIGHT, allocation.EXPLORATION_FLOOR)
 
     def test_a_channel_that_repeatedly_fails_loses_weight(self):
         for _ in range(4):
@@ -143,7 +158,9 @@ class ReallocationTests(Fixture):
             "SELECT channel, decision FROM allocation_decisions"
         ).fetchall()
         self.assertEqual(len(rows), len(allocation.CHANNELS))
-        self.assertTrue(all(row["decision"] == "insufficient_evidence" for row in rows))
+        self.assertTrue(all(
+            row["decision"] == "insufficient_evidence"
+            or row["channel"] in allocation.SUPPLY_STARVED for row in rows))
 
     def test_reallocation_has_no_external_side_effects(self):
         self.assertEqual(allocation.reallocate(self.connection)["external_side_effects"], "none")

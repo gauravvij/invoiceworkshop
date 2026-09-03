@@ -20,7 +20,12 @@ behave differently. The gate is mechanical:
                         output. Wording alone can never satisfy this.
   4. product_change -- names the change to the code that delivers them
   5. not duplicate  -- the route is not already served
-  6. sourced        -- a country family additionally needs its tax facts recorded
+  6. distribution   -- who besides Google might realistically put this in front of
+                       users. Not "a backlink before it is built" -- an audience
+                       that can be named and a route that reaches them. Thirteen
+                       surfaces shipped with nothing behind them before this was
+                       a condition rather than an intention.
+  7. sourced        -- a country family additionally needs its tax facts recorded
                        against a primary government source, with a recheck date
                        that has not passed. A page that tells someone what their
                        tax authority requires is not editorial content and is not
@@ -50,6 +55,15 @@ PRESENTATIONAL_KINDS = frozenset({"heading", "description", "copy", "example"})
 
 MIN_DIFFERENTIATORS = 3
 MIN_FUNCTIONAL = 2
+
+# Who, other than a search engine, would put this in front of someone. A family
+# that cannot answer it is not refused for lacking links; it is refused for not
+# having been asked the question before the development effort was committed.
+DISTRIBUTION_AUDIENCES = frozenset({
+    "freelancer_newsletter", "freelancer_creator", "bookkeeping_newsletter",
+    "bookkeeping_creator", "small_business_newsletter", "contractor_creator",
+    "resource_pages", "launch_platforms", "directories",
+})
 
 # Build order. Expected growth value is usefulness x realistic traffic upside x
 # confidence, divided by effort -- so the crowded receipt SERP still leads,
@@ -85,7 +99,8 @@ def _d(kind: str, detail: str) -> dict:
 
 LOCALES = [
     {
-        "key": "locale-gb", "jurisdiction": "gb", "build_scope": "content_only", "name": "UK VAT invoice", "route": "/vat-invoice-template-uk/",
+        "key": "locale-gb", "distribution_audiences": ['resource_pages'],
+        "distribution_angle": 'HMRC particulars checked against the authority, including the £250 simplified-invoice threshold', "jurisdiction": "gb", "build_scope": "content_only", "name": "UK VAT invoice", "route": "/vat-invoice-template-uk/",
         "demand": "SERP for 'vat invoice template uk' returns UK-specific templates from "
                   "Sage, FreeAgent, GOV.UK guidance and several template libraries",
         "differentiators": [
@@ -99,7 +114,8 @@ LOCALES = [
                           "requirement, currency, date format, document title",
     },
     {
-        "key": "locale-in", "jurisdiction": "in", "build_scope": "product", "name": "India GST invoice", "route": "/gst-invoice-format-india/",
+        "key": "locale-in", "distribution_audiences": ['resource_pages'],
+        "distribution_angle": 'the post-22-September-2025 GST slabs, which most published formats still have wrong', "jurisdiction": "in", "build_scope": "product", "name": "India GST invoice", "route": "/gst-invoice-format-india/",
         "demand": "SERP for 'gst invoice format india free' returns several dedicated GST "
                   "generators and bill-format downloads; demand is large and specific",
         "differentiators": [
@@ -116,7 +132,8 @@ LOCALES = [
                           "intra/inter-state GST split in the totals calculation",
     },
     {
-        "key": "locale-au", "jurisdiction": "au", "build_scope": "content_only", "name": "Australia tax invoice", "route": "/tax-invoice-template-australia/",
+        "key": "locale-au", "distribution_audiences": ['resource_pages'],
+        "distribution_angle": 'what the ATO actually requires rather than the folklore version', "jurisdiction": "au", "build_scope": "content_only", "name": "Australia tax invoice", "route": "/tax-invoice-template-australia/",
         "demand": "SERP for 'tax invoice template australia' returns ATO guidance and "
                   "Australian-specific generators",
         "differentiators": [
@@ -130,7 +147,8 @@ LOCALES = [
         "product_change": "locale preset with ABN validation and the required document title",
     },
     {
-        "key": "locale-ca", "jurisdiction": "ca", "build_scope": "content_only", "name": "Canada GST/HST invoice", "route": "/gst-hst-invoice-template-canada/",
+        "key": "locale-ca", "distribution_audiences": ['resource_pages'],
+        "distribution_angle": 'the current $100/$500 input-tax-credit thresholds and Nova Scotia at 14%', "jurisdiction": "ca", "build_scope": "content_only", "name": "Canada GST/HST invoice", "route": "/gst-hst-invoice-template-canada/",
         "demand": "SERP for 'gst hst invoice template canada' returns CRA guidance and "
                   "province-specific templates",
         "differentiators": [
@@ -144,7 +162,8 @@ LOCALES = [
         "product_change": "locale preset plus a province table driving the tax rate",
     },
     {
-        "key": "locale-ae", "jurisdiction": "ae", "build_scope": "content_only", "name": "UAE VAT invoice", "route": "/vat-invoice-template-uae/",
+        "key": "locale-ae", "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "FTA VAT invoice particulars checked against the authority", "jurisdiction": "ae", "build_scope": "content_only", "name": "UAE VAT invoice", "route": "/vat-invoice-template-uae/",
         "demand": "SERP for 'vat invoice format uae' returns FTA guidance and UAE generators",
         "differentiators": [
             _d("tax_computation", "VAT fixed at 5%"),
@@ -155,7 +174,8 @@ LOCALES = [
         "product_change": "locale preset with TRN validation",
     },
     {
-        "key": "locale-za", "jurisdiction": "za", "build_scope": "content_only", "name": "South Africa VAT invoice", "route": "/vat-invoice-template-south-africa/",
+        "key": "locale-za", "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "SARS full-tax-invoice particulars checked against the authority", "jurisdiction": "za", "build_scope": "content_only", "name": "South Africa VAT invoice", "route": "/vat-invoice-template-south-africa/",
         "demand": "SERP for 'vat invoice template south africa' returns SARS guidance and "
                   "local templates",
         "differentiators": [
@@ -167,7 +187,8 @@ LOCALES = [
         "product_change": "locale preset with SARS VAT number validation",
     },
     {
-        "key": "locale-eu-de", "jurisdiction": "de", "build_scope": "content_only", "name": "Germany VAT (USt) invoice", "route": "/rechnung-vorlage-vat-germany/",
+        "key": "locale-eu-de", "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "Kleinunternehmer and USt handling checked against the authority", "jurisdiction": "de", "build_scope": "content_only", "name": "Germany VAT (USt) invoice", "route": "/rechnung-vorlage-vat-germany/",
         "demand": "SERP for 'rechnung vorlage kleinunternehmer' shows heavy German demand "
                   "for invoice templates with USt handling",
         "differentiators": [
@@ -179,7 +200,8 @@ LOCALES = [
         "product_change": "locale preset with German tax identifier and date format",
     },
     {
-        "key": "locale-ie", "jurisdiction": "ie", "build_scope": "content_only", "name": "Ireland VAT invoice", "route": "/vat-invoice-template-ireland/",
+        "key": "locale-ie", "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "Revenue VAT invoice particulars checked against the authority", "jurisdiction": "ie", "build_scope": "content_only", "name": "Ireland VAT invoice", "route": "/vat-invoice-template-ireland/",
         "demand": "SERP for 'vat invoice template ireland' returns Revenue guidance and "
                   "Irish templates",
         "differentiators": [
@@ -191,7 +213,8 @@ LOCALES = [
         "product_change": "locale preset with Irish rate table",
     },
     {
-        "key": "locale-sg", "jurisdiction": "sg", "build_scope": "content_only", "name": "Singapore GST invoice", "route": "/gst-invoice-template-singapore/",
+        "key": "locale-sg", "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "IRAS tax invoice particulars checked against the authority", "jurisdiction": "sg", "build_scope": "content_only", "name": "Singapore GST invoice", "route": "/gst-invoice-template-singapore/",
         "demand": "SERP for 'gst invoice template singapore' returns IRAS guidance and "
                   "Singapore templates",
         "differentiators": [
@@ -203,7 +226,8 @@ LOCALES = [
         "product_change": "locale preset with UEN field",
     },
     {
-        "key": "locale-nz", "jurisdiction": "nz", "build_scope": "content_only", "name": "New Zealand GST invoice", "route": "/gst-invoice-template-new-zealand/",
+        "key": "locale-nz", "distribution_audiences": ["resource_pages"],
+        "distribution_angle": "IRD GST invoice particulars checked against the authority", "jurisdiction": "nz", "build_scope": "content_only", "name": "New Zealand GST invoice", "route": "/gst-invoice-template-new-zealand/",
         "demand": "SERP for 'gst invoice template nz' returns IRD guidance and NZ templates",
         "differentiators": [
             _d("tax_computation", "GST fixed at 15%"),
@@ -217,7 +241,8 @@ LOCALES = [
 
 DOCUMENTS = [
     {
-        "key": "doc-receipt", "expected_value": 9.0,
+        "key": "doc-receipt", "distribution_audiences": ['freelancer_newsletter', 'directories'],
+        "distribution_angle": 'a receipt that records a payment against an invoice, in a market whose first page is mostly till-receipt replication', "expected_value": 9.0,
         "value_basis": "the kind already exists in the type union, factory, conversions, PDF and storage, so the build is fields and a page rather than a new document model; largest demand of the four", "build_scope": "product", "name": "Receipt generator", "route": "/receipt-generator/",
         "demand": "SERP checked 3 September 2026. 'free receipt maker generator online' "
                   "returns MakeMyReceipt, SimpleReceiptMaker (130+ templates), ReceiptMake, "
@@ -241,7 +266,8 @@ DOCUMENTS = [
                           "has no page; give it payment fields and a paid-status total block",
     },
     {
-        "key": "doc-credit-note", "expected_value": 7.0,
+        "key": "doc-credit-note", "distribution_audiences": ['bookkeeping_newsletter', 'resource_pages'],
+        "distribution_angle": 'the document a bookkeeper hands a client who keeps editing the original invoice instead of crediting it', "expected_value": 7.0,
         "value_basis": "unambiguous B2B intent, the weakest incumbent tools of the three remaining, and it pairs with the existing invoice through the same conversion mechanism the receipt uses", "build_scope": "product", "name": "Credit note generator", "route": "/credit-note-generator/",
         "demand": "SERP checked 3 September 2026. 'credit note generator template free' "
                   "returns Billdu, PaidNice, InvoiceHome, invoice-generator.com, DepositFix, "
@@ -260,7 +286,8 @@ DOCUMENTS = [
                           "sign-inverted totals",
     },
     {
-        "key": "doc-delivery-note", "expected_value": 4.0,
+        "key": "doc-delivery-note", "distribution_audiences": ['small_business_newsletter', 'resource_pages'],
+        "distribution_angle": 'carries no prices at all, because it is read in a loading bay', "expected_value": 4.0,
         "value_basis": "weakest field, which is the upside, against the largest build: totals are unit counts rather than money and no existing document behaves that way", "build_scope": "product", "name": "Delivery note / packing slip",
         "route": "/delivery-note-template/",
         "demand": "SERP checked 3 September 2026. 'delivery note template free online "
@@ -283,7 +310,8 @@ DOCUMENTS = [
                           "and unit-count totals in place of money totals",
     },
     {
-        "key": "doc-timesheet-invoice", "expected_value": 5.0,
+        "key": "doc-timesheet-invoice", "distribution_audiences": ['freelancer_creator', 'resource_pages'],
+        "distribution_angle": 'an hours total that reconciles with the money total', "expected_value": 5.0,
         "value_basis": "closest to the existing invoice and cheapest to build, but the head terms are held by QuickBooks and Wave, so the realistic traffic upside is the lowest", "build_scope": "product", "name": "Timesheet invoice",
         "route": "/timesheet-invoice-generator/",
         "demand": "SERP checked 3 September 2026. 'timesheet invoice template contractor "
@@ -320,6 +348,14 @@ UTILITIES = [
         ],
         "product_change": "a genuine calculator, not a page: jurisdiction rate table plus "
                           "day-count arithmetic",
+        "distribution_audiences": ["freelancer_creator", "freelancer_newsletter",
+                                   "resource_pages"],
+        "distribution_angle": "statutory late-payment interest and compensation by "
+                              "jurisdiction, with the demand letter alongside the "
+                              "figure. Freelancer resource pages already link to "
+                              "calculators of this kind because their readers ask for "
+                              "them, and the answer is not obtainable by reasoning it "
+                              "out -- which is what separates it from a template page",
     },
 ]
 
@@ -413,6 +449,7 @@ def check(family: dict, *, taken: set[str], facts: dict[str, dict] | None = None
     if scope not in BUILD_SCOPES:
         raise GateRefusal(f"build scope must be one of {BUILD_SCOPES}, got {scope!r}")
     sourcing = _check_sources(family, facts)
+    _check_distribution(family)
     gate = {
         "build_scope": scope,
         "differentiators": len(differentiators),
@@ -421,9 +458,38 @@ def check(family: dict, *, taken: set[str], facts: dict[str, dict] | None = None
         "product_change": family["product_change"],
         "expected_value": family.get("expected_value", DEFAULT_VALUE),
         "value_basis": family.get("value_basis", ""),
+        "distribution_audiences": family.get("distribution_audiences", []),
+        "distribution_angle": family.get("distribution_angle", ""),
     }
     gate.update(sourcing)
     return gate
+
+
+def _check_distribution(family: dict) -> None:
+    """A family must name someone other than Google who would carry it.
+
+    This is not a demand for a link before the page exists. It is the question
+    that went unasked while thirteen useful surfaces shipped into silence: who,
+    specifically, would put this in front of users, and how would it reach them.
+    A family that cannot answer is one whose distribution nobody has thought
+    about, and building it first has already been tried.
+    """
+    audiences = family.get("distribution_audiences") or []
+    unknown = [a for a in audiences if a not in DISTRIBUTION_AUDIENCES]
+    if unknown:
+        raise GateRefusal(
+            f"unrecognised distribution audience(s): {', '.join(sorted(set(unknown)))}")
+    if not audiences:
+        raise GateRefusal(
+            "no distribution audience named. Search is not a distribution plan on its "
+            "own: a family has to say who besides Google would realistically put it in "
+            "front of users before the development effort is committed. It does not "
+            "need a link yet -- it needs someone to have asked the question")
+    if not (family.get("distribution_angle") or "").strip():
+        raise GateRefusal(
+            "no linkable angle recorded. 'It is a free tool' is not a reason for anyone "
+            "to mention it; the angle is the specific thing that makes it worth "
+            "someone's recommendation")
 
 
 def _check_sources(family: dict, facts: dict[str, dict] | None) -> dict:

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '22')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '23')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1289,4 +1289,28 @@ CREATE TABLE IF NOT EXISTS launch_events (
   metrics_json   TEXT NOT NULL DEFAULT '{}',
   created_at     TEXT NOT NULL,
   updated_at     TEXT NOT NULL
+);
+
+-- Distribution state per shipped product surface. One row per thing a user can
+-- actually open, so a product with no external audience is visible as debt
+-- rather than being invisible because nobody asked.
+CREATE TABLE IF NOT EXISTS product_distribution (
+  route                TEXT PRIMARY KEY,
+  name                 TEXT NOT NULL,
+  family               TEXT NOT NULL DEFAULT '',
+  search_cluster       TEXT NOT NULL DEFAULT '',
+  resource_audience    TEXT NOT NULL DEFAULT '',
+  creator_audience     TEXT NOT NULL DEFAULT '',
+  directory_target     TEXT NOT NULL DEFAULT '',
+  linkable_angle       TEXT NOT NULL DEFAULT '',
+  distribution_state   TEXT NOT NULL DEFAULT 'debt'
+                         CHECK (distribution_state IN ('debt', 'targeted', 'contacted',
+                                                       'placed', 'earning')),
+  referral_sessions    INTEGER NOT NULL DEFAULT 0,
+  backlinks            INTEGER NOT NULL DEFAULT 0,
+  organic_clicks       INTEGER NOT NULL DEFAULT 0,
+  qualified_targets    INTEGER NOT NULL DEFAULT 0,
+  priority_rank        INTEGER,
+  priority_reason      TEXT NOT NULL DEFAULT '',
+  updated_at           TEXT NOT NULL
 );

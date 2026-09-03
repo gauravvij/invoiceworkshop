@@ -64,3 +64,7 @@ fi
 # The creator backlog and where the Product Hunt launch stands.
 "$PYTHON" scripts/growth_creators.py report
 "$PYTHON" scripts/growth_breakout.py launch-plan
+
+# Which surfaces to push, and what the pushing has actually produced.
+"$PYTHON" scripts/growth_distribution.py rank --top 3
+"$PYTHON" scripts/growth_distribution.py report

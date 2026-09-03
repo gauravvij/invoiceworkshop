@@ -244,6 +244,143 @@ def _is_vendor(page_url: str, title: str, text: str) -> tuple[bool, str]:
     return False, ""
 
 
+# ---------------------------------------------------------------------------
+# Contact forms as a second verified route
+# ---------------------------------------------------------------------------
+
+# Anti-bot controls. Their presence ends the assessment: a form behind one of
+# these is a form the site has decided should be filled in by a person, and
+# working around that is not something this system does at any volume.
+CAPTCHA_MARKERS = ("recaptcha", "g-recaptcha", "hcaptcha", "h-captcha", "cf-turnstile",
+                   "turnstile", "friendlycaptcha", "captcha", "arkoselabs", "funcaptcha")
+
+# A form behind a login is not a public contact route.
+LOGIN_MARKERS = ("type=\"password\"", "type='password'", "sign in to continue",
+                 "log in to continue", "you must be logged in", "members only")
+
+# Forms that exist for a different purpose. Repurposing a complaint, privacy or
+# support-ticket form for an unsolicited suggestion is an abuse of it regardless
+# of how polite the message is.
+WRONG_PURPOSE = re.compile(
+    r"\b(privacy request|data (?:subject|deletion) request|gdpr request|ccpa request|"
+    r"file a complaint|complaints? (?:form|procedure)|report abuse|report a problem|"
+    r"submit a ticket|support ticket|open a case|dmca|legal notice|whistleblow|"
+    r"safeguarding|incident report)\b", re.I)
+
+# The route is right when the page says so.
+RIGHT_PURPOSE = re.compile(
+    r"\b(contact us|get in touch|general enquir|general inquir|editorial|"
+    r"pitch (?:us|a story)|submit a (?:tip|resource|tool|story)|write for us|"
+    r"partnership|collaborat|work with (?:us|me)|press|media enquir|"
+    r"suggest a (?:tool|resource)|advertis)\b", re.I)
+
+# The site telling us not to. Honoured as written.
+FORBIDS_CONTACT = re.compile(
+    r"\b(no unsolicited|do not send unsolicited|no cold (?:email|outreach|pitch)|"
+    r"we do not accept (?:guest|unsolicited|pitches|submissions)|"
+    r"unsolicited (?:pitches|submissions|emails) will be|"
+    r"not accepting (?:pitches|submissions|guest)|no vendors|no solicitation|"
+    r"please do not contact us (?:about|regarding) (?:products|tools|software))\b", re.I)
+
+# A form demanding a personal first and last name cannot be filled truthfully by
+# an organization. That is a REVIEW, not a refusal: a person may legitimately
+# put their own name in it, and this system may not put anyone's.
+PERSONAL_NAME = re.compile(
+    r'name="[^"]*(?:first[_-]?name|last[_-]?name|fname|lname|surname)"[^>]*required|'
+    r'required[^>]*name="[^"]*(?:first[_-]?name|last[_-]?name|fname|lname|surname)"', re.I)
+
+# The path a contact route actually lives on. Checked against the URL rather
+# than the copy, because almost every page carries the words "contact us".
+CONTACT_ROUTE_PATH = re.compile(
+    r"/(contact|contact-us|get-in-touch|enquir|inquir|pitch|submit|tips?|"
+    r"write-for-us|contribute|partnership|partner-with|collaborat|press|media|"
+    r"work-with-(us|me)|advertis|suggest)", re.I)
+
+PAYMENT = re.compile(r"\b(submission fee|listing fee|\$\d+ to submit|paid submission|"
+                     r"pay to be featured|sponsored listing fee)\b", re.I)
+
+
+def verify_form(form_url: str) -> dict:
+    """Read a contact form's own page and decide whether it is usable.
+
+    Every condition is a fact on that page. Nothing here works around a control
+    the site put up: a CAPTCHA or a login ends the assessment, and a form that
+    exists for complaints or support tickets is not repurposed. A site that says
+    in writing it does not want unsolicited contact is believed.
+    """
+    from urllib.parse import urlsplit
+
+    from growth_backlink_engine import PageParser, fetch as http_fetch
+
+    checks = {"fetched": False, "has_form": False, "no_captcha": False,
+              "no_login": False, "right_purpose": False, "not_wrong_purpose": False,
+              "no_payment": False, "not_forbidden": False}
+    blockers: list[str] = []
+    try:
+        status, body = http_fetch(form_url)
+    except Exception:
+        status, body = 0, ""
+    if status != 200 or not body:
+        return {"usable": False, "review": False, "checks": checks,
+                "blockers": ["the form page could not be read, so nothing about it "
+                             "could be verified"]}
+    checks["fetched"] = True
+    lowered = body.lower()
+    page = PageParser()
+    page.feed(body)
+    text = page.body_text
+
+    checks["has_form"] = "<form" in lowered or "<textarea" in lowered
+    if not checks["has_form"]:
+        blockers.append("no form on the page it links to")
+
+    hit = next((marker for marker in CAPTCHA_MARKERS if marker in lowered), None)
+    checks["no_captcha"] = hit is None
+    if hit:
+        blockers.append(f"protected by an anti-bot control ({hit}), which is not "
+                        "worked around")
+
+    login = next((marker for marker in LOGIN_MARKERS if marker in lowered), None)
+    checks["no_login"] = login is None
+    if login:
+        blockers.append("behind a login, so it is not a public contact route")
+
+    wrong = WRONG_PURPOSE.search(text)
+    checks["not_wrong_purpose"] = wrong is None
+    if wrong:
+        blockers.append(f"exists for a different purpose ({wrong.group(0)}), and "
+                        "repurposing it would be an abuse of it")
+
+    # The URL has to be a contact route, not merely a page that says "contact us"
+    # somewhere in its footer. An /about page qualified twice before this, and an
+    # about page is not an invitation to write.
+    path = urlsplit(form_url).path.lower()
+    on_a_contact_route = bool(CONTACT_ROUTE_PATH.search(path))
+    checks["right_purpose"] = on_a_contact_route and bool(RIGHT_PURPOSE.search(text))
+    if not checks["right_purpose"]:
+        blockers.append(
+            "the URL is not a contact route" if not on_a_contact_route else
+            "the page does not identify itself as a general, editorial or business "
+            "contact route")
+
+    pay = PAYMENT.search(text)
+    checks["no_payment"] = pay is None
+    if pay:
+        blockers.append(f"asks for payment ({pay.group(0)})")
+
+    forbidden = FORBIDS_CONTACT.search(text)
+    checks["not_forbidden"] = forbidden is None
+    if forbidden:
+        blockers.append(f"the site says in writing: \"{forbidden.group(0)}\"")
+
+    review = bool(PERSONAL_NAME.search(body)) and not blockers
+    return {"usable": not blockers and not review, "review": review, "checks": checks,
+            "blockers": blockers,
+            "review_reason": ("the form requires a personal first or last name, which "
+                              "cannot be answered truthfully as an organization"
+                              if review else "")}
+
+
 def _resolve_contact(page_url: str, parser) -> tuple[str | None, str, str | None]:
     """Find a published business email, following the contact link if there is one.
 
@@ -448,18 +585,33 @@ def fetch(connection: sqlite3.Connection, limit: int = 25) -> dict:
             failed += 1
             continue
         contact_url, contact_kind, recipient = _resolve_contact(row["page_url"], parser)
+        form_url, form_checks, form_blockers = None, {}, ""
+        if contact_kind != "email" and contact_url:
+            verdict = verify_form(contact_url)
+            form_checks = verdict["checks"]
+            if verdict["usable"]:
+                form_url = contact_url
+            elif verdict["review"]:
+                form_blockers = verdict["review_reason"]
+            else:
+                form_blockers = "; ".join(verdict["blockers"])[:400]
         audience, evidence = _audience(text)
         connection.execute(
             """UPDATE creator_prospects
                   SET status='fetched', http_status=?, fetched_at=?,
                       last_activity_date=?, audience_estimate=?, audience_evidence=?,
                       recommends_tools=?, coverage_kind=?, contact_url=?,
-                      contact_kind=?, recipient=?, contact_verified_at=?, updated_at=?
+                      contact_kind=?, recipient=?, contact_verified_at=?,
+                      contact_form_url=?, form_verified_at=?, form_checks_json=?,
+                      form_blockers=?, updated_at=?
                 WHERE id=?""",
             (status, now, _parse_date(text, body), audience, evidence,
              1 if RECOMMENDS.search(text) else 0, _coverage_kind(text),
              contact_url, contact_kind, recipient,
-             now if recipient else None, now, row["id"]))
+             now if recipient else None,
+             form_url, now if form_checks else None,
+             json.dumps(form_checks, sort_keys=True), form_blockers,
+             now, row["id"]))
         read += 1
     connection.commit()
     return {"read": read, "unreadable": failed,
@@ -488,15 +640,20 @@ def qualify(connection: sqlite3.Connection) -> dict:
         if GENERIC_INFLUENCER.search(f"{row['name']} {row['notes']}"):
             reasons.append("reads as a general business-audience account rather than a "
                            "specific audience with a paperwork problem")
-        # The sending policy forbids form submission outright and requires a
-        # published business email address. Qualifying a form-only target would
-        # build a backlog of prospects the policy can never admit, which is a
-        # list that looks like progress and is not.
-        if row["contact_kind"] != "email" or not row["recipient"]:
-            reasons.append(
-                "no business email published on their own site. A contact form is not a "
-                "route this channel may use: form submission is outside the policy, so a "
-                "form-only target would sit in the backlog forever")
+        # Two routes, both verified. Qualifying a target neither route can reach
+        # would build a backlog the policy can never admit, which is a list that
+        # looks like progress and is not.
+        route = "email" if (row["contact_kind"] == "email" and row["recipient"]) else (
+            "form" if row["form_checks_json"] and row["form_checks_json"] != "{}"
+            and not row["form_blockers"] and row["contact_form_url"] else "none")
+        if route == "none":
+            if row["form_blockers"]:
+                reasons.append(f"contact form unusable: {row['form_blockers']}")
+            else:
+                reasons.append(
+                    "no verified contact route: no business email published on their own "
+                    "site, and no public editorial or general contact form that could be "
+                    "checked")
         if not row["product_angle"] or not row["target_url"]:
             reasons.append("no specific product angle recorded")
 
@@ -508,8 +665,9 @@ def qualify(connection: sqlite3.Connection) -> dict:
             rejected.append({"domain": row["domain"], "reason": reasons[0]})
             continue
         connection.execute(
-            "UPDATE creator_prospects SET status='qualified', fit_score=?, updated_at=? WHERE id=?",
-            (fit_score(row), now, row["id"]))
+            """UPDATE creator_prospects SET status='qualified', fit_score=?,
+                   contact_route=?, updated_at=? WHERE id=?""",
+            (fit_score(row), route, now, row["id"]))
         qualified += 1
     connection.commit()
     return {"qualified": qualified, "rejected": len(rejected),
@@ -531,9 +689,10 @@ def fit_score(row: sqlite3.Row) -> float:
         age = (datetime.now(timezone.utc).date()
                - datetime.fromisoformat(row["last_activity_date"]).date()).days
         recency = 1.0 if age <= 60 else 0.8 if age <= 150 else 0.6
-    # Only email-reachable targets are qualified at all, so this is a constant
-    # today; it stays as a factor because a future channel may use another route.
-    contact = {"email": 1.0}.get(row["contact_kind"], 0.3)
+    # An address reaches a person; a form reaches an inbox somebody may triage.
+    # Both are real routes, and the difference is smaller than the difference
+    # between a good fit and a bad one, so the gap here is deliberately narrow.
+    contact = 1.0 if (row["contact_kind"] == "email" and row["recipient"]) else 0.8
     coverage = {"editorial": 1.0, "mixed": 0.8, "affiliate": 0.7,
                 "sponsored": 0.3, "unknown": 0.6}[row["coverage_kind"]]
     return round(reach * recency * contact * coverage * (1.2 if row["recommends_tools"] else 0.5), 3)
@@ -542,7 +701,8 @@ def fit_score(row: sqlite3.Row) -> float:
 def backlog(connection: sqlite3.Connection, limit: int = 50) -> list[dict]:
     return [dict(row) for row in connection.execute(
         """SELECT id, domain, name, segment, fit_score, audience_estimate,
-                  last_activity_date, contact_kind, coverage_kind, target_url, status
+                  last_activity_date, contact_route, recipient, contact_form_url,
+                  coverage_kind, target_url, status
              FROM creator_prospects WHERE status='qualified'
             ORDER BY fit_score DESC, id LIMIT ?""", (limit,))]
 
@@ -557,6 +717,9 @@ def report(connection: sqlite3.Connection) -> dict:
     return {
         "counts": counts,
         "total": sum(counts.values()),
+        "by_route": {row["contact_route"]: row["n"] for row in connection.execute(
+            """SELECT contact_route, COUNT(*) n FROM creator_prospects
+                WHERE status='qualified' GROUP BY contact_route""")},
         "by_segment": by_segment,
         "backlog": backlog(connection, 25),
         "top_rejections": [dict(row) for row in connection.execute(

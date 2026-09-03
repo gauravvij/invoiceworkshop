@@ -118,4 +118,10 @@ fi
 # Read-only throughout: sending is governed by a separate owner-signed policy
 # and a qualified prospect sits in the backlog until that policy exists.
 "$PYTHON" scripts/growth_creators.py cycle --queries-per-segment 2 --fetch-limit 30
+
+# --- 9. distribution register -----------------------------------------------
+# One row per live product surface, carrying the only three numbers this phase
+# counts: referral sessions, backlinks, organic clicks. A surface with none of
+# them stays marked as debt and says so, however much was built behind it.
+"$PYTHON" scripts/growth_distribution.py measure
 "$PYTHON" scripts/growth_creator_policy.py status

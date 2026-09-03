@@ -46,6 +46,17 @@ HIGH_VARIANCE = frozenset({"launch_platforms", "creator_newsletter", "linkable_a
                            "social_community", "product_loops"})
 EXPLORATION_FLOOR = 0.6
 
+# A channel can also be judged on the supply it can reach, before a single
+# attempt. Four hundred and five creator candidates were researched and four are
+# contactable; the exploration floor exists to stop a channel being killed on
+# early noise, not to protect one that has demonstrably almost no inventory.
+# This reduces it once rather than waiting for ten sends to fail.
+SUPPLY_STARVED = {"creator_newsletter": (
+    "405 candidates researched across six segments, 4 reachable. Most publish a "
+    "contact form behind a CAPTCHA, or never recommend a tool at all. This is a "
+    "measurement of the channel, not of the effort put into it")}
+SUPPLY_STARVED_WEIGHT = 0.4
+
 # How many completed attempts a channel needs before its outcomes are allowed to
 # move anything. Distribution is higher because a single unanswered email says
 # almost nothing, and because the cost of wrongly abandoning outreach is high.
@@ -391,6 +402,32 @@ def reallocate(connection: sqlite3.Connection) -> dict:
     for channel in CHANNELS:
         record = current[channel]
         found = evidence.get(channel, {"attempts": 0, "wins": 0, "detail": "no attempts recorded"})
+        starved = SUPPLY_STARVED.get(channel)
+        if starved and float(record["weight"]) > SUPPLY_STARVED_WEIGHT:
+            connection.execute(
+                """UPDATE channel_allocation SET weight=?, last_reason=?, updated_at=?
+                    WHERE channel=?""",
+                (SUPPLY_STARVED_WEIGHT, f"supply-starved: {starved}", now, channel))
+            connection.execute(
+                """INSERT INTO allocation_decisions
+                     (decided_at, channel, previous_weight, new_weight, attempts, wins,
+                      evidence, decision, rationale)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (now, channel, float(record["weight"]), SUPPLY_STARVED_WEIGHT,
+                 int(found["attempts"]), int(found["wins"]), found["detail"],
+                 "reduce", f"supply-starved: {starved}"))
+            decisions.append({
+                # A reduce, like any other, so the stored vocabulary stays the
+                # one the schema and every reader already understand. What makes
+                # it different is the rationale: inventory, not outcomes.
+                "channel": channel, "decision": "reduce",
+                "supply_starved": True,
+                "previous_weight": float(record["weight"]),
+                "new_weight": SUPPLY_STARVED_WEIGHT,
+                "attempts": int(found["attempts"]), "wins": int(found["wins"]),
+                "evidence": found["detail"], "rationale": starved,
+            })
+            continue
         attempts, wins = int(found["attempts"]), int(found["wins"])
         previous = float(record["weight"])
         minimum = int(record["min_sample"])

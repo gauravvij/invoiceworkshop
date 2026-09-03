@@ -208,6 +208,21 @@ def apply_schema(connection: sqlite3.Connection) -> None:
               ON level1a_action_audit(action_id, started_at DESC);
             """
         )
+    # Creator policy v2 added contact forms as a second verified route, so a
+    # prospect carries what was actually checked about its form.
+    creator_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(creator_prospects)")
+    }
+    for column, definition in (
+        ("contact_form_url", "TEXT"),
+        ("form_verified_at", "TEXT"),
+        ("form_checks_json", "TEXT NOT NULL DEFAULT '{}'"),
+        ("form_blockers", "TEXT NOT NULL DEFAULT ''"),
+        ("contact_route", "TEXT NOT NULL DEFAULT 'none'"),
+    ):
+        if creator_columns and column not in creator_columns:
+            connection.execute(
+                f"ALTER TABLE creator_prospects ADD COLUMN {column} {definition}")
     # The channel portfolio gained launch platforms, directories, creator
     # distribution, community and product loops. The old table pinned the seven
     # original channels in a CHECK, so the portfolio could not grow without a
