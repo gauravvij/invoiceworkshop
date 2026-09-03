@@ -13,7 +13,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from growth_common import apply_schema, connect_db  # noqa: E402
+from growth_common import apply_schema, connect_db, record_escalation  # noqa: E402
 from growth_db import cmd_add_prospect  # noqa: E402
 
 
@@ -80,3 +80,30 @@ class DatabaseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EscalationFreshnessTests(unittest.TestCase):
+    """An escalation subject usually carries a count. Updating the detail but
+    not the subject is how one quietly starts lying."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.connection = connect_db(str(Path(self.temp.name) / "growth.db"))
+        apply_schema(self.connection)
+
+    def tearDown(self):
+        self.connection.close()
+        self.temp.cleanup()
+
+    def test_a_repeat_escalation_refreshes_its_subject(self):
+        record_escalation(self.connection, kind="k", severity="info",
+                          subject="6 of 18 surfaces", detail="first", fingerprint="f")
+        record_escalation(self.connection, kind="k", severity="warning",
+                          subject="15 of 18 surfaces", detail="second", fingerprint="f")
+        row = self.connection.execute(
+            "SELECT subject, detail, severity, occurrences FROM escalations WHERE fingerprint='f'"
+        ).fetchone()
+        self.assertEqual(row["subject"], "15 of 18 surfaces")
+        self.assertEqual(row["detail"], "second")
+        self.assertEqual(row["severity"], "warning")
+        self.assertEqual(row["occurrences"], 2)

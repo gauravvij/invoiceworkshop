@@ -290,6 +290,10 @@ def record_escalation(connection, *, kind: str, severity: str, subject: str,
            ON CONFLICT(fingerprint) DO UPDATE SET
              occurrences=escalations.occurrences+1,
              last_seen_at=excluded.last_seen_at,
+             -- The subject carries the count, so leaving it at whatever it said
+             -- the first time is how an escalation quietly starts lying: it read
+             -- "6 of 18 surfaces" for hours after the number became 15.
+             subject=excluded.subject,
              detail=excluded.detail,
              severity=excluded.severity,
              resolved_at=NULL""",
