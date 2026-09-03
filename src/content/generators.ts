@@ -76,6 +76,7 @@ export const generators: Record<string, GeneratorContent> = {
       { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Bill labor, materials, deposits and project work.' },
       { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Create a practical contractor-specific invoice.' },
       { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm the payment once the invoice is settled.' },
+      { href: '/credit-note-generator/', label: 'Credit Note Generator', text: 'Reverse an invoice already sent, in full or in part.' },
     ],
   },
   proforma: {
@@ -793,6 +794,78 @@ export const generators: Record<string, GeneratorContent> = {
       { href: '/invoice-template/', label: 'Invoice Template', text: 'Start from a plain invoice layout.' },
       { href: '/quotation-generator/', label: 'Quotation Generator', text: 'Price the work before it is agreed.' },
       { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Bill contract work with project and deposit fields.' },
+    ],
+  },
+  creditNoteGenerator: {
+    path: '/credit-note-generator/', kind: 'creditNote', dynamic: true,
+    title: 'Free Credit Note Generator | Credit Memo Maker | Invoice Workshop',
+    description: 'Create a credit note free: the invoice it credits, the reason, and the amount given back shown as a credit. Full or partial. No signup, PDF download.',
+    h1: 'Free Credit Note Generator', eyebrow: 'Reverse an invoice without confusing anyone',
+    intro: 'Issue a credit note against an invoice you already sent — for a return, an overcharge or a cancelled order. Name the invoice, give the reason, list what is being credited, and the total shows as money going back rather than money owed.',
+    reassurance: 'Everything stays in this browser. Your business, customers and past documents are saved on this device only.',
+    sections: [
+      {
+        heading: 'What a credit note is for',
+        paragraphs: [
+          'A credit note reduces what a customer owes on an invoice that has already been issued. It exists because you generally cannot delete or rewrite an invoice once it has gone out: the original stays as it was, and the credit note is the separate document that cancels part or all of it.',
+          'That is why editing the original invoice is the wrong fix. Two versions of the same invoice number circulating is exactly the situation a credit note prevents, and it is the version your customer already filed that their accounts will be reconciled against.',
+        ],
+        bullets: [
+          'The invoice number being credited, so both documents can be matched',
+          'The reason — return, overcharge, cancellation, damaged goods',
+          'The lines being credited, which may be some of the invoice, not all',
+          'Tax credited alongside the amount, at the rate the invoice used',
+          'A total presented as a credit, never as a balance due',
+        ],
+      },
+      {
+        heading: 'A worked partial credit',
+        paragraphs: [
+          'Most credit notes reverse part of an invoice, not the whole thing, and the part people get wrong is the tax. Credit the tax at the rate the original invoice charged, on the amount being credited — not on the invoice total, and not at whatever rate applies today. Tax is calculated per line and rounded there, then the lines are added, which is the same order the editor above uses.',
+        ],
+        table: {
+          caption: 'Credit note CN-1007 against invoice INV-2026-0311 — two of six chairs returned',
+          columns: ['Description', 'Qty', 'Rate', 'Amount'],
+          rows: [
+            ['Oak dining chair, returned', '2', '$185.00', '$370.00'],
+            ['Delivery surcharge, refunded', '1', '$45.00', '$45.00'],
+          ],
+          total: [['Subtotal', '$415.00'], ['Tax at 8.25%', '$34.24'], ['Total credited', '−$449.24']],
+          note: 'Tax is $30.53 on the chairs and $3.71 on the delivery line, which add to $34.24. The customer now owes the original invoice total less $449.24. The invoice itself is unchanged, which is what lets both documents be filed against each other.',
+        },
+      },
+      {
+        heading: 'Credit an invoice you already made',
+        paragraphs: [
+          'If the invoice was created here, open it and convert it. The credit note keeps the customer and the line items, carries the invoice number across as the reference, and starts with the full invoice contents so you can delete the lines you are not crediting.',
+          'The invoice stays in your list untouched. Both documents can be produced separately when either is asked for.',
+        ],
+      },
+      {
+        heading: 'Credit note, debit note, refund or discount?',
+        paragraphs: [
+          'These four are used interchangeably and mean different things to the person receiving them.',
+        ],
+        terms: [
+          { term: 'Credit note', definition: 'You reduce what the customer owes you. Issued by the seller against a specific invoice, and it stands as a document in its own right.' },
+          { term: 'Debit note', definition: 'The buyer tells the seller they intend to pay less, usually before a credit note is issued. It requests the credit rather than granting it.' },
+          { term: 'Refund', definition: 'Money physically returned. A credit note may lead to a refund, or it may just reduce the balance on an unpaid invoice — those are different outcomes.' },
+          { term: 'Discount', definition: 'Applied on the invoice before it is sent. Once the invoice has gone out, the same reduction has to be made by credit note instead.' },
+        ],
+      },
+      {
+        heading: 'Keeping the record',
+        paragraphs: [
+          'Credit notes are saved in this browser alongside your invoices and receipts and can be exported as a backup. Clearing site data removes them, so download the PDF for anything you need to keep.',
+          'Whether a credit note is required, how it must be numbered, and how the tax on it is reported depend on where you trade and how you are registered. This tool produces the document; it does not file anything, does not adjust a tax return, and is not tax advice.',
+        ],
+      },
+    ],
+    related: [
+      { href: '/', label: 'Invoice Generator', text: 'Create the invoice this credit note reverses.' },
+      { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm a payment that has been received.' },
+      { href: '/proforma-invoice-generator/', label: 'Proforma Invoice Generator', text: 'Send a preliminary invoice before the final one.' },
+      { href: '/invoice-template/', label: 'Invoice Template', text: 'Start from a plain invoice layout.' },
     ],
   },
 };

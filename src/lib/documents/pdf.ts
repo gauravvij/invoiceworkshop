@@ -86,15 +86,20 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
 
   pdf.setTextColor(navy);
   pdf.text(`Issued: ${document.issueDate}`, pageWidth - margin, 204, { align: 'right' });
-  pdf.text(`${document.kind === 'receipt' ? 'Paid' : 'Due'}: ${document.dueDate}`, pageWidth - margin, 220, { align: 'right' });
+  const dateLabel = document.kind === 'receipt' ? 'Paid'
+    : document.kind === 'creditNote' ? 'Credited' : 'Due';
+  pdf.text(`${dateLabel}: ${document.dueDate}`, pageWidth - margin, 220, { align: 'right' });
   if (document.reference) {
     pdf.text(
-      `${document.kind === 'receipt' ? 'Transaction ref' : 'Reference'}: ${document.reference}`,
+      `${document.kind === 'receipt' ? 'Transaction ref' : document.kind === 'creditNote' ? 'Credits invoice' : 'Reference'}: ${document.reference}`,
       pageWidth - margin, 236, { align: 'right' },
     );
   }
   if (document.kind === 'receipt' && document.paymentMethod) {
     pdf.text(`Paid by: ${document.paymentMethod}`, pageWidth - margin, 252, { align: 'right' });
+  }
+  if (document.kind === 'creditNote' && document.creditReason) {
+    pdf.text(`Reason: ${document.creditReason}`, pageWidth - margin, 252, { align: 'right' });
   }
 
   autoTable(pdf, {
@@ -128,7 +133,9 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
     ['Tax', totals.taxMinor],
     ...(totals.shippingMinor ? ([['Shipping', totals.shippingMinor]] as Array<[string, number]>) : []),
     ...(totals.adjustmentMinor ? ([['Adjustment', totals.adjustmentMinor]] as Array<[string, number]>) : []),
-    ['Total', totals.totalMinor],
+    ...(document.kind === 'creditNote'
+      ? ([['Total credited', totals.creditedMinor]] as Array<[string, number]>)
+      : ([['Total', totals.totalMinor]] as Array<[string, number]>)),
     ...(totals.depositMinor ? ([['Deposit paid', -totals.depositMinor], ['Balance due', totals.balanceDueMinor]] as Array<[string, number]>) : []),
     // A receipt's point is the money received and what, if anything, is left.
     ...(document.kind === 'receipt'
@@ -148,7 +155,7 @@ export const downloadDocumentPdf = async (document: DocumentRecord): Promise<voi
     y = 60;
   }
   for (const [label, value] of totalRows) {
-    const isTotal = label === 'Total' || label === 'Balance due' || label === 'Balance remaining';
+    const isTotal = ['Total', 'Total credited', 'Balance due', 'Balance remaining'].includes(label);
     pdf.setFont('helvetica', isTotal ? 'bold' : 'normal');
     pdf.setFontSize(isTotal ? 11 : 9);
     pdf.setTextColor(navy);

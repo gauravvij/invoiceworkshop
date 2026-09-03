@@ -97,6 +97,14 @@ export interface DocumentTotals {
    */
   amountPaidMinor: number;
   balanceRemainingMinor: number;
+  /**
+   * What a credit note gives back, as a negative number. The line items stay
+   * positive -- you list what is being credited, not a column of minus signs --
+   * and the sign is applied once, here, so the preview, the PDF and any future
+   * reader all get it from the same place instead of each inverting their own.
+   * Zero on every other kind.
+   */
+  creditedMinor: number;
 }
 
 export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
@@ -125,5 +133,6 @@ export const calculateDocument = (document: DocumentRecord): DocumentTotals => {
     amountPaidMinor,
     // Overpayment is a real thing and clamping it to zero would hide it.
     balanceRemainingMinor: document.kind === 'receipt' ? totalMinor - amountPaidMinor : 0,
+    creditedMinor: document.kind === 'creditNote' ? -totalMinor : 0,
   };
 };

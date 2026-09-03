@@ -64,6 +64,7 @@ export const defaultNumbering = (): NumberingSettings => ({
     workOrder: 'WO-',
     purchaseOrder: 'PO-',
     receipt: 'REC-',
+    creditNote: 'CN-',
   },
   nextNumbers: {
     invoice: 1001,
@@ -73,6 +74,7 @@ export const defaultNumbering = (): NumberingSettings => ({
     workOrder: 1001,
     purchaseOrder: 1001,
     receipt: 1001,
+    creditNote: 1001,
   },
 });
 
@@ -97,7 +99,9 @@ export const createDocument = (
     status: kind === 'receipt' ? 'paid' : 'draft',
     number: `${numbering.prefixes[kind]}${numbering.nextNumbers[kind]}`,
     issueDate: timestamp.slice(0, 10),
-    dueDate: addDays(now, kind === 'receipt' ? 0 : 30),
+    // Neither a receipt nor a credit note asks for money later, so neither has
+    // a payment date in the future to offer.
+    dueDate: addDays(now, kind === 'receipt' || kind === 'creditNote' ? 0 : 30),
     currency: business.defaultCurrency,
     business: structuredClone(business),
     client: emptyClient(),
@@ -114,6 +118,7 @@ export const createDocument = (
     progressBillingNote: '',
     paymentMethod: '',
     amountPaidMinor: 0,
+    creditReason: '',
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -127,4 +132,5 @@ export const documentLabels: Record<DocumentKind, string> = {
   workOrder: 'Work Order',
   purchaseOrder: 'Purchase Order',
   receipt: 'Receipt',
+  creditNote: 'Credit Note',
 };

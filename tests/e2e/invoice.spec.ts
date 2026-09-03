@@ -234,3 +234,23 @@ test('a receipt records the payment rather than requesting one', async ({ page, 
   await expect(page.locator('.preview-totals')).toContainText('Balance remaining');
   await expect(page.locator('.paid-mark')).toHaveCount(0);
 });
+
+test('a credit note reverses an invoice instead of asking for money', async ({ page }) => {
+  await page.goto('/credit-note-generator/');
+  await expect(page.locator('.document-identity h2')).toHaveText('Credit Note');
+  await expect(page.getByLabel('Credits invoice number')).toBeVisible();
+  await expect(page.getByLabel('Reason for credit')).toBeVisible();
+  await expect(page.getByLabel('Due / valid until')).toHaveCount(0);
+
+  const rate = page.locator('.line-item').first().getByLabel('Unit price');
+  await rate.fill('185.00');
+  await rate.blur();
+  // The sign is the message: a credit note that reads "Total: $185.00" is
+  // indistinguishable from an invoice at a glance.
+  await expect(page.locator('.preview-totals .grand-total')).toContainText('Total credited');
+  await expect(page.locator('.preview-totals .grand-total')).toContainText('−');
+
+  await page.getByLabel('Credits invoice number').fill('INV-2026-0311');
+  await expect(page.locator('.document-parties')).toContainText('Credits invoice');
+  await expect(page.locator('.document-parties')).toContainText('INV-2026-0311');
+});

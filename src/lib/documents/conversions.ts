@@ -7,7 +7,7 @@ export const allowedConversions: Partial<Record<DocumentKind, DocumentKind[]>> =
   estimate: ['workOrder', 'invoice'],
   workOrder: ['invoice'],
   proforma: ['invoice'],
-  invoice: ['receipt'],
+  invoice: ['receipt', 'creditNote'],
 };
 
 export const canConvert = (from: DocumentKind, to: DocumentKind): boolean =>
@@ -39,6 +39,11 @@ export const convertDocument = (
     updatedAt: timestamp,
     dueDate: targetKind === 'receipt' ? source.issueDate : source.dueDate,
     amountPaidMinor: paidInFull,
-    reference: targetKind === 'receipt' && !source.reference ? source.number : source.reference,
+    // Both documents point back at the invoice by number: a receipt so the
+    // customer can match it to their bank, a credit note because the credit is
+    // meaningless without saying what it reverses.
+    reference: ['receipt', 'creditNote'].includes(targetKind) && !source.reference
+      ? source.number
+      : source.reference,
   };
 };

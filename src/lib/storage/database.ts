@@ -14,7 +14,7 @@ export const DB_VERSION = 2;
 
 type StoreName = 'profiles' | 'clients' | 'catalog' | 'documents' | 'settings';
 
-const documentKinds = new Set(['invoice', 'proforma', 'quotation', 'estimate', 'workOrder', 'purchaseOrder', 'receipt']);
+const documentKinds = new Set(['invoice', 'proforma', 'quotation', 'estimate', 'workOrder', 'purchaseOrder', 'receipt', 'creditNote']);
 const documentStatuses = new Set(['draft', 'completed', 'paid']);
 const record = (value: unknown): Record<string, unknown> | undefined =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
@@ -138,6 +138,7 @@ const normalizeDocument = (value: unknown): DocumentRecord | undefined => {
     // is the whole migration: everything here already tolerates a missing key.
     paymentMethod: text(source.paymentMethod),
     amountPaidMinor: amount(source.amountPaidMinor),
+    creditReason: text(source.creditReason),
     convertedFrom: record(source.convertedFrom) as DocumentRecord['convertedFrom'] | undefined,
     createdAt: text(source.createdAt, fallback.createdAt),
     updatedAt: text(source.updatedAt, fallback.updatedAt),

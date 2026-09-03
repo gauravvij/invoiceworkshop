@@ -41,6 +41,9 @@ const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'INR', 'JPY', 'CHF
 // Suggestions, not a closed list: the field is free text because a receipt that
 // cannot say "standing order" or "UPI" is worse than one with a shorter menu.
 const paymentMethods = ['Bank transfer', 'Card', 'Cash', 'Cheque', 'Direct debit', 'PayPal', 'Stripe', 'Other'];
+// The reasons a credit is actually issued for. Free text, for the same reason
+// the payment method is: the list is a shortcut, not a permitted set.
+const creditReasons = ['Goods returned', 'Order cancelled', 'Overcharge corrected', 'Damaged or faulty goods', 'Service not delivered', 'Duplicate invoice', 'Agreed discount applied after invoicing'];
 
 const percentage = (basisPoints: number) => `${basisPoints / 100}%`;
 const displayAddress = (client: Client | DocumentRecord['business']) =>
@@ -399,14 +402,14 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
             <div className="form-grid form-grid--three">
               <Field label="Document number" required value={document.number} onChange={(value) => updateDocument('number', value)} />
               <Field label="Issue date" type="date" value={document.issueDate} onChange={(value) => updateDocument('issueDate', value)} />
-              <Field label={document.kind === 'receipt' ? 'Paid date' : 'Due / valid until'} type="date" value={document.dueDate} onChange={(value) => updateDocument('dueDate', value)} />
+              <Field label={document.kind === 'receipt' ? 'Paid date' : document.kind === 'creditNote' ? 'Credit date' : 'Due / valid until'} type="date" value={document.dueDate} onChange={(value) => updateDocument('dueDate', value)} />
               <label className="field">
                 <span>Currency</span>
                 <select value={document.currency} onChange={(event) => updateDocument('currency', event.target.value)}>
                   {currencies.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
               </label>
-              {document.kind !== 'receipt' && (
+              {!['receipt', 'creditNote'].includes(document.kind) && (
                 <Field label="Reference / PO" value={document.reference} onChange={(value) => updateDocument('reference', value)} />
               )}
               <label className="field">
@@ -418,6 +421,28 @@ export default function DocumentWorkspace({ initialKind, vertical, locale }: Pro
                 </select>
               </label>
             </div>
+            {document.kind === 'creditNote' && (
+              <div className="form-grid section-subgrid">
+                <Field
+                  label="Credits invoice number"
+                  required
+                  value={document.reference}
+                  onChange={(value) => updateDocument('reference', value)}
+                />
+                <label className="field field--wide">
+                  <span>Reason for credit</span>
+                  <input
+                    list="credit-reasons"
+                    value={document.creditReason}
+                    onChange={(event) => updateDocument('creditReason', event.target.value)}
+                    placeholder="Goods returned"
+                  />
+                </label>
+                <datalist id="credit-reasons">
+                  {creditReasons.map((reason) => <option key={reason} value={reason} />)}
+                </datalist>
+              </div>
+            )}
             {document.kind === 'receipt' && (
               <div className="form-grid section-subgrid">
                 <label className="field">
@@ -597,7 +622,7 @@ function DocumentPreview({ document, totals, preset }: { document: DocumentRecor
           </header>
           <div className="document-parties">
             <div><small>{document.kind === 'purchaseOrder' ? 'SUPPLIER' : 'BILL TO'}</small><strong>{document.client.name || 'Customer name'}</strong>{displayAddress(document.client).map((line) => <span key={line}>{line}</span>)}{document.client.email && <span>{document.client.email}</span>}</div>
-            <dl><div><dt>Issue date</dt><dd>{formatLocaleDate(document.issueDate, preset)}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : 'Due / valid until'}</dt><dd>{formatLocaleDate(document.dueDate, preset)}</dd></div>{document.reference && <div><dt>{document.kind === 'receipt' ? 'Transaction ref' : 'Reference'}</dt><dd>{document.reference}</dd></div>}{document.kind === 'receipt' && document.paymentMethod && <div><dt>Paid by</dt><dd>{document.paymentMethod}</dd></div>}</dl>
+            <dl><div><dt>Issue date</dt><dd>{formatLocaleDate(document.issueDate, preset)}</dd></div><div><dt>{document.kind === 'receipt' ? 'Paid date' : document.kind === 'creditNote' ? 'Credit date' : 'Due / valid until'}</dt><dd>{formatLocaleDate(document.dueDate, preset)}</dd></div>{document.reference && <div><dt>{document.kind === 'receipt' ? 'Transaction ref' : document.kind === 'creditNote' ? 'Credits invoice' : 'Reference'}</dt><dd>{document.reference}</dd></div>}{document.kind === 'creditNote' && document.creditReason && <div><dt>Reason</dt><dd>{document.creditReason}</dd></div>}{document.kind === 'receipt' && document.paymentMethod && <div><dt>Paid by</dt><dd>{document.paymentMethod}</dd></div>}</dl>
           </div>
           {(document.projectName || document.jobsite) && <div className="project-strip"><span><small>PROJECT</small>{document.projectName}</span><span><small>JOBSITE</small>{document.jobsite}</span></div>}
           <div className="preview-table-scroll">
@@ -612,7 +637,7 @@ function DocumentPreview({ document, totals, preset }: { document: DocumentRecor
             <div><span>{preset ? preset.taxLabel : 'Tax'}</span><strong>{formatMoney(totals.taxMinor, document.currency)}</strong></div>
             {totals.shippingMinor !== 0 && <div><span>Shipping</span><strong>{formatMoney(totals.shippingMinor, document.currency)}</strong></div>}
             {totals.adjustmentMinor !== 0 && <div><span>Adjustment</span><strong>{formatMoney(totals.adjustmentMinor, document.currency)}</strong></div>}
-            <div className="grand-total"><span>Total</span><strong>{formatMoney(totals.totalMinor, document.currency)}</strong></div>
+            <div className="grand-total"><span>{document.kind === 'creditNote' ? 'Total credited' : 'Total'}</span><strong>{document.kind === 'creditNote' ? `−${formatMoney(totals.totalMinor, document.currency)}` : formatMoney(totals.totalMinor, document.currency)}</strong></div>
             {totals.depositMinor > 0 && <><div><span>Deposit paid</span><strong>−{formatMoney(totals.depositMinor, document.currency)}</strong></div><div className="balance-due"><span>Balance due</span><strong>{formatMoney(totals.balanceDueMinor, document.currency)}</strong></div></>}
             {document.kind === 'receipt' && <>
               <div><span>Amount received</span><strong>{formatMoney(totals.amountPaidMinor, document.currency)}</strong></div>

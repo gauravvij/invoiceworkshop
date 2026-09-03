@@ -5,7 +5,8 @@ export type DocumentKind =
   | 'estimate'
   | 'workOrder'
   | 'purchaseOrder'
-  | 'receipt';
+  | 'receipt'
+  | 'creditNote';
 
 export type DocumentStatus = 'draft' | 'completed' | 'paid';
 
@@ -95,6 +96,12 @@ export interface DocumentRecord {
   paymentMethod: string;
   /** What this receipt acknowledges. Below the total, a balance remains. */
   amountPaidMinor: number;
+  /**
+   * Why a credit note was issued -- a return, an overcharge, a cancelled order.
+   * Tax authorities that require credit notes at all generally require the
+   * reason, and it is what stops the document being mistaken for a discount.
+   */
+  creditReason: string;
   convertedFrom?: { id: string; kind: DocumentKind; number: string };
   createdAt: string;
   updatedAt: string;
