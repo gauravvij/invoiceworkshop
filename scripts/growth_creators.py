@@ -175,6 +175,45 @@ PLATFORM_HOSTS = ("twitter.com", "x.com", "instagram.com", "facebook.com", "tikt
                   "linkedin.com", "youtube.com", "reddit.com", "medium.com", "threads.net")
 
 
+# A site that sells a product has a product's navigation. These paths are what
+# separate a company blog from a creator's: nobody's personal newsletter has an
+# enterprise page, and a company's content team does not act on an unpaid tool
+# suggestion the way an individual publisher does.
+COMPANY_PATHS = ("/pricing", "/plans", "/signup", "/sign-up", "/login", "/log-in",
+                 "/enterprise", "/request-a-demo", "/book-a-demo", "/integrations",
+                 "/customers", "/careers", "/start-free-trial", "/free-trial")
+MIN_COMPANY_SIGNALS = 3
+
+
+def _is_company(page_url: str, links: list) -> tuple[bool, str]:
+    """Whether the site is a company rather than a publisher.
+
+    Read from the site's own navigation, so it is a fact about the target and
+    not a guess about its size. Three of these together is a product company:
+    one on its own could be anything.
+    """
+    from urllib.parse import urljoin, urlsplit
+
+    host = urlsplit(page_url).netloc
+    found = set()
+    for href, _anchor in links:
+        if not href or href.startswith(("mailto:", "tel:", "#", "javascript:")):
+            continue
+        absolute = urljoin(page_url, href)
+        if urlsplit(absolute).netloc != host:
+            continue
+        path = urlsplit(absolute).path.rstrip("/").lower()
+        for marker in COMPANY_PATHS:
+            if path == marker or path.endswith(marker):
+                found.add(marker)
+    if len(found) >= MIN_COMPANY_SIGNALS:
+        return True, ("the site is a product company, not a publisher: its own navigation "
+                      f"carries {', '.join(sorted(found)[:4])}. A company content team does "
+                      "not act on an unpaid tool suggestion the way an individual "
+                      "publisher does")
+    return False, ""
+
+
 def _is_vendor(page_url: str, title: str, text: str) -> tuple[bool, str]:
     """A company selling its own invoicing product is not a creator.
 
@@ -191,10 +230,66 @@ def _is_vendor(page_url: str, title: str, text: str) -> tuple[bool, str]:
     for blocked in set(COMPETITORS) | set(BLOCKED_DOMAINS):
         if domain == blocked or domain.endswith("." + blocked):
             return True, f"{domain} sells a competing product"
+    # A domain named after the thing we make is making it too. The maintained
+    # competitor list only holds the ones already known; this catches the rest,
+    # which arrive continuously and are the ones most likely to look like a
+    # relevant blog while being a product.
+    root = domain.split(".")[0].lower()
+    if any(word in root for word in ("invoice", "billing", "receipt", "facture")):
+        return True, (f"{domain} is named after an invoicing product, so it is a "
+                      "competitor rather than a publisher")
     if _is_vendor_content(text, title):
         return True, ("the page reads as vendor content for the site's own product "
                       "rather than as editorial recommendation")
     return False, ""
+
+
+def _resolve_contact(page_url: str, parser) -> tuple[str | None, str, str | None]:
+    """Find a published business email, following the contact link if there is one.
+
+    The backlink engine's extractor stops at the link because a resource page's
+    own body usually carries what it needs. A creator's does not: the address
+    lives on /contact, one hop away, and stopping short reported 404 of 405
+    candidates as unreachable when most of them publish an address perfectly
+    plainly. One hop, same host only, and the address must belong to the target's
+    own domain -- a Gmail address on a contact page is a personal address that
+    was not offered as a business route.
+    """
+    from urllib.parse import urlsplit
+
+    from growth_backlink_engine import (
+        ASSET_EMAIL_RE, EMAIL_RE, PageParser, fetch as http_fetch, find_contact_route,
+    )
+
+    contact_url, kind, recipient = find_contact_route(page_url, parser)
+    if kind == "email" and recipient:
+        return contact_url, kind, recipient
+    if kind not in ("form", "editorial_guidelines") or not contact_url:
+        return contact_url, kind, recipient
+    if urlsplit(contact_url).netloc != urlsplit(page_url).netloc:
+        return contact_url, kind, recipient
+    try:
+        status, body = http_fetch(contact_url)
+    except Exception:
+        return contact_url, kind, recipient
+    if status != 200 or not body:
+        return contact_url, kind, recipient
+    page = PageParser()
+    page.feed(body)
+    root = canonical_domain(contact_url).split(".")[0].lower()
+    candidates = [
+        address.lower() for address in EMAIL_RE.findall(page.body_text)
+        if not ASSET_EMAIL_RE.search(address)
+        and root in address.split("@")[-1].lower()
+    ]
+    for href, _ in page.links:
+        if href and href.startswith("mailto:"):
+            address = href[7:].split("?")[0].strip().lower()
+            if EMAIL_RE.fullmatch(address) and root in address.split("@")[-1].lower():
+                candidates.append(address)
+    if candidates:
+        return contact_url, "email", sorted(set(candidates), key=len)[0]
+    return contact_url, kind, recipient
 
 
 def _provider():
@@ -314,7 +409,7 @@ def _coverage_kind(text: str) -> str:
 
 def fetch(connection: sqlite3.Connection, limit: int = 25) -> dict:
     """Read each candidate's own page and record what it actually says."""
-    from growth_backlink_engine import PageParser, fetch as http_fetch, find_contact_route
+    from growth_backlink_engine import PageParser, fetch as http_fetch
 
     now = utc_now()
     rows = connection.execute(
@@ -341,6 +436,8 @@ def fetch(connection: sqlite3.Connection, limit: int = 25) -> dict:
         parser.feed(body)
         text = parser.body_text
         vendor, why = _is_vendor(row["page_url"], parser.title, text)
+        if not vendor:
+            vendor, why = _is_company(row["page_url"], parser.links)
         if vendor:
             connection.execute(
                 """UPDATE creator_prospects
@@ -350,7 +447,7 @@ def fetch(connection: sqlite3.Connection, limit: int = 25) -> dict:
                 (status, now, why, now, row["id"]))
             failed += 1
             continue
-        contact_url, contact_kind, recipient = find_contact_route(row["page_url"], parser)
+        contact_url, contact_kind, recipient = _resolve_contact(row["page_url"], parser)
         audience, evidence = _audience(text)
         connection.execute(
             """UPDATE creator_prospects
@@ -391,8 +488,15 @@ def qualify(connection: sqlite3.Connection) -> dict:
         if GENERIC_INFLUENCER.search(f"{row['name']} {row['notes']}"):
             reasons.append("reads as a general business-audience account rather than a "
                            "specific audience with a paperwork problem")
-        if row["contact_kind"] not in ("email", "form", "editorial_guidelines"):
-            reasons.append("no public business contact route published on their own site")
+        # The sending policy forbids form submission outright and requires a
+        # published business email address. Qualifying a form-only target would
+        # build a backlog of prospects the policy can never admit, which is a
+        # list that looks like progress and is not.
+        if row["contact_kind"] != "email" or not row["recipient"]:
+            reasons.append(
+                "no business email published on their own site. A contact form is not a "
+                "route this channel may use: form submission is outside the policy, so a "
+                "form-only target would sit in the backlog forever")
         if not row["product_angle"] or not row["target_url"]:
             reasons.append("no specific product angle recorded")
 
@@ -427,7 +531,9 @@ def fit_score(row: sqlite3.Row) -> float:
         age = (datetime.now(timezone.utc).date()
                - datetime.fromisoformat(row["last_activity_date"]).date()).days
         recency = 1.0 if age <= 60 else 0.8 if age <= 150 else 0.6
-    contact = {"email": 1.0, "editorial_guidelines": 0.9, "form": 0.7}.get(row["contact_kind"], 0.3)
+    # Only email-reachable targets are qualified at all, so this is a constant
+    # today; it stays as a factor because a future channel may use another route.
+    contact = {"email": 1.0}.get(row["contact_kind"], 0.3)
     coverage = {"editorial": 1.0, "mixed": 0.8, "affiliate": 0.7,
                 "sponsored": 0.3, "unknown": 0.6}[row["coverage_kind"]]
     return round(reach * recency * contact * coverage * (1.2 if row["recommends_tools"] else 0.5), 3)

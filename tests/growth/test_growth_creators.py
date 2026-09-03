@@ -112,7 +112,23 @@ class QualificationTests(Fixture):
         pid = self._fetched(contact_kind="unknown", recipient=None)
         status, reason = self._judge(pid)
         self.assertEqual(status, "rejected")
-        self.assertIn("no public business contact route", reason)
+        self.assertIn("no business email published on their own site", reason)
+
+    def test_a_form_only_target_is_rejected_at_qualification_not_at_send(self):
+        """Qualifying a target the policy can never admit builds a backlog that
+        looks like progress and is not. The two gates now agree."""
+        pid = self._fetched(contact_kind="form", recipient=None)
+        status, reason = self._judge(pid)
+        self.assertEqual(status, "rejected")
+        self.assertIn("sit in the backlog forever", reason)
+
+    def test_a_domain_named_after_an_invoicing_product_is_a_competitor(self):
+        vendor, why = creators._is_vendor("https://invoiceace.app/blog/x", "Freelance tips", "")
+        self.assertTrue(vendor)
+        self.assertIn("named after an invoicing product", why)
+        # Our own domain is excluded by the blocked-domain list before this runs.
+        clean, _ = creators._is_vendor("https://example.org/blog/x", "Tools I use", "")
+        self.assertFalse(clean)
 
     def test_reach_never_outweighs_fit_in_the_ranking(self):
         """A huge audience with no fit must not outrank a good one, which is the
