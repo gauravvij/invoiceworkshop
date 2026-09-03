@@ -32,3 +32,4 @@ data/*.sqlite
 data/reports/
 data/plans/
 data/research-batches/
+task_brief_cc*.md

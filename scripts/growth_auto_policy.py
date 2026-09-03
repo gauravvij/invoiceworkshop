@@ -85,6 +85,39 @@ CLAIM_RED_FLAGS = (
     re.compile(r"(\bnumber one\b|#1\b|\bbest[- ]in[- ]class\b|\baward[- ]winning\b)", re.I),
 )
 
+# Statements about what a tax authority requires. These are not editorial copy:
+# a reader acts on them, they go stale silently on a political timetable, and
+# getting one wrong is a different kind of harm from getting a heading wrong.
+# The audit on 2 September 2026 found three of them already published and wrong.
+#
+# So an unattended run may not write one on its own judgement. It may only
+# restate a figure that has already been read off the primary government source
+# and recorded in tax_facts; anything else -- a new requirement, a rate nobody
+# recorded, a claim with no number in it to check -- is refused here and goes to
+# the owner as REVIEW. Ordinary editorial work on the same pages is unaffected,
+# because none of these patterns fire on it.
+TAX_AUTHORITIES = re.compile(
+    r"\b(HMRC|GOV\.UK|ATO|CRA|CBIC|GST Council|IRAS|SARS|FTA|IRD|"
+    r"Revenue Commissioners|Finanzamt|Inland Revenue)\b")
+TAX_CLAIM_PATTERNS = (
+    (TAX_AUTHORITIES, "states what a tax authority requires"),
+    (re.compile(r"\b(VAT|GST|HST|QST|USt|sales tax|tax invoice)\b[^.]{0,60}"
+                r"\b(must|required|requires|mandatory|threshold|obliged)\b", re.I),
+     "states a tax requirement"),
+    (re.compile(r"\b(must|required|requires|mandatory|threshold|obliged)\b[^.]{0,60}"
+                r"\b(VAT|GST|HST|QST|USt|sales tax|tax invoice)\b", re.I),
+     "states a tax requirement"),
+    (re.compile(r"\b\d{1,2}(?:\.\d+)?\s?%[^.]{0,40}\b(VAT|GST|HST|QST|USt)\b", re.I),
+     "states a tax rate"),
+    (re.compile(r"\b(VAT|GST|HST|QST|USt)\b[^.]{0,40}\b\d{1,2}(?:\.\d+)?\s?%", re.I),
+     "states a tax rate"),
+    (re.compile(r"\b(legally required|required by law|valid tax invoice|statutory)\b", re.I),
+     "states a legal requirement"),
+)
+# Figures inside such a line: percentages and currency amounts. Every one of them
+# must match a recorded fact verbatim for the line to pass unattended.
+TAX_FIGURE = re.compile(r"(?:[£$€₹]\s?\d[\d,]*(?:\.\d+)?|\b\d{1,3}(?:\.\d+)?\s?%)")
+
 MAX_CHANGED_FILES = 3
 MAX_DIFF_LINES = 400
 
@@ -143,7 +176,54 @@ def working_diff(paths: list[str], cwd: Path | None = None) -> str:
     return diff + untracked
 
 
-def validate_change(files: list[str], diff: str) -> dict:
+def verified_tax_figures(connection) -> frozenset[str]:
+    """Figures from tax facts that are recorded, sourced and not yet due a recheck.
+
+    Read from the database, not from the change, so the run cannot vouch for
+    itself. Normalised loosely (spaces and thousands separators dropped) because
+    the same rate is written "20%" in one place and "20 %" in another.
+    """
+    today = _today()
+    values = set()
+    for row in connection.execute(
+            """SELECT value FROM tax_facts
+                WHERE reverify_by > ? AND COALESCE(source_url,'') <> ''""", (today,)):
+        for figure in TAX_FIGURE.findall(row["value"] or ""):
+            values.add(_normalise_figure(figure))
+    return frozenset(values)
+
+
+def _normalise_figure(figure: str) -> str:
+    return figure.replace(" ", "").replace(",", "").lower()
+
+
+def _check_tax_claims(added_lines: list[str], verified: frozenset[str]) -> int:
+    """Refuse a tax or legal assertion the recorded sources do not already carry."""
+    checked = 0
+    for line in added_lines:
+        text = line[1:]
+        why = next((reason for pattern, reason in TAX_CLAIM_PATTERNS if pattern.search(text)),
+                   None)
+        if why is None:
+            continue
+        checked += 1
+        figures = [_normalise_figure(f) for f in TAX_FIGURE.findall(text)]
+        if not figures:
+            raise PolicyRefusal(
+                f"REVIEW: {why} with nothing in it that can be checked against a recorded "
+                f"source, so it cannot be verified unattended: {text.strip()[:120]}")
+        unknown = [f for f in figures if f not in verified]
+        if unknown:
+            raise PolicyRefusal(
+                f"REVIEW: {why} using {', '.join(unknown)}, which is not a figure recorded "
+                f"in tax_facts against a primary government source. Read it off the "
+                f"authority and record it with growth_tax_facts.py first: "
+                f"{text.strip()[:120]}")
+    return checked
+
+
+def validate_change(files: list[str], diff: str,
+                    verified_tax: frozenset[str] = frozenset()) -> dict:
     """Refuse anything outside the envelope. Returns the checks that passed."""
     if not files:
         raise PolicyRefusal("no files changed")
@@ -175,10 +255,14 @@ def validate_change(files: list[str], diff: str) -> dict:
         if found:
             raise PolicyRefusal(f"introduces an unreviewed product claim: {found.group(0)}")
 
+    tax_claims = _check_tax_claims([line for line in body if line.startswith("+")],
+                                   verified_tax)
+
     return {
         "files": files, "changed_lines": len(body),
         "within_file_allowlist": True, "no_frozen_pattern": True,
         "no_new_external_url": True, "no_unreviewed_claim": True,
+        "tax_claims_checked": tax_claims, "tax_claims_source_backed": True,
     }
 
 
@@ -382,7 +466,20 @@ def policy_document() -> str:
             "arbitrary application logic",
             "legal or compliance claims",
             "padding written to make a page longer",
+            "any new statement about what a tax authority requires, or any tax rate "
+            "or threshold figure not already recorded in tax_facts against a primary "
+            "government source",
         ],
+        "tax_and_legal_rule": (
+            "Country pages state what HMRC, the ATO, the CRA and the GST Council "
+            "require. You may reword such a sentence, but you may not change what it "
+            "asserts and you may not introduce a rate, threshold or requirement of "
+            "your own. Every figure in a sentence like that is checked verbatim "
+            "against the recorded facts, and a sentence that asserts a requirement "
+            "with no figure in it cannot be checked at all, so it is refused and sent "
+            "to the owner for review. If a page looks factually wrong, say so in the "
+            "summary and take NO_ACTION rather than correcting it from memory."
+        ),
     }, indent=2, sort_keys=True)
 
 

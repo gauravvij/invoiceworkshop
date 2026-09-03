@@ -138,3 +138,98 @@ class CatalogTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CountrySourcingTests(unittest.TestCase):
+    """A country page states what a tax authority requires, so the gate wants
+    the authority's own words on record before it admits one."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.connection = connect_db(str(Path(self.temp.name) / "growth.db"))
+        apply_schema(self.connection)
+
+    def tearDown(self):
+        self.connection.close()
+        self.temp.cleanup()
+
+    def _locale(self, **overrides):
+        family = {
+            "key": "locale-xx", "jurisdiction": "xx", "build_scope": "content_only",
+            "name": "Test locale", "route": "/test-locale/", "demand": "measured demand",
+            "differentiators": [
+                surface._d("tax_computation", "a rate"),
+                surface._d("tax_identifier", "an identifier"),
+                surface._d("currency", "a currency"),
+            ],
+            "product_change": "locale preset",
+        }
+        family.update(overrides)
+        return family
+
+    def _fact(self, key, *, url="https://gov.example/x", reverify="2099-01-01"):
+        self.connection.execute(
+            """INSERT INTO tax_facts
+                 (jurisdiction, fact_key, value, source_name, source_url,
+                  verified_on, reverify_by, confidence)
+               VALUES ('xx', ?, '20%', 'Authority', ?, '2026-09-02', ?, 'primary_source')""",
+            (key, url, reverify))
+        self.connection.commit()
+
+    def test_a_country_family_without_recorded_facts_is_refused(self):
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._locale(), taken=set(),
+                          facts=surface.fact_index(self.connection))
+        self.assertIn("verified tax fact", str(caught.exception))
+        self.assertIn("Competitor templates are not a source", str(caught.exception))
+
+    def test_recorded_and_current_facts_admit_it(self):
+        for n in range(surface.MIN_FACTS_PER_JURISDICTION):
+            self._fact(f"fact{n}")
+        gate = surface.check(self._locale(), taken=set(),
+                             facts=surface.fact_index(self.connection))
+        self.assertEqual(gate["sourced"], "xx")
+        self.assertEqual(gate["facts"], surface.MIN_FACTS_PER_JURISDICTION)
+
+    def test_a_fact_past_its_recheck_date_blocks_the_family(self):
+        for n in range(surface.MIN_FACTS_PER_JURISDICTION):
+            self._fact(f"fact{n}")
+        self._fact("stale", reverify="2020-01-01")
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._locale(), taken=set(),
+                          facts=surface.fact_index(self.connection))
+        self.assertIn("past their recheck date", str(caught.exception))
+
+    def test_a_fact_with_no_source_url_blocks_the_family(self):
+        for n in range(surface.MIN_FACTS_PER_JURISDICTION):
+            self._fact(f"fact{n}")
+        self._fact("unsourced", url="")
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._locale(), taken=set(),
+                          facts=surface.fact_index(self.connection))
+        self.assertIn("no source URL", str(caught.exception))
+
+    def test_a_country_family_cannot_skip_the_check_by_omitting_its_jurisdiction(self):
+        with self.assertRaises(surface.GateRefusal) as caught:
+            surface.check(self._locale(jurisdiction=None), taken=set(), facts={})
+        self.assertIn("names no jurisdiction", str(caught.exception))
+
+    def test_a_non_country_family_is_unaffected(self):
+        gate = surface.check(
+            {"key": "doc-thing", "build_scope": "product", "name": "Thing",
+             "route": "/thing/", "demand": "demand",
+             "differentiators": [surface._d("totals_logic", "a"),
+                                 surface._d("required_field", "b"),
+                                 surface._d("heading", "c")],
+             "product_change": "new document kind"},
+            taken=set(), facts={})
+        self.assertEqual(gate["sourced"], "not_applicable")
+
+    def test_no_shipped_country_page_asserts_a_requirement_the_audit_disproved(self):
+        """The three claims the 2 September 2026 primary-source audit found wrong
+        must not survive anywhere in the catalogue."""
+        source = Path(surface.__file__).read_text()
+        self.assertNotIn("as HMRC requires", source)
+        self.assertNotIn("ATO requires the words", source)
+        for abolished in ("5/12/18/28", "12/18/28"):
+            self.assertNotIn(abolished, source)

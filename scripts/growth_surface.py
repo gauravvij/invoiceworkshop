@@ -20,6 +20,11 @@ behave differently. The gate is mechanical:
                         output. Wording alone can never satisfy this.
   4. product_change -- names the change to the code that delivers them
   5. not duplicate  -- the route is not already served
+  6. sourced        -- a country family additionally needs its tax facts recorded
+                       against a primary government source, with a recheck date
+                       that has not passed. A page that tells someone what their
+                       tax authority requires is not editorial content and is not
+                       admitted on a differentiator list alone.
 
 A family that cannot state two functional differences is refused and stays
 refused, with the reason. That is the whole point of the module: it is much
@@ -72,14 +77,13 @@ def _d(kind: str, detail: str) -> dict:
 
 LOCALES = [
     {
-        "key": "locale-gb", "build_scope": "content_only", "name": "UK VAT invoice", "route": "/vat-invoice-template-uk/",
+        "key": "locale-gb", "jurisdiction": "gb", "build_scope": "content_only", "name": "UK VAT invoice", "route": "/vat-invoice-template-uk/",
         "demand": "SERP for 'vat invoice template uk' returns UK-specific templates from "
                   "Sage, FreeAgent, GOV.UK guidance and several template libraries",
         "differentiators": [
             _d("tax_label", "Tax is labelled VAT throughout the document and the PDF"),
             _d("tax_computation", "Default rate 20%, with 5% and 0% as standard options"),
             _d("tax_identifier", "VAT registration number field, required for a valid VAT invoice"),
-            _d("legal_wording_required", "Document is titled 'VAT Invoice' as HMRC requires"),
             _d("currency", "GBP default with £ formatting"),
             _d("date_format", "DD/MM/YYYY"),
         ],
@@ -87,7 +91,7 @@ LOCALES = [
                           "requirement, currency, date format, document title",
     },
     {
-        "key": "locale-in", "build_scope": "product", "name": "India GST invoice", "route": "/gst-invoice-format-india/",
+        "key": "locale-in", "jurisdiction": "in", "build_scope": "product", "name": "India GST invoice", "route": "/gst-invoice-format-india/",
         "demand": "SERP for 'gst invoice format india free' returns several dedicated GST "
                   "generators and bill-format downloads; demand is large and specific",
         "differentiators": [
@@ -96,18 +100,20 @@ LOCALES = [
             _d("extra_column", "HSN/SAC code column per line, which no other locale needs"),
             _d("tax_identifier", "GSTIN field with 15-character format validation"),
             _d("required_field", "Place of supply, which determines the CGST/SGST vs IGST split"),
-            _d("tax_label", "Default rate 18% with the 5/12/18/28 slabs as options"),
+            _d("tax_label", "Default rate 18%; slabs are 5% and 18% with a 40% demerit "
+                            "rate since 22 September 2025"),
             _d("currency", "INR default with ₹ formatting"),
         ],
         "product_change": "locale preset plus a per-line HSN/SAC column and the "
                           "intra/inter-state GST split in the totals calculation",
     },
     {
-        "key": "locale-au", "build_scope": "content_only", "name": "Australia tax invoice", "route": "/tax-invoice-template-australia/",
+        "key": "locale-au", "jurisdiction": "au", "build_scope": "content_only", "name": "Australia tax invoice", "route": "/tax-invoice-template-australia/",
         "demand": "SERP for 'tax invoice template australia' returns ATO guidance and "
                   "Australian-specific generators",
         "differentiators": [
-            _d("legal_wording_required", "ATO requires the words 'Tax Invoice' on the document"),
+            _d("legal_wording_required", "The document must indicate it is intended to be a "
+                                        "tax invoice; the preset titles it Tax Invoice"),
             _d("tax_computation", "GST fixed at 10%"),
             _d("tax_identifier", "ABN field with 11-digit validation"),
             _d("currency", "AUD default"),
@@ -116,11 +122,13 @@ LOCALES = [
         "product_change": "locale preset with ABN validation and the required document title",
     },
     {
-        "key": "locale-ca", "build_scope": "content_only", "name": "Canada GST/HST invoice", "route": "/gst-hst-invoice-template-canada/",
+        "key": "locale-ca", "jurisdiction": "ca", "build_scope": "content_only", "name": "Canada GST/HST invoice", "route": "/gst-hst-invoice-template-canada/",
         "demand": "SERP for 'gst hst invoice template canada' returns CRA guidance and "
                   "province-specific templates",
         "differentiators": [
-            _d("tax_computation", "Rate varies by province: 5% GST, 13% HST, 15% HST, plus QST"),
+            _d("tax_computation", "Rate varies by province: 5% GST, 13% HST in Ontario, "
+                                  "14% in Nova Scotia since 1 April 2025, 15% in NB/NL/PE, "
+                                  "plus QST in Quebec"),
             _d("tax_identifier", "CRA Business Number field"),
             _d("required_field", "Province selector, which sets the applicable rate"),
             _d("currency", "CAD default"),
@@ -128,7 +136,7 @@ LOCALES = [
         "product_change": "locale preset plus a province table driving the tax rate",
     },
     {
-        "key": "locale-ae", "build_scope": "content_only", "name": "UAE VAT invoice", "route": "/vat-invoice-template-uae/",
+        "key": "locale-ae", "jurisdiction": "ae", "build_scope": "content_only", "name": "UAE VAT invoice", "route": "/vat-invoice-template-uae/",
         "demand": "SERP for 'vat invoice format uae' returns FTA guidance and UAE generators",
         "differentiators": [
             _d("tax_computation", "VAT fixed at 5%"),
@@ -139,7 +147,7 @@ LOCALES = [
         "product_change": "locale preset with TRN validation",
     },
     {
-        "key": "locale-za", "build_scope": "content_only", "name": "South Africa VAT invoice", "route": "/vat-invoice-template-south-africa/",
+        "key": "locale-za", "jurisdiction": "za", "build_scope": "content_only", "name": "South Africa VAT invoice", "route": "/vat-invoice-template-south-africa/",
         "demand": "SERP for 'vat invoice template south africa' returns SARS guidance and "
                   "local templates",
         "differentiators": [
@@ -151,7 +159,7 @@ LOCALES = [
         "product_change": "locale preset with SARS VAT number validation",
     },
     {
-        "key": "locale-eu-de", "build_scope": "content_only", "name": "Germany VAT (USt) invoice", "route": "/rechnung-vorlage-vat-germany/",
+        "key": "locale-eu-de", "jurisdiction": "de", "build_scope": "content_only", "name": "Germany VAT (USt) invoice", "route": "/rechnung-vorlage-vat-germany/",
         "demand": "SERP for 'rechnung vorlage kleinunternehmer' shows heavy German demand "
                   "for invoice templates with USt handling",
         "differentiators": [
@@ -163,7 +171,7 @@ LOCALES = [
         "product_change": "locale preset with German tax identifier and date format",
     },
     {
-        "key": "locale-ie", "build_scope": "content_only", "name": "Ireland VAT invoice", "route": "/vat-invoice-template-ireland/",
+        "key": "locale-ie", "jurisdiction": "ie", "build_scope": "content_only", "name": "Ireland VAT invoice", "route": "/vat-invoice-template-ireland/",
         "demand": "SERP for 'vat invoice template ireland' returns Revenue guidance and "
                   "Irish templates",
         "differentiators": [
@@ -175,7 +183,7 @@ LOCALES = [
         "product_change": "locale preset with Irish rate table",
     },
     {
-        "key": "locale-sg", "build_scope": "content_only", "name": "Singapore GST invoice", "route": "/gst-invoice-template-singapore/",
+        "key": "locale-sg", "jurisdiction": "sg", "build_scope": "content_only", "name": "Singapore GST invoice", "route": "/gst-invoice-template-singapore/",
         "demand": "SERP for 'gst invoice template singapore' returns IRAS guidance and "
                   "Singapore templates",
         "differentiators": [
@@ -187,7 +195,7 @@ LOCALES = [
         "product_change": "locale preset with UEN field",
     },
     {
-        "key": "locale-nz", "build_scope": "content_only", "name": "New Zealand GST invoice", "route": "/gst-invoice-template-new-zealand/",
+        "key": "locale-nz", "jurisdiction": "nz", "build_scope": "content_only", "name": "New Zealand GST invoice", "route": "/gst-invoice-template-new-zealand/",
         "demand": "SERP for 'gst invoice template nz' returns IRD guidance and NZ templates",
         "differentiators": [
             _d("tax_computation", "GST fixed at 15%"),
@@ -307,6 +315,32 @@ CATALOG = {
 # The gate
 # ---------------------------------------------------------------------------
 
+def fact_index(connection: sqlite3.Connection) -> dict[str, dict]:
+    """Per jurisdiction: how many facts are recorded, whether any are overdue,
+    and whether every one of them carries a source URL.
+
+    This is the structured source the country gate resolves against. It is read
+    from the database rather than from the family definition so that a family
+    cannot assert its own compliance.
+    """
+    today = utc_now()[:10]
+    index: dict[str, dict] = {}
+    for row in connection.execute(
+            """SELECT jurisdiction,
+                      COUNT(*) AS facts,
+                      SUM(CASE WHEN reverify_by <= ? THEN 1 ELSE 0 END) AS overdue,
+                      SUM(CASE WHEN COALESCE(source_url,'') = '' THEN 1 ELSE 0 END) AS unsourced,
+                      MIN(reverify_by) AS next_recheck
+                 FROM tax_facts GROUP BY jurisdiction""", (today,)):
+        index[row["jurisdiction"]] = {
+            "facts": row["facts"], "overdue": row["overdue"],
+            "unsourced": row["unsourced"], "next_recheck": row["next_recheck"]}
+    return index
+
+
+MIN_FACTS_PER_JURISDICTION = 4
+
+
 def existing_routes(connection: sqlite3.Connection) -> set[str]:
     from growth_opportunities import CANONICAL
     routes = {url.replace("https://invoiceworkshop.com", "") or "/" for url in CANONICAL}
@@ -315,7 +349,7 @@ def existing_routes(connection: sqlite3.Connection) -> set[str]:
     return routes
 
 
-def check(family: dict, *, taken: set[str]) -> dict:
+def check(family: dict, *, taken: set[str], facts: dict[str, dict] | None = None) -> dict:
     """Mechanical admission test. Raises GateRefusal with the reason."""
     differentiators = family.get("differentiators") or []
     functional = [d for d in differentiators if d["kind"] in FUNCTIONAL_KINDS]
@@ -344,19 +378,60 @@ def check(family: dict, *, taken: set[str]) -> dict:
     scope = family.get("build_scope")
     if scope not in BUILD_SCOPES:
         raise GateRefusal(f"build scope must be one of {BUILD_SCOPES}, got {scope!r}")
-    return {
+    sourcing = _check_sources(family, facts)
+    gate = {
         "build_scope": scope,
         "differentiators": len(differentiators),
         "functional": len(functional),
         "functional_kinds": sorted({d["kind"] for d in functional}),
         "product_change": family["product_change"],
     }
+    gate.update(sourcing)
+    return gate
+
+
+def _check_sources(family: dict, facts: dict[str, dict] | None) -> dict:
+    """A country family must be backed by recorded, sourced, unexpired facts.
+
+    Everything a country page asserts about registration numbers, rates and
+    required particulars is a claim about law. The differentiator list is written
+    here, by us, so it cannot be its own evidence; the evidence is the tax_facts
+    record, which carries the government URL and the date the fact was last read
+    off it. A family whose facts are missing or overdue is refused until they are
+    rechecked, and the refusal names what to do about it.
+    """
+    jurisdiction = family.get("jurisdiction")
+    if not jurisdiction:
+        if family["key"].startswith("locale-"):
+            raise GateRefusal(
+                "country family names no jurisdiction, so its legal claims cannot be "
+                "resolved against a recorded source")
+        return {"sourced": "not_applicable"}
+    recorded = (facts or {}).get(jurisdiction)
+    if not recorded or recorded["facts"] < MIN_FACTS_PER_JURISDICTION:
+        have = recorded["facts"] if recorded else 0
+        raise GateRefusal(
+            f"only {have} verified tax fact(s) recorded for '{jurisdiction}'; "
+            f"{MIN_FACTS_PER_JURISDICTION} required. Country pages state what a tax "
+            "authority requires, so the rates, identifiers and required particulars must "
+            "first be read off the primary government source and recorded with "
+            "growth_tax_facts.py. Competitor templates are not a source.")
+    if recorded["unsourced"]:
+        raise GateRefusal(
+            f"{recorded['unsourced']} fact(s) for '{jurisdiction}' carry no source URL")
+    if recorded["overdue"]:
+        raise GateRefusal(
+            f"{recorded['overdue']} fact(s) for '{jurisdiction}' are past their recheck "
+            f"date; recheck against the primary source before publishing more pages")
+    return {"sourced": jurisdiction, "facts": recorded["facts"],
+            "facts_recheck_by": recorded["next_recheck"]}
 
 
 def evaluate(connection: sqlite3.Connection) -> dict:
     """Run every catalogued family through the gate and record the verdicts."""
     now = utc_now()
     taken = existing_routes(connection)
+    facts = fact_index(connection)
     built = {row["family_key"] for row in connection.execute(
         "SELECT family_key FROM page_families WHERE status='built'")}
     admitted, refused, already = [], [], []
@@ -368,7 +443,7 @@ def evaluate(connection: sqlite3.Connection) -> dict:
                 already.append(family["key"])
                 continue
             try:
-                gate = check(family, taken=taken)
+                gate = check(family, taken=taken, facts=facts)
                 status, reason = "admitted", None
                 admitted.append({"family": family["key"], "route": family["route"],
                                  "functional": gate["functional"]})

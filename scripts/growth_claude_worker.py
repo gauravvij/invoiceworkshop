@@ -535,7 +535,9 @@ def execute(connection, opportunity: dict, *, fixture: bool = False,
 
     # --- the change exists; now everything the model may not do ---------------
     try:
-        checks = policy.validate_change(changed, policy.working_diff(changed))
+        checks = policy.validate_change(
+            changed, policy.working_diff(changed),
+            verified_tax=policy.verified_tax_figures(connection))
     except policy.PolicyRefusal as refusal:
         _revert_working_tree(changed)
         run = {**base, **usage, "outcome": "refused", "files_changed": ",".join(changed),

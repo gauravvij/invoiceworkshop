@@ -19,10 +19,18 @@ what the target demands by two orders of magnitude.
 
 That number is the honest headline and it is computed here rather than asserted,
 so it moves when the baseline moves. Sessions are the destination, but in the
-first weeks they round to zero and steer nothing; the leading indicators --
-pages published, pages indexed, queries ranking, impressions, referring domains
--- are what can actually be moved, so attainment is measured against those early
-and shifts to sessions as they start to exist.
+first weeks they round to zero and steer nothing, so attainment is measured
+early against leading indicators and shifts to sessions as they start to exist.
+
+Every one of those leading indicators is an OUTCOME, never a production count.
+Page count in particular is not among them and must not be: traffic does not
+scale with pages, a target expressed in pages is a standing instruction to
+manufacture pages, and fifty tools that rank beat nine hundred that do not. The
+metrics that steer are the ones a page cannot satisfy merely by existing --
+queries the site ranks for, how many of those reach the top 20 and top 10,
+impressions earned, pages that actually earn impressions, referring domains,
+sessions. Pages published and pages indexed are still measured and reported,
+because they explain the others, but they carry no target and no weight.
 
 Intensity escalates when the trajectory is behind. What escalation raises is
 *production quota*: how many qualified families and pages get built, how much
@@ -56,29 +64,42 @@ TARGET_PAGEVIEWS = 500_000
 # session, half a million pageviews needs half a million sessions, not 370,000.
 PAGEVIEWS_PER_SESSION_DEFAULT = 1.2
 
-# Terminal leading indicators consistent with that much traffic. A tool page
-# that ranks well earns a few hundred pageviews a month, so the destination
-# implies roughly a thousand of them, not a dozen.
+# Terminal leading indicators consistent with that much traffic. Each one is
+# something the market does in response to the work, so none of them can be
+# satisfied by publishing. There is deliberately no page-count entry here: an
+# earlier version carried one and it turned every week into an argument for
+# more pages rather than better ones.
 TERMINAL = {
-    "published_pages": 900,
-    "indexed_pages": 700,
     "ranking_queries": 4_000,
+    "queries_top_20": 900,
+    "queries_top_10": 400,
     "monthly_impressions": 1_400_000,
+    "pages_with_impressions": 220,
     "referring_domains": 120,
 }
 
-# What each metric is worth when scoring attainment, and when it starts to
-# count. Sessions are the goal but say nothing in week 2; surface area is
-# steerable from day one.
+# What each metric is worth when scoring attainment. Sessions are the goal but
+# say nothing in week 2, so the ranking footprint carries the early weeks.
 WEIGHTS = {
-    "published_pages": 0.25,
-    "indexed_pages": 0.20,
     "ranking_queries": 0.15,
-    "monthly_impressions": 0.15,
+    "queries_top_20": 0.15,
+    "queries_top_10": 0.15,
+    "monthly_impressions": 0.20,
+    "pages_with_impressions": 0.10,
     "referring_domains": 0.10,
     "daily_sessions": 0.15,
 }
 
+# Measured and reported every week, never targeted and never weighted. They
+# explain movement in the metrics above; on their own they are vanity.
+DIAGNOSTIC_ONLY = ("published_pages", "indexed_pages", "addressable_demand",
+                   "pages_with_traffic", "tool_starts", "pdf_downloads",
+                   "daily_pageviews")
+
+# Quotas are CEILINGS, never quotas to fill. `pages_per_week` is the most that
+# may be built in a week, not an amount owed; a week that builds two excellent
+# things at intensity 4 has done better than one that builds thirty adequate
+# ones, and nothing here should be read as asking for the thirty.
 INTENSITY = {
     1: {"name": "baseline", "claude_runs_per_day": 1, "pages_per_week": 2,
         "families_per_week": 0, "deep_discovery_per_week": 3, "budget_usd_per_day": 5},
@@ -147,21 +168,49 @@ def _baseline(connection: sqlite3.Connection) -> dict:
             WHERE diagnosed_at=(SELECT MAX(diagnosed_at) FROM index_diagnosis)
               AND index_state='indexed'"""
     ).fetchone()[0]
-    queries = connection.execute(
-        """SELECT COUNT(DISTINCT query) FROM gsc_query_facts
+    footprint = connection.execute(
+        """SELECT COUNT(DISTINCT query) queries,
+                  COUNT(DISTINCT CASE WHEN position <= 50 THEN query END) top50,
+                  COUNT(DISTINCT CASE WHEN position <= 20 THEN query END) top20,
+                  COUNT(DISTINCT CASE WHEN position <= 10 THEN query END) top10,
+                  COUNT(DISTINCT CASE WHEN impressions > 0 THEN page END) pages_seen,
+                  COUNT(DISTINCT CASE WHEN clicks > 0 THEN page END) pages_clicked,
+                  COALESCE(SUM(impressions), 0) demand
+             FROM gsc_query_facts
             WHERE snapshot_date=(SELECT MAX(snapshot_date) FROM gsc_query_facts)"""
-    ).fetchone()[0]
+    ).fetchone()
     domains = connection.execute(
         "SELECT COUNT(DISTINCT placement_url) FROM placements WHERE status='live'"
     ).fetchone()[0]
+    usage = connection.execute(
+        """SELECT COALESCE(SUM(tool_starts), 0) starts,
+                  COALESCE(SUM(pdf_downloads), 0) pdfs,
+                  COALESCE(SUM(pageviews), 0) views
+             FROM ga4_acquisition
+            WHERE snapshot_date=(SELECT MAX(snapshot_date) FROM ga4_acquisition)"""
+    ).fetchone()
     return {
+        # Targeted. Each is something the market did, not something we published.
         "daily_sessions": max(1.0, float(sessions or 0)),
-        "organic_sessions_measured": float(sessions or 0),
         "monthly_impressions": float(impressions or 1),
+        "ranking_queries": float(footprint["queries"] or 1),
+        "queries_top_20": float(footprint["top20"] or 0),
+        "queries_top_10": float(footprint["top10"] or 0),
+        "pages_with_impressions": float(footprint["pages_seen"] or 0),
+        "referring_domains": float(domains or 0),
+        # Reported only. Never scored; see DIAGNOSTIC_ONLY.
+        "organic_sessions_measured": float(sessions or 0),
+        "queries_top_50": float(footprint["top50"] or 0),
+        "pages_with_traffic": float(footprint["pages_clicked"] or 0),
+        # Search demand the site is actually visible to. Not total market
+        # demand: no keyword-volume source is connected, and inventing one
+        # would put a made-up number next to measured ones.
+        "addressable_demand": float(footprint["demand"] or 0),
         "published_pages": float(published or 9),
         "indexed_pages": float(indexed or 1),
-        "ranking_queries": float(queries or 1),
-        "referring_domains": float(domains or 0),
+        "tool_starts": float(usage["starts"] or 0),
+        "pdf_downloads": float(usage["pdfs"] or 0),
+        "daily_pageviews": float(usage["views"] or 0),
     }
 
 
@@ -201,7 +250,8 @@ def plan(connection: sqlite3.Connection, *, rebuild: bool = False) -> dict:
         "SELECT COUNT(*) FROM growth_targets WHERE experiment=?", (EXPERIMENT,)
     ).fetchone()[0]
     if existing and not rebuild:
-        return {"status": "already planned", "rows": existing}
+        return {"status": "already planned", "rows": existing,
+                **reconcile_metrics(connection)}
     if rebuild:
         connection.execute("DELETE FROM growth_targets WHERE experiment=?", (EXPERIMENT,))
 
@@ -212,11 +262,12 @@ def plan(connection: sqlite3.Connection, *, rebuild: bool = False) -> dict:
         "daily_sessions": f"{TARGET_PAGEVIEWS:,} pageviews/month at "
                           f"{pageviews_per_session(connection)} measured pageviews "
                           "per session, over 30 days",
-        "published_pages": "a tool page that ranks earns a few hundred pageviews a "
-                           "month, so the destination implies roughly a thousand",
-        "indexed_pages": "published is not indexed; ~78% is a good ceiling to plan for",
-        "ranking_queries": "each genuinely differentiated tool page ranks for a "
-                           "handful of long-tail queries",
+        "ranking_queries": "the breadth of the ranking footprint the destination "
+                           "traffic implies, however many pages produce it",
+        "queries_top_20": "queries on page two or better, where impressions begin",
+        "queries_top_10": "queries on page one, where the clicks actually are",
+        "pages_with_impressions": "pages the market found worth showing; a page that "
+                                  "earns none never counts, however many exist",
         "monthly_impressions": "the destination sessions at a realistic blended CTR",
         "referring_domains": "authority needed for a young domain to rank the head terms",
     }
@@ -247,6 +298,45 @@ def plan(connection: sqlite3.Connection, *, rebuild: bool = False) -> dict:
     connection.commit()
     return {"status": "planned", "rows": rows, "experiment": EXPERIMENT,
             "requirement": required_weekly_growth(connection)}
+
+
+def reconcile_metrics(connection: sqlite3.Connection) -> dict:
+    """Bring the stored plan in line with the metric set, without touching a
+    target that is still in it.
+
+    When a metric stops being an objective its rows are dropped, and when one is
+    added its rows are computed from the current baseline. Rows for metrics that
+    survive the change are left exactly as written. That distinction matters:
+    moving a target a metric is already being judged against would make a bad
+    week look better, which is the one thing this file must never do.
+    """
+    wanted = set(TERMINAL) | {"daily_sessions", "monthly_pageviews"}
+    present = {row["metric"] for row in connection.execute(
+        "SELECT DISTINCT metric FROM growth_targets WHERE experiment=?", (EXPERIMENT,))}
+    dropped = sorted(present - wanted)
+    added = sorted(wanted - present)
+    if not dropped and not added:
+        return {"retargeted": False}
+    for metric in dropped:
+        connection.execute(
+            "DELETE FROM growth_targets WHERE experiment=? AND metric=?",
+            (EXPERIMENT, metric))
+    if added:
+        baseline = _baseline(connection)
+        for metric in added:
+            for week in range(WEEKS + 1):
+                connection.execute(
+                    """INSERT INTO growth_targets
+                         (experiment, week, week_ending, metric, target, rationale)
+                       VALUES (?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(experiment, week, metric) DO NOTHING""",
+                    (EXPERIMENT, week, week_ending(week).isoformat(), metric,
+                     round(_curve(baseline.get(metric, 0.0), TERMINAL[metric], week), 2),
+                     "added when the objective moved from page count to demand"))
+    connection.commit()
+    return {"retargeted": True, "metrics_dropped": dropped, "metrics_added": added,
+            "note": ("Targets for metrics that stayed in the objective were not "
+                     "recomputed. Only metrics that left or joined it changed.")}
 
 
 def measure(connection: sqlite3.Connection) -> dict:
@@ -308,25 +398,41 @@ def attainment(connection: sqlite3.Connection, week: int | None = None) -> dict:
             "detail": detail}
 
 
+# The demand-side outcomes the floor reads. Both are things the market does, so
+# neither can be closed by publishing; the floor cannot become an argument for
+# page count no matter how far behind the experiment falls.
+FLOOR_METRICS = ("ranking_queries", "monthly_impressions")
+
+
 def structural_floor(connection: sqlite3.Connection) -> tuple[int, str]:
-    """Minimum intensity implied by how far the site is from the surface area
-    the target needs.
+    """Minimum intensity implied by distance from the demand the target needs.
 
     The weekly curve is exponential, so early weeks are easy to "meet" while
-    still being nowhere near the destination: thirteen pages against a plan that
-    needs nine hundred scores full marks in week one and tells you nothing. This
-    floor looks at the destination directly, so a structural shortfall raises
-    production immediately instead of after a month of passing weeks.
+    still being nowhere near the destination: a plan whose week-one bar is
+    trivially cleared scores full marks and tells you nothing. This floor looks
+    at the destination directly, so a structural shortfall raises production
+    immediately instead of after a month of passing weeks.
+
+    It reads the ranking footprint and impressions rather than the page count.
+    That distinction is the whole point: a floor keyed to pages says "publish
+    more" in every situation including the ones where publishing more is the
+    problem, whereas a floor keyed to demand says "earn more", which is
+    satisfied by better work as readily as by more of it.
     """
-    published = float(connection.execute(
-        "SELECT COUNT(DISTINCT url) FROM page_content_stats").fetchone()[0] or 0)
-    share = published / TERMINAL["published_pages"]
+    live = measure(connection)
+    shares = {metric: float(live.get(metric, 0)) / TERMINAL[metric]
+              for metric in FLOOR_METRICS}
+    binding = min(shares, key=shares.get)
+    share = shares[binding]
+    label = binding.replace("_", " ")
     for threshold, level in ((0.25, 4), (0.50, 3), (0.75, 2)):
         if share < threshold:
-            return level, (f"{published:.0f} of the ~{TERMINAL['published_pages']} pages the "
-                           f"target implies ({share:.1%}). Structural shortfall, so "
-                           f"intensity floors at {level} regardless of the weekly curve.")
-    return 1, "surface area is broadly where the target needs it"
+            return level, (
+                f"{live.get(binding, 0):,.0f} {label} against the {TERMINAL[binding]:,} the "
+                f"target implies ({share:.1%}). Structural shortfall on demand, so "
+                f"intensity floors at {level} regardless of the weekly curve. What that "
+                f"buys is more qualified work, never a lower bar or a larger page count.")
+    return 1, "demand is broadly where the target needs it"
 
 
 def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> dict:
@@ -341,8 +447,11 @@ def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> di
             wanted = level
             break
     floor, floor_reason = structural_floor(connection)
-    if floor > wanted:
-        wanted = floor
+    wanted = max(wanted, floor)
+    # Reported whenever the floor is holding the level, not only when it raises
+    # it. A week that "met the curve" while the floor independently demanded the
+    # same intensity has not met anything, and the verdict should say so.
+    if floor > 1 and floor >= wanted:
         result["structural_floor"] = floor_reason
     # Rises immediately when behind; falls one step at a time, because changing
     # the quota every week produces worse work than holding a level.
@@ -393,12 +502,14 @@ def checkpoint(connection: sqlite3.Connection, *, week: int | None = None) -> di
     if queued < INTENSITY[after]["pages_per_week"]:
         record_escalation(
             connection, kind="surface_queue_short", severity="info",
-            subject=f"Qualified page queue ({queued}) is below the weekly quota "
+            subject=f"Qualified page queue ({queued}) is below the weekly ceiling "
                     f"({INTENSITY[after]['pages_per_week']})",
-            detail=("Production capacity now exceeds the supply of families that can "
-                    "pass the admission gate. The response is more research into "
-                    "genuinely differentiated families, never admitting weaker ones: "
-                    "a page family whose only difference is wording costs the domain "
+            detail=("Capacity now exceeds the supply of families that can pass the "
+                    "admission gate. This is a note, not a shortfall: the ceiling is "
+                    "the most that may be built, not an amount owed, and an empty "
+                    "queue is a legitimate steady state. The response is more research "
+                    "into genuinely differentiated families, never admitting weaker "
+                    "ones -- a family whose only difference is wording costs the domain "
                     "more than its pages could ever earn."),
             fingerprint="surface_queue_short")
     if after >= 5 and result["attainment"] < 0.15 and week >= 4:

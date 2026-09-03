@@ -49,3 +49,8 @@ fi
 # being behind is a reason to build more of what helps, never a reason to
 # publish something that does not.
 "$PYTHON" scripts/growth_trajectory.py checkpoint
+
+# The Monday scoreboard: surface, Google, authority, usage, velocity and the
+# distance left to the target, computed from measurements already collected. It
+# reads the plan and never rewrites it, so a week that missed stays missed.
+"$PYTHON" scripts/growth_scoreboard.py publish

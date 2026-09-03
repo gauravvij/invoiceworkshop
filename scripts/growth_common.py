@@ -208,6 +208,29 @@ def apply_schema(connection: sqlite3.Connection) -> None:
               ON level1a_action_audit(action_id, started_at DESC);
             """
         )
+    # The 90-day objective moved off page count and onto demand outcomes, and
+    # the old table pinned the metric names in a CHECK. Rebuild without it: the
+    # objective belongs in growth_trajectory.py, not in two places.
+    targets_sql_row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='growth_targets'"
+    ).fetchone()
+    if targets_sql_row and "published_pages" in (targets_sql_row[0] or ""):
+        connection.executescript(
+            """
+            ALTER TABLE growth_targets RENAME TO growth_targets_v19;
+            CREATE TABLE growth_targets (
+              experiment    TEXT NOT NULL,
+              week          INTEGER NOT NULL CHECK (week BETWEEN 0 AND 13),
+              week_ending   TEXT NOT NULL,
+              metric        TEXT NOT NULL,
+              target        REAL NOT NULL,
+              rationale     TEXT NOT NULL DEFAULT '',
+              PRIMARY KEY (experiment, week, metric)
+            );
+            INSERT INTO growth_targets SELECT * FROM growth_targets_v19;
+            DROP TABLE growth_targets_v19;
+            """
+        )
     connection.commit()
 
 

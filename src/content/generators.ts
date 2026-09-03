@@ -436,16 +436,24 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'What makes an invoice a VAT invoice',
         paragraphs: [
-          'A VAT invoice is a specific document, not an invoice that happens to include VAT. If you are VAT registered, HMRC expects a defined set of information, and a customer who is also registered needs it to reclaim the VAT you charged.',
+          'A VAT invoice is a specific document, not an invoice that happens to include VAT. If you are VAT registered, HMRC guidance sets out a defined set of particulars, and a customer who is also registered needs them to reclaim the VAT you charged. If you are not registered, none of this applies: you do not charge VAT and you do not issue VAT invoices.',
+          'HMRC does not require the document to be headed “VAT invoice”. What matters is that the particulars are present. This generator prints the heading because it is the common convention and it helps the recipient file it, not because the wording itself is a requirement.',
         ],
         bullets: [
           'A unique, sequential invoice number',
           'Your business name, address and VAT registration number',
           'The customer’s name and address',
           'The time of supply (tax point) and the invoice date if different',
-          'A description of what was supplied, per line',
+          'A description of what was supplied, with quantity and unit price',
           'The rate of VAT charged on each line',
-          'The total excluding VAT, the VAT amount, and the total including VAT',
+          'The total excluding VAT, the VAT amount charged, and the total payable',
+        ],
+      },
+      {
+        heading: 'Simplified invoices under £250',
+        paragraphs: [
+          'Where the consideration does not exceed £250, HMRC allows a simplified VAT invoice carrying fewer particulars than the full list above. It is a genuinely shorter document rather than a relaxed version of the same one, so if most of your sales are small, it is worth reading what your situation actually requires before building a full invoice for every transaction.',
+          'This generator produces a full invoice. That is never wrong — a full invoice satisfies the simplified requirements too — but it is more than a small sale strictly needs.',
         ],
       },
       {
@@ -474,13 +482,14 @@ export const generators: Record<string, GeneratorContent> = {
           { term: 'Standard rate, 20%', definition: 'The default for most goods and services. This generator applies it to new lines unless you change the line.' },
           { term: 'Reduced rate, 5%', definition: 'Applies to a narrow list including domestic fuel and power and certain energy-saving installations.' },
           { term: 'Zero rate, 0%', definition: 'A taxable supply charged at nothing: most food, children’s clothing, books and printed matter. Different from exempt, which is outside VAT and cannot be reclaimed against.' },
-          { term: 'Registration', definition: 'Compulsory once taxable turnover passes the threshold in a rolling twelve months, and available voluntarily below it. You cannot issue a VAT invoice or charge VAT before you are registered.' },
+          { term: 'Registration', definition: 'Compulsory once taxable turnover passes the threshold in a rolling twelve months, and available voluntarily below it. You cannot issue a VAT invoice or charge VAT before you are registered. The threshold changes at fiscal events, so check the current figure on GOV.UK rather than relying on a number you remember.' },
         ],
       },
       {
         heading: 'Before you send it',
         paragraphs: [
-          'Check the VAT number is your own and correctly formatted, that the invoice number continues your sequence without gaps, and that each line carries the rate you actually intend. Invoice Workshop does the arithmetic and the layout; which rate applies to a particular supply is a question about your business, and HMRC guidance or your accountant is the right source for it.',
+          'Check the VAT number is your own and correctly formatted, that the invoice number continues your sequence without gaps, and that each line carries the rate you actually intend.',
+          'Invoice Workshop lays the document out and does the arithmetic. It does not determine whether you should be registered, which rate applies to a particular supply, or whether a transaction is zero-rated, exempt or outside the scope, and it cannot confirm that a document you produce with it satisfies HMRC in your circumstances. Rates and thresholds here were checked against GOV.UK and HMRC VAT Notice 700 on 2 September 2026; they change, and your own situation governs. Use HMRC guidance or your accountant for anything that matters.',
         ],
       },
     ],
@@ -497,15 +506,15 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'What a GST tax invoice must carry',
         paragraphs: [
-          'A tax invoice under GST is prescribed in some detail, and a customer claiming input tax credit needs every part of it. The two fields most often missing are the place of supply and the HSN or SAC code.',
+          'A tax invoice under GST is prescribed in some detail, and a customer claiming input tax credit needs the relevant parts of it. Not every particular applies to every supply: place of supply matters where the supply crosses a state boundary, and how many digits of HSN or SAC you must show depends on your turnover.',
         ],
         bullets: [
           'The words “Tax Invoice”',
           'Supplier name, address and GSTIN',
           'A consecutive invoice number and the date of issue',
           'Recipient name, address and GSTIN where registered',
-          'Place of supply, with the state and state code',
-          'HSN code for goods or SAC code for services, per line',
+          'Place of supply with state and code, where the supply is inter-State',
+          'HSN code for goods or SAC code for services, to the digit depth your turnover requires',
           'Taxable value per line after any discount',
           'Rate and amount of CGST, SGST/UTGST or IGST',
           'Whether the tax is payable on reverse charge',
@@ -534,16 +543,18 @@ export const generators: Record<string, GeneratorContent> = {
           'One rate, split two ways or charged as one, depending on where the supply lands.',
         ],
         terms: [
+          { term: 'Rates since 22 September 2025', definition: 'The GST Council reduced the structure to 5% and 18%, with a 40% rate on demerit goods. The 12% and 28% slabs no longer apply. This generator offers 5, 18 and 40, and you can enter any rate your classification requires.' },
           { term: 'CGST + SGST', definition: 'Intra-state supply: the rate is halved between the centre and the state. An 18% supply becomes 9% CGST and 9% SGST on the invoice.' },
           { term: 'IGST', definition: 'Inter-state supply, and exports and imports: the full rate is charged as a single integrated tax.' },
-          { term: 'Place of supply', definition: 'The rule that decides which of the two applies. It is not always the customer’s address, which is why it is stated on the invoice rather than inferred.' },
-          { term: 'HSN and SAC', definition: 'HSN classifies goods, SAC classifies services. How many digits you must show depends on your turnover.' },
+          { term: 'Place of supply', definition: 'The rule that decides which of the two applies. It is not always the customer’s address, and the rules differ for goods and for services, which is why it is stated on the invoice rather than inferred.' },
+          { term: 'HSN and SAC', definition: 'HSN classifies goods, SAC classifies services. How many digits you must show depends on your turnover, so a small supplier and a large one can both be correct at different depths.' },
         ],
       },
       {
         heading: 'Before you file it',
         paragraphs: [
-          'Check that the GSTIN of both parties is the full 15 characters, that the invoice number is unique within the financial year and unbroken, and that each line’s HSN or SAC is the one you actually use in your returns. Invoice Workshop formats the document and computes the totals; classification, place-of-supply determination and your GSTR filings are matters for you or your chartered accountant.',
+          'Check that the GSTIN of both parties is the full 15 characters, that the invoice number is unique within the financial year and unbroken, and that each line’s HSN or SAC is the one you actually use in your returns.',
+          'Invoice Workshop formats the document and computes the totals. It does not classify your supplies, determine place of supply, decide your HSN digit depth, apply reverse charge, or produce a document guaranteed to satisfy a GST officer. The rate structure above reflects the 56th GST Council decisions effective 22 September 2025, checked on 2 September 2026 against the Government of India press release; classification and filing are matters for you or your chartered accountant.',
         ],
       },
     ],
@@ -560,16 +571,16 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'What the ATO asks a tax invoice to show',
         paragraphs: [
-          'For a sale under $1,000 the list is short, and the single most common omission is the phrase itself: the document has to say “Tax invoice”. Above $1,000 the buyer’s identity is required as well.',
+          'For a sale under A$1,000 the list is short. The first item is easy to misread: what the ATO asks is that the document indicates it is intended to be a tax invoice. Printing the words “Tax invoice” is how almost everyone satisfies that, and this generator does, but the wording is the usual evidence of the requirement rather than the requirement itself. Above A$1,000 the buyer’s identity is needed as well.',
         ],
         bullets: [
-          'The words “Tax invoice”',
-          'Your business name and ABN',
+          'That the document is intended to be a tax invoice',
+          'Your identity as the seller, and your ABN',
           'The date the invoice was issued',
           'A description of the items sold, with quantity and price',
-          'The GST amount, or a statement that the total includes GST',
-          'The extent to which each sale is taxable',
-          'The buyer’s identity or ABN, for sales of $1,000 or more',
+          'The GST amount payable, or a statement that the total price includes GST',
+          'The extent to which each sale on the invoice is taxable',
+          'The buyer’s identity or ABN, for sales of A$1,000 or more',
         ],
       },
       {
@@ -594,7 +605,7 @@ export const generators: Record<string, GeneratorContent> = {
           'These three are related but not the same, and only one of them is about the invoice.',
         ],
         terms: [
-          { term: 'ABN', definition: 'An eleven-digit business number. Without one on the invoice, a business customer may be required to withhold tax from your payment at the top rate.' },
+          { term: 'ABN', definition: 'An eleven-digit business number. Without one quoted, a business customer may be required to withhold from your payment at the top rate, subject to the exceptions in the withholding rules.' },
           { term: 'GST registration', definition: 'Separate from having an ABN. Compulsory once turnover reaches the registration threshold, and optional below it. You only charge GST once registered.' },
           { term: 'GST-free vs input-taxed', definition: 'GST-free supplies carry no GST but you can still claim credits on their inputs. Input-taxed supplies carry no GST and you cannot.' },
         ],
@@ -602,7 +613,8 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'Before you send it',
         paragraphs: [
-          'Confirm the ABN is right, that the document says “Tax invoice”, and that a sale of $1,000 or more names the buyer. Invoice Workshop lays the document out and does the arithmetic; whether a particular supply is taxable, GST-free or input-taxed depends on what you sell, and the ATO or your accountant is the place to settle it.',
+          'Confirm the ABN is right, that the document reads as a tax invoice, and that a sale of A$1,000 or more names the buyer.',
+          'Invoice Workshop lays the document out and does the arithmetic. It does not decide whether you must be registered for GST, whether a particular supply is taxable, GST-free or input-taxed, or whether a document it produces meets the ATO’s requirements in your circumstances. The requirements above were checked against ATO guidance on 2 September 2026. The ATO or your accountant is the place to settle anything that matters.',
         ],
       },
     ],
@@ -619,16 +631,13 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'What a GST/HST invoice needs',
         paragraphs: [
-          'The CRA sets out what a customer needs in order to claim an input tax credit, and the requirements grow with the size of the sale. Your business number is the item most often left off.',
+          'The CRA sets out what a customer needs in order to claim an input tax credit, and the requirements grow with the size of the sale. The thresholds changed on 20 April 2021, from $30 and $150 to $100 and $500, and a good deal of published guidance still quotes the old figures.',
         ],
         bullets: [
-          'Your business name and the date of the invoice',
-          'The total amount payable',
-          'Your GST/HST registration number, for sales of $30 or more',
-          'The amount of GST/HST charged, or a statement that it is included and at what rate',
-          'The buyer’s name, for sales of $150 or more',
-          'A description sufficient to identify each item',
-          'Terms of payment',
+          'Under $100: your business name, the date, and the total amount payable',
+          '$100 to under $500: also your GST/HST registration number, the tax charged or a statement that it is included, the rate applying to each item, and whether each supply is taxable, zero-rated or exempt',
+          '$500 or more: also the buyer’s name or trade name, the terms of payment, and a description sufficient to identify each supply',
+          'For HST, show the total rate rather than the federal and provincial parts separately',
         ],
       },
       {
@@ -654,7 +663,7 @@ export const generators: Record<string, GeneratorContent> = {
         ],
         terms: [
           { term: 'GST at 5%', definition: 'The federal tax, charged alone in provinces that have not harmonised.' },
-          { term: 'HST at 13% or 15%', definition: 'Federal and provincial combined into one tax in the participating provinces, administered by the CRA.' },
+          { term: 'HST at 13%, 14% or 15%', definition: 'Federal and provincial combined into one tax in the participating provinces, administered by the CRA: 13% in Ontario, 14% in Nova Scotia since 1 April 2025, and 15% in New Brunswick, Newfoundland and Labrador and Prince Edward Island.' },
           { term: 'PST', definition: 'A separate provincial tax in provinces such as British Columbia, Saskatchewan and Manitoba, registered for and reported separately from GST.' },
           { term: 'QST', definition: 'Quebec’s own tax, administered by Revenu Québec alongside the federal GST.' },
         ],
@@ -662,7 +671,8 @@ export const generators: Record<string, GeneratorContent> = {
       {
         heading: 'Before you send it',
         paragraphs: [
-          'Check that the rate matches the province of supply rather than your own, that your business number appears once the sale is $30 or more, and that the buyer is named at $150 or more. Invoice Workshop formats the document and does the arithmetic; place-of-supply rules and any PST or QST obligations are for you or your accountant to determine.',
+          'Check that the rate matches the province of supply rather than your own, that your business number appears once the sale reaches $100, and that the buyer is named at $500 or more.',
+          'Invoice Workshop formats the document and does the arithmetic. It does not apply the place-of-supply rules, handle PST or QST, decide whether a supply is zero-rated or exempt, or confirm that a document it produces supports your customer’s input tax credit claim. The thresholds and rates above were checked against CRA guidance on 2 September 2026, including the April 2021 threshold change and the Nova Scotia rate reduction of 1 April 2025.',
         ],
       },
     ],

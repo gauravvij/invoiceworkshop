@@ -258,3 +258,80 @@ class EligibilityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TaxClaimTests(unittest.TestCase):
+    """An unattended run may reword a tax sentence but may not change what it
+    asserts. Every figure in one is checked against the recorded sources."""
+
+    VERIFIED = frozenset({"20%", "5%", "£250"})
+
+    def _validate(self, lines, verified=None):
+        return policy.validate_change(
+            [CONTENT], diff_for(lines),
+            verified_tax=self.VERIFIED if verified is None else verified)
+
+    def test_a_rate_that_matches_a_recorded_fact_passes(self):
+        checks = self._validate(["      'The standard VAT rate is 20% in the UK.',"])
+        self.assertEqual(checks["tax_claims_checked"], 1)
+
+    def test_an_unrecorded_rate_is_sent_to_review(self):
+        with self.assertRaises(policy.PolicyRefusal) as caught:
+            self._validate(["      'The standard VAT rate is 17.5%.',"])
+        self.assertIn("REVIEW", str(caught.exception))
+        self.assertIn("17.5%", str(caught.exception))
+
+    def test_a_requirement_with_nothing_checkable_in_it_is_sent_to_review(self):
+        with self.assertRaises(policy.PolicyRefusal) as caught:
+            self._validate(["      'HMRC requires the words VAT Invoice as a heading.',"])
+        self.assertIn("REVIEW", str(caught.exception))
+        self.assertIn("cannot be verified unattended", str(caught.exception))
+
+    def test_an_invented_threshold_is_sent_to_review(self):
+        with self.assertRaises(policy.PolicyRefusal):
+            self._validate(["      'A simplified tax invoice is required under £900.',"])
+
+    def test_ordinary_editorial_copy_is_untouched_by_the_rule(self):
+        checks = self._validate([
+            "      'Enter your line items and the totals update as you type.',",
+            "      'Download the finished document as a PDF, entirely in your browser.',",
+            "      'Freelancers and small studios use this to bill clients each month.',",
+        ])
+        self.assertEqual(checks["tax_claims_checked"], 0)
+
+    def test_a_line_merely_mentioning_vat_is_not_a_tax_claim(self):
+        checks = self._validate([
+            "      'The tax column is labelled VAT and totals appear beneath it.',"])
+        self.assertEqual(checks["tax_claims_checked"], 0)
+
+    def test_the_verified_set_comes_from_the_database_not_the_change(self):
+        """With nothing recorded, even a correct figure is refused: the run
+        cannot vouch for its own facts."""
+        with self.assertRaises(policy.PolicyRefusal):
+            self._validate(["      'The standard VAT rate is 20%.',"], verified=frozenset())
+
+    def test_recorded_figures_exclude_stale_and_unsourced_facts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            connection = connect_db(str(Path(temp) / "growth.db"))
+            apply_schema(connection)
+            rows = [("fresh", "20%", "https://gov.example/a", "2099-01-01"),
+                    ("stale", "17.5%", "https://gov.example/b", "2020-01-01"),
+                    ("unsourced", "8%", "", "2099-01-01")]
+            for key, value, url, reverify in rows:
+                connection.execute(
+                    """INSERT INTO tax_facts
+                         (jurisdiction, fact_key, value, source_name, source_url,
+                          verified_on, reverify_by, confidence)
+                       VALUES ('gb', ?, ?, 'Authority', ?, '2026-09-02', ?, 'primary_source')""",
+                    (key, value, url, reverify))
+            connection.commit()
+            figures = policy.verified_tax_figures(connection)
+            connection.close()
+        self.assertIn("20%", figures)
+        self.assertNotIn("17.5%", figures)
+        self.assertNotIn("8%", figures)
+
+    def test_the_policy_the_agent_reads_states_the_rule(self):
+        document = policy.policy_document()
+        self.assertIn("tax_and_legal_rule", document)
+        self.assertIn("NO_ACTION", document)

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '18')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '20')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1039,10 +1039,10 @@ CREATE TABLE IF NOT EXISTS growth_targets (
   experiment    TEXT NOT NULL,
   week          INTEGER NOT NULL CHECK (week BETWEEN 0 AND 13),
   week_ending   TEXT NOT NULL,
-  metric        TEXT NOT NULL CHECK (metric IN (
-                  'monthly_pageviews', 'daily_sessions', 'indexed_pages',
-                  'published_pages', 'ranking_queries', 'monthly_impressions',
-                  'referring_domains')),
+  -- Deliberately not an allowlist. The metric set is the objective, it lives
+  -- in growth_trajectory.py, and duplicating it here only meant the objective
+  -- could not change without a schema migration.
+  metric        TEXT NOT NULL,
   target        REAL NOT NULL,
   rationale     TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (experiment, week, metric)
@@ -1113,3 +1113,33 @@ CREATE TABLE IF NOT EXISTS page_candidates (
 );
 CREATE INDEX IF NOT EXISTS idx_page_candidates_family
   ON page_candidates(family_key, status);
+
+
+-- Tax and invoicing facts asserted on a country page, each tied to the primary
+-- government source it came from and the date it was checked.
+--
+-- Pages that state what a tax authority requires are a different risk class from
+-- ordinary marketing copy: they go stale silently, and a reader acts on them. So
+-- every such fact is recorded with its source and a reverification date, and a
+-- fact past that date is a REVIEW item rather than something the unattended
+-- worker may quietly restate.
+--
+-- The four pages shipped before this table existed carried three errors that
+-- only a primary source would catch: India's 12% and 28% slabs were abolished in
+-- September 2025, Canada's input-tax-credit thresholds moved from $30/$150 to
+-- $100/$500 in April 2021, and HMRC does not in fact require the words "VAT
+-- invoice" as a document title.
+CREATE TABLE IF NOT EXISTS tax_facts (
+  jurisdiction   TEXT NOT NULL,
+  fact_key       TEXT NOT NULL,
+  value          TEXT NOT NULL,
+  source_name    TEXT NOT NULL,
+  source_url     TEXT NOT NULL,
+  verified_on    TEXT NOT NULL,
+  reverify_by    TEXT NOT NULL,
+  confidence     TEXT NOT NULL DEFAULT 'primary_source' CHECK (confidence IN (
+                   'primary_source', 'primary_source_indirect', 'unverified')),
+  caveat         TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (jurisdiction, fact_key)
+);
+CREATE INDEX IF NOT EXISTS idx_tax_facts_reverify ON tax_facts(reverify_by);

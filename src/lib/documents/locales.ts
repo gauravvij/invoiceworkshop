@@ -7,9 +7,14 @@
  * currency and the date format. A UK VAT invoice and an Australian tax invoice
  * are different documents, not the same document in different words.
  *
- * Rates are the standard rates at time of writing and are defaults, not advice —
- * the user can change every one of them, and which rate applies to a given
- * supply is their responsibility.
+ * Rates are defaults, not advice. Every one can be changed, and which rate
+ * applies to a given supply depends on what is being supplied, to whom, and
+ * whether the seller is registered.
+ *
+ * Each figure here is recorded in the `tax_facts` table with the government
+ * source it came from and a date by which it must be rechecked. Verified
+ * 2026-09-02; recheck due 2026-11-01. Do not edit a rate here without updating
+ * that record, because a stale rate on an invoice template is acted on.
  */
 
 export interface LocalePreset {
@@ -39,28 +44,28 @@ export const localePresets: Record<string, LocalePreset> = {
     rateOptions: [2000, 500, 0], currency: 'GBP',
     businessTaxIdLabel: 'VAT registration number', clientTaxIdLabel: 'Customer VAT number',
     documentTitle: 'VAT INVOICE', dateLocale: 'en-GB',
-    requirement: 'A VAT invoice must show your VAT registration number, the rate charged and the VAT amount as a separate figure.',
+    requirement: 'If you are VAT registered, a full VAT invoice shows your VAT registration number, the rate charged and the VAT as a separate figure. A simplified invoice is available where the consideration does not exceed £250.',
   },
   in: {
     key: 'in', country: 'India', taxLabel: 'GST', defaultTaxBps: 1800,
-    rateOptions: [1800, 1200, 500, 2800, 0], currency: 'INR',
+    rateOptions: [1800, 500, 4000, 0], currency: 'INR',
     businessTaxIdLabel: 'GSTIN', clientTaxIdLabel: 'Customer GSTIN',
     documentTitle: 'TAX INVOICE', dateLocale: 'en-IN',
-    requirement: 'A GST tax invoice carries both parties’ GSTIN, the place of supply and the HSN or SAC code for each line.',
+    requirement: 'A GST tax invoice generally carries both parties’ GSTIN and the HSN or SAC code for each line; place of supply matters where the supply is inter-State. Slabs were reduced to 5% and 18% with a 40% demerit rate on 22 September 2025.',
   },
   au: {
     key: 'au', country: 'Australia', taxLabel: 'GST', defaultTaxBps: 1000,
     rateOptions: [1000, 0], currency: 'AUD',
     businessTaxIdLabel: 'ABN', clientTaxIdLabel: 'Customer ABN',
     documentTitle: 'TAX INVOICE', dateLocale: 'en-AU',
-    requirement: 'The ATO requires the words “Tax invoice”, your ABN, and the GST amount shown separately.',
+    requirement: 'A tax invoice must indicate that it is intended to be one, and show your ABN and the GST amount (or that the total includes GST). Sales of A$1,000 or more also need the buyer’s identity or ABN.',
   },
   ca: {
     key: 'ca', country: 'Canada', taxLabel: 'GST/HST', defaultTaxBps: 500,
-    rateOptions: [500, 1300, 1500, 1200, 0], currency: 'CAD',
+    rateOptions: [500, 1300, 1400, 1500, 0], currency: 'CAD',
     businessTaxIdLabel: 'CRA business number', clientTaxIdLabel: 'Customer business number',
     dateLocale: 'en-CA',
-    requirement: 'The rate depends on the province of supply: 5% GST alone, or 13% and 15% HST in the participating provinces.',
+    requirement: 'The rate follows the province of supply: 5% GST alone, or HST at 13% in Ontario, 14% in Nova Scotia and 15% in New Brunswick, Newfoundland and Labrador and Prince Edward Island.',
   },
   ae: {
     key: 'ae', country: 'United Arab Emirates', taxLabel: 'VAT', defaultTaxBps: 500,

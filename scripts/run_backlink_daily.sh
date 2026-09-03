@@ -95,3 +95,9 @@ fi
 # gate refuses families rather than admitting them, so running it often is safe.
 "$PYTHON" scripts/growth_surface.py evaluate
 "$PYTHON" scripts/growth_trajectory.py status
+
+# Facts on the country pages that have gone past their recheck date. A page that
+# tells someone what HMRC or the ATO requires goes stale silently on a political
+# timetable, so it is checked on a clock rather than when someone notices.
+# Reports and escalates; it cannot edit a page.
+"$PYTHON" scripts/growth_tax_facts.py check
