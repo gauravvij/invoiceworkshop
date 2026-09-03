@@ -74,6 +74,7 @@ export const generators: Record<string, GeneratorContent> = {
       { href: '/work-order-generator/', label: 'Work Order Generator', text: 'Document approved work and turn it into an invoice.' },
       { href: '/purchase-order-generator/', label: 'Purchase Order Generator', text: 'Create purchasing paperwork for a supplier.' },
       { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Bill labor, materials, deposits and project work.' },
+      { href: '/progress-draw-schedule/', label: 'Progress Draw Schedule', text: 'Work out the draw and retainage before billing it.' },
       { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Create a practical contractor-specific invoice.' },
       { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Confirm the payment once the invoice is settled.' },
       { href: '/credit-note-generator/', label: 'Credit Note Generator', text: 'Reverse an invoice already sent, in full or in part.' },
@@ -722,7 +723,7 @@ export const generators: Record<string, GeneratorContent> = {
       },
       { heading: 'Keep records safely', paragraphs: ['Documents persist only in this browser, so export backups as part of your normal recordkeeping. Clearing browser site data removes the saved workspace. The generated PDF can be stored or shared wherever you normally manage business records.'] },
     ],
-    related: [{ href: '/', label: 'Invoice Generator', text: 'Use the primary invoice-generation page.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use project and deposit fields for contract work.' }, { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Record the payment when it arrives.' }, { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Itemize construction labor and materials.' }],
+    related: [{ href: '/', label: 'Invoice Generator', text: 'Use the primary invoice-generation page.' }, { href: '/contractor-invoice-template/', label: 'Contractor Invoice Template', text: 'Use project and deposit fields for contract work.' }, { href: '/receipt-generator/', label: 'Receipt Generator', text: 'Record the payment when it arrives.' }, { href: '/construction-invoice-template/', label: 'Construction Invoice Template', text: 'Itemize construction labor and materials.' }, { href: '/progress-draw-schedule/', label: 'Progress Draw Schedule', text: 'Work out the draw and retainage before billing it.' }],
   },
   receiptGenerator: {
     path: '/receipt-generator/', kind: 'receipt', dynamic: true,

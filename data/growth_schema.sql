@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '20')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '21')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -912,9 +912,10 @@ CREATE INDEX IF NOT EXISTS idx_index_diagnosis_url ON index_diagnosis(url, diagn
 -- channel that repeatedly fails genuinely loses ground instead of being
 -- described as failing in a report nobody acts on.
 CREATE TABLE IF NOT EXISTS channel_allocation (
-  channel        TEXT PRIMARY KEY CHECK (channel IN (
-                   'product_led_seo', 'page_improvement', 'technical_seo', 'distribution',
-                   'linkable_assets', 'utility_development', 'ctr')),
+  -- Not an allowlist. The channel portfolio is a growth decision and lives in
+  -- growth_allocation.py; pinning it here only meant adding a channel needed a
+  -- schema migration, which is how the portfolio stayed frozen.
+  channel        TEXT PRIMARY KEY,
   weight         REAL NOT NULL DEFAULT 1.0 CHECK (weight BETWEEN 0.2 AND 1.6),
   attempts       INTEGER NOT NULL DEFAULT 0,
   wins           INTEGER NOT NULL DEFAULT 0,
@@ -1143,3 +1144,64 @@ CREATE TABLE IF NOT EXISTS tax_facts (
   PRIMARY KEY (jurisdiction, fact_key)
 );
 CREATE INDEX IF NOT EXISTS idx_tax_facts_reverify ON tax_facts(reverify_by);
+
+-- Non-search distribution. One row per destination we have actually looked at,
+-- carrying what was verified about it and on what date, because a directory's
+-- terms and its account requirements change and a stale note is what leads to
+-- submitting somewhere that has quietly become a link farm.
+CREATE TABLE IF NOT EXISTS breakout_destinations (
+  key                        TEXT PRIMARY KEY,
+  channel                    TEXT NOT NULL,
+  name                       TEXT NOT NULL,
+  url                        TEXT NOT NULL,
+  submit_url                 TEXT,
+  audience_fit               TEXT NOT NULL,
+  evidence                   TEXT NOT NULL DEFAULT '',
+  verified_on                TEXT NOT NULL,
+  source_url                 TEXT NOT NULL DEFAULT '',
+  -- What the destination demands of us. Each of these can force REVIEW on its
+  -- own; none of them may be worked around.
+  requires_account           INTEGER NOT NULL DEFAULT 1 CHECK (requires_account IN (0,1)),
+  requires_payment           INTEGER NOT NULL DEFAULT 0 CHECK (requires_payment IN (0,1)),
+  requires_personal_identity INTEGER NOT NULL DEFAULT 0 CHECK (requires_personal_identity IN (0,1)),
+  requires_community_posting INTEGER NOT NULL DEFAULT 0 CHECK (requires_community_posting IN (0,1)),
+  -- Scoring inputs, each recorded rather than inferred.
+  reach                      INTEGER NOT NULL DEFAULT 0,
+  intent                     REAL NOT NULL DEFAULT 0,
+  speed_days                 INTEGER NOT NULL DEFAULT 90,
+  confidence                 REAL NOT NULL DEFAULT 0,
+  effort                     REAL NOT NULL DEFAULT 1,
+  score                      REAL NOT NULL DEFAULT 0,
+  gate_status                TEXT NOT NULL DEFAULT 'admitted'
+                               CHECK (gate_status IN ('admitted', 'refused')),
+  refusal_reason             TEXT,
+  execution_class            TEXT NOT NULL DEFAULT 'REVIEW'
+                               CHECK (execution_class IN ('AUTO', 'REVIEW', 'BLOCKED')),
+  execution_reason           TEXT NOT NULL DEFAULT '',
+  status                     TEXT NOT NULL DEFAULT 'identified'
+                               CHECK (status IN ('identified', 'prepared', 'submitted',
+                                                 'live', 'declined', 'failed')),
+  bundle_json                TEXT NOT NULL DEFAULT '{}',
+  notes                      TEXT NOT NULL DEFAULT '',
+  created_at                 TEXT NOT NULL,
+  updated_at                 TEXT NOT NULL
+);
+
+-- What a destination actually produced. Submission count is not an outcome, so
+-- it is not stored here; sessions, tool starts and downloads are.
+CREATE TABLE IF NOT EXISTS breakout_results (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  destination_key   TEXT NOT NULL REFERENCES breakout_destinations(key),
+  observed_on       TEXT NOT NULL,
+  referral_sessions INTEGER NOT NULL DEFAULT 0,
+  tool_starts       INTEGER NOT NULL DEFAULT 0,
+  pdf_downloads     INTEGER NOT NULL DEFAULT 0,
+  backlinks         INTEGER NOT NULL DEFAULT 0,
+  cost_usd          REAL NOT NULL DEFAULT 0,
+  owner_minutes     INTEGER NOT NULL DEFAULT 0,
+  note              TEXT NOT NULL DEFAULT '',
+  UNIQUE(destination_key, observed_on)
+);
+
+CREATE INDEX IF NOT EXISTS idx_breakout_rank
+  ON breakout_destinations(gate_status, execution_class, score DESC);

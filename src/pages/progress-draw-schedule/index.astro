@@ -1,0 +1,139 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProgressDrawSchedule from '@/components/draws/ProgressDrawSchedule';
+import '@/components/draws/draws.css';
+
+const path = '/progress-draw-schedule/';
+const title = 'Progress Draw Schedule & Retainage Calculator | Invoice Workshop';
+const description =
+  'Free progress draw calculator on the AIA G702/G703 column model: schedule of values, work completed, stored materials, retainage per line and the payment due this period.';
+const software = {
+  '@context': 'https://schema.org', '@type': 'SoftwareApplication',
+  name: 'Progress Draw Schedule & Retainage Calculator',
+  applicationCategory: 'BusinessApplication', operatingSystem: 'Web',
+  url: new URL(path, Astro.site).toString(), description,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  featureList: 'Schedule of values, per-line retainage, percent complete, payment due, browser-only',
+};
+const breadcrumb = {
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Invoice Workshop', item: 'https://invoiceworkshop.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Progress Draw Schedule', item: new URL(path, Astro.site).toString() },
+  ],
+};
+---
+<BaseLayout title={title} description={description} path={path} schema={[software, breadcrumb]}>
+  <section class="hero">
+    <p class="eyebrow">Progress billing without the spreadsheet</p>
+    <h1>Progress Draw Schedule &amp; Retainage Calculator</h1>
+    <p class="hero-intro">
+      Build a schedule of values, enter what was completed previously and this period,
+      and get the retainage and the payment due on the same column model an architect or
+      lender reviews against. Free, no signup, and nothing leaves your browser.
+    </p>
+    <p class="privacy-reassurance">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 8V6a4.5 4.5 0 0 1 9 0v2M4 8h12v9H4z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      Your schedule is saved in this browser only. Nothing is uploaded.
+    </p>
+  </section>
+  <ProgressDrawSchedule client:load />
+  <div class="content-shell">
+    <section class="content-section">
+      <h2>The columns, and why they are lettered</h2>
+      <div class="content-copy">
+        <p>
+          A pay application is not reviewed as a total. It is reviewed column by column
+          against the schedule of values agreed at the start of the job, which is why the
+          AIA G703 continuation sheet letters them. A schedule that invents its own columns
+          is one the reviewer cannot check line against line, and that is what gets a draw
+          held.
+        </p>
+        <dl class="term-list">
+          <dt>C — Scheduled value</dt><dd>What the line is worth in the contract. These add to the contract sum.</dd>
+          <dt>D — Completed in previous applications</dt><dd>Work already billed and certified before this period.</dd>
+          <dt>E — Completed this period</dt><dd>Work put in place since the last application.</dd>
+          <dt>F — Materials presently stored</dt><dd>Delivered to site and paid for, not yet installed. Billable on most contracts, and the column most often disputed.</dd>
+          <dt>G — Total completed and stored to date</dt><dd>D + E + F. This is the figure percent complete and retainage are both taken from.</dd>
+          <dt>I — Balance to finish</dt><dd>C − G. A negative number here means the line is over-billed, which this tool shows rather than hides.</dd>
+          <dt>J — Retainage</dt><dd>The percentage withheld from completed work as security until substantial completion. Typically 5% or 10%.</dd>
+        </dl>
+      </div>
+    </section>
+    <section class="content-section">
+      <h2>Where the arithmetic goes wrong</h2>
+      <div class="content-copy">
+        <p>
+          Two mistakes account for most disputed draws, and both are arithmetic rather than
+          judgement.
+        </p>
+        <p>
+          The first is taking retainage on the total instead of summing the column. Round
+          each line and add them, and the figure differs from a percentage of the total by a
+          few cents on a long schedule. That difference is small and it is also the one a
+          reviewer finds first, because the column visibly does not add to the box beneath
+          it. This tool sums the column.
+        </p>
+        <p>
+          The second is applying a retainage reduction line by line. Many contracts halve
+          retainage once the job passes 50% complete — the job, not a line. Releasing
+          retainage on a finished line while the project is a quarter built bills money the
+          contract does not yet owe, and it is the kind of error that gets an entire
+          application returned.
+        </p>
+      </div>
+    </section>
+    <section class="content-section">
+      <h2>A worked draw</h2>
+      <div class="content-copy">
+        <p>
+          A $200,000 contract, 10% retainage, with $60,000 billed previously and $40,000
+          this period.
+        </p>
+        <figure class="doc-table-wrap">
+          <figcaption>Application 2 — total completed $100,000 against a $200,000 contract</figcaption>
+          <div class="doc-table-scroll" tabindex="0" role="region" aria-label="Application 2 payment rollup">
+            <table class="doc-table">
+              <thead><tr><th scope="col">Line</th><th scope="col" class="numeric">Amount</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Contract sum</th><td class="numeric">$200,000.00</td></tr>
+                <tr><th scope="row">Total completed and stored to date</th><td class="numeric">$100,000.00</td></tr>
+                <tr><th scope="row">Less retainage at 10%</th><td class="numeric">−$10,000.00</td></tr>
+                <tr><th scope="row">Less previous certificates</th><td class="numeric">−$54,000.00</td></tr>
+              </tbody>
+              <tfoot>
+                <tr><th scope="row">Current payment due</th><td class="numeric">$36,000.00</td></tr>
+                <tr><th scope="row">Balance to finish, including retainage</th><td class="numeric">$110,000.00</td></tr>
+              </tfoot>
+            </table>
+          </div>
+          <p class="doc-table-note">
+            The previous certificate is $54,000, not $60,000: the earlier application was
+            also net of its own 10% retainage. Subtracting the gross figure understates the
+            payment due by $6,000, and it is the single most common error on a second draw.
+          </p>
+        </figure>
+      </div>
+    </section>
+    <section class="content-section">
+      <h2>What this is not</h2>
+      <div class="content-copy">
+        <p>
+          This calculates a draw. It is not an AIA document, is not a substitute for the
+          G702 and G703 forms where a contract requires those specific forms, and does not
+          carry an architect's certification. Retainage limits, and whether retainage may be
+          held on stored materials at all, are set by contract and by state law and differ
+          considerably. Check your contract.
+        </p>
+      </div>
+    </section>
+    <section class="related-tools content-section">
+      <div class="related-heading"><h2>Related business tools</h2><p>Bill the draw once the schedule is agreed.</p></div>
+      <div class="related-grid">
+        <a class="related-card" href="/construction-invoice-template/"><strong>Construction Invoice Template</strong><span>Itemize labor, materials and deposits on a construction job.</span></a>
+        <a class="related-card" href="/contractor-invoice-template/"><strong>Contractor Invoice Template</strong><span>Project and deposit fields for contract work.</span></a>
+        <a class="related-card" href="/work-order-generator/"><strong>Work Order Generator</strong><span>Document authorized work before it is billed.</span></a>
+        <a class="related-card" href="/receipt-generator/"><strong>Receipt Generator</strong><span>Confirm the draw payment when it arrives.</span></a>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

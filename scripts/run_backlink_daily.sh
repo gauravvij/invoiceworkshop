@@ -101,3 +101,11 @@ fi
 # timetable, so it is checked on a clock rather than when someone notices.
 # Reports and escalates; it cannot edit a page.
 "$PYTHON" scripts/growth_tax_facts.py check
+
+# --- 7. non-search distribution --------------------------------------------
+# Re-run the destination gate and write the submission bundles. Both are local:
+# the gate refuses rather than submits, and preparation writes copy into the
+# database. Nothing is sent, no account is created and no form is posted --
+# every destination that needs one of those is REVIEW by construction.
+"$PYTHON" scripts/growth_breakout.py evaluate
+"$PYTHON" scripts/growth_breakout.py prepare

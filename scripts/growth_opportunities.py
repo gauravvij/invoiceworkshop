@@ -41,6 +41,14 @@ from growth_common import apply_schema, connect_db, database_path, utc_now
 # The site now adds pages by adding entries to `generators`, so a hardcoded list
 # would silently stop measuring every page added after it was written.
 _GENERATORS = Path(__file__).resolve().parents[1] / "src" / "content" / "generators.ts"
+# Not every tool page is a `generators` entry. A tool with its own interactive
+# island -- the progress draw schedule -- is a hand-written route, and reading
+# only `generators` measured the site as if it did not exist. Both sources are
+# read, because "what pages exist" has two of them.
+_PAGES = Path(__file__).resolve().parents[1] / "src" / "pages"
+# Routes that exist but are not tools: legal and contact pages carry no growth
+# opportunity and would only dilute every per-page ranking they appeared in.
+_NON_TOOL_ROUTES = frozenset({"/about/", "/privacy/", "/terms/", "/contact/", "/404/"})
 _FALLBACK = (
     "https://invoiceworkshop.com/",
     "https://invoiceworkshop.com/invoice-template/",
@@ -63,6 +71,7 @@ def canonical_routes() -> tuple[str, ...]:
     paths = re.findall(r"^\s*path:\s*'(/[a-z0-9/-]*)'", text, re.M)
     if not paths:
         return _FALLBACK
+    paths.extend(_standalone_routes())
     seen, routes = set(), []
     for path in paths:
         url = "https://invoiceworkshop.com" + path
@@ -70,6 +79,25 @@ def canonical_routes() -> tuple[str, ...]:
             seen.add(url)
             routes.append(url)
     return tuple(routes)
+
+
+def _standalone_routes() -> list[str]:
+    """Tool pages that are their own .astro file rather than a data entry."""
+    routes = []
+    try:
+        for page in sorted(_PAGES.glob("*/index.astro")):
+            name = page.parent.name
+            # `[slug]` is the dynamic route that renders the `generators`
+            # entries; it is a template, not a page, and counting it would put a
+            # literal "[slug]" URL into every ranking and every crawl.
+            if name.startswith("["):
+                continue
+            route = f"/{name}/"
+            if route not in _NON_TOOL_ROUTES:
+                routes.append(route)
+    except OSError:
+        return []
+    return routes
 
 
 CANONICAL = canonical_routes()

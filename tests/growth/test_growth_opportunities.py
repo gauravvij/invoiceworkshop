@@ -351,3 +351,26 @@ class RefreshTests(Fixture):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CanonicalRouteTests(unittest.TestCase):
+    """What counts as a page has two sources, and reading one of them measured
+    the site as if the other did not exist."""
+
+    def test_data_driven_and_standalone_tool_pages_are_both_counted(self):
+        routes = opportunities.canonical_routes()
+        self.assertIn("https://invoiceworkshop.com/receipt-generator/", routes)
+        self.assertIn("https://invoiceworkshop.com/progress-draw-schedule/", routes)
+
+    def test_the_dynamic_route_template_is_not_a_page(self):
+        for route in opportunities.canonical_routes():
+            self.assertNotIn("[", route)
+
+    def test_legal_and_contact_pages_carry_no_growth_opportunity(self):
+        routes = opportunities.canonical_routes()
+        for route in ("/privacy/", "/terms/", "/about/", "/contact/"):
+            self.assertNotIn(f"https://invoiceworkshop.com{route}", routes)
+
+    def test_routes_are_unique(self):
+        routes = opportunities.canonical_routes()
+        self.assertEqual(len(routes), len(set(routes)))

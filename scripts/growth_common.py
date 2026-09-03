@@ -208,6 +208,31 @@ def apply_schema(connection: sqlite3.Connection) -> None:
               ON level1a_action_audit(action_id, started_at DESC);
             """
         )
+    # The channel portfolio gained launch platforms, directories, creator
+    # distribution, community and product loops. The old table pinned the seven
+    # original channels in a CHECK, so the portfolio could not grow without a
+    # migration. Rebuild without it.
+    allocation_sql_row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='channel_allocation'"
+    ).fetchone()
+    if allocation_sql_row and "CHECK (channel IN" in (allocation_sql_row[0] or ""):
+        connection.executescript(
+            """
+            ALTER TABLE channel_allocation RENAME TO channel_allocation_v20;
+            CREATE TABLE channel_allocation (
+              channel        TEXT PRIMARY KEY,
+              weight         REAL NOT NULL DEFAULT 1.0 CHECK (weight BETWEEN 0.2 AND 1.6),
+              attempts       INTEGER NOT NULL DEFAULT 0,
+              wins           INTEGER NOT NULL DEFAULT 0,
+              consecutive_failures INTEGER NOT NULL DEFAULT 0,
+              min_sample     INTEGER NOT NULL DEFAULT 3,
+              last_reason    TEXT NOT NULL DEFAULT 'initial prior; no outcomes observed yet',
+              updated_at     TEXT NOT NULL
+            );
+            INSERT INTO channel_allocation SELECT * FROM channel_allocation_v20;
+            DROP TABLE channel_allocation_v20;
+            """
+        )
     # The 90-day objective moved off page count and onto demand outcomes, and
     # the old table pinned the metric names in a CHECK. Rebuild without it: the
     # objective belongs in growth_trajectory.py, not in two places.

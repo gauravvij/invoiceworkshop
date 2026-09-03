@@ -29,9 +29,22 @@ from datetime import datetime, timedelta, timezone
 from growth_common import apply_schema, connect_db, database_path, utc_now
 
 CHANNELS = (
-    "product_led_seo", "page_improvement", "technical_seo", "distribution",
-    "linkable_assets", "utility_development", "ctr",
+    # Search and product
+    "product_led_seo", "page_improvement", "technical_seo", "utility_development", "ctr",
+    # Distribution that does not wait for rankings
+    "distribution", "linkable_assets", "launch_platforms", "directories",
+    "creator_newsletter", "social_community", "product_loops",
 )
+
+# Channels whose outcome distribution is long-tailed: most attempts return
+# nothing and the occasional one returns a step change. Killing one of these on
+# an early run of zeros is how a portfolio ends up containing only the channels
+# that produce small, reliable, insufficient results -- which is exactly the
+# position the search-only plan was in. They keep a floor of exploration budget
+# and are only reduced once the evidence is twice the ordinary minimum.
+HIGH_VARIANCE = frozenset({"launch_platforms", "creator_newsletter", "linkable_assets",
+                           "social_community", "product_loops"})
+EXPLORATION_FLOOR = 0.6
 
 # How many completed attempts a channel needs before its outcomes are allowed to
 # move anything. Distribution is higher because a single unanswered email says
@@ -44,6 +57,13 @@ MIN_SAMPLE = {
     "linkable_assets": 1,
     "utility_development": 1,
     "ctr": 2,
+    # A launch is a single event with a large variance; two of them say very
+    # little, but they are also expensive in owner time, so the bar is low.
+    "launch_platforms": 2,
+    "directories": 3,
+    "creator_newsletter": 8,
+    "social_community": 3,
+    "product_loops": 2,
 }
 
 WEIGHT_FLOOR, WEIGHT_CEILING = 0.2, 1.6
@@ -236,6 +256,39 @@ def calibrate_outreach(connection: sqlite3.Connection, *, record: bool = True) -
     return result
 
 
+def _breakout_outcomes(connection: sqlite3.Connection) -> dict[str, dict]:
+    """Per breakout channel: destinations that went live, and what they sent.
+
+    A destination counts as an attempt once it is live -- prepared and waiting on
+    an owner is not an attempt, and counting it as a failure would punish the
+    channel for a queue rather than for a result.
+    """
+    outcomes: dict[str, dict] = {}
+    try:
+        rows = connection.execute(
+            """SELECT d.channel,
+                      COUNT(DISTINCT d.key) AS live,
+                      COUNT(DISTINCT CASE WHEN r.pdf_downloads > 0 OR r.tool_starts > 0
+                                          THEN d.key END) AS producing,
+                      COALESCE(SUM(r.referral_sessions), 0) AS sessions,
+                      COALESCE(SUM(r.pdf_downloads), 0) AS downloads
+                 FROM breakout_destinations d
+                 LEFT JOIN breakout_results r ON r.destination_key = d.key
+                WHERE d.status='live'
+                GROUP BY d.channel""").fetchall()
+    except sqlite3.Error:
+        return outcomes
+    for row in rows:
+        outcomes[row["channel"]] = {
+            "attempts": int(row["live"]),
+            "wins": int(row["producing"]),
+            "detail": (f"{row['live']} destination(s) live, {row['producing']} produced "
+                       f"a document, {row['sessions']} referral sessions, "
+                       f"{row['downloads']} downloads"),
+        }
+    return outcomes
+
+
 def channel_evidence(connection: sqlite3.Connection) -> dict[str, dict]:
     """One evidence record per channel: attempts, wins and what counted."""
     calibration = calibrate_outreach(connection, record=False)
@@ -278,6 +331,11 @@ def channel_evidence(connection: sqlite3.Connection) -> dict[str, dict]:
                    "(nothing to fix; rewriting these would be churn)"),
     }
 
+    # Breakout channels are judged on what a destination produced after it went
+    # live, never on how many were submitted. A submission is an attempt; a win
+    # is referral sessions that turned into someone making a document.
+    breakout = _breakout_outcomes(connection)
+
     ctr = _experiment_outcomes(connection, ("ctr",))
     ctr["detail"] = f"{ctr['attempts']} concluded CTR experiments, {ctr['wins']} positive"
     product = _experiment_outcomes(connection, ("product_led_seo", "new_landing_asset"))
@@ -287,7 +345,7 @@ def channel_evidence(connection: sqlite3.Connection) -> dict[str, dict]:
     utility = _experiment_outcomes(connection, ("product_utility",))
     utility["detail"] = f"{utility['attempts']} concluded utility experiments, {utility['wins']} positive"
 
-    return {
+    evidence = {
         "distribution": distribution,
         "page_improvement": pages,
         "technical_seo": technical,
@@ -296,6 +354,23 @@ def channel_evidence(connection: sqlite3.Connection) -> dict[str, dict]:
         "linkable_assets": assets,
         "utility_development": utility,
     }
+    # Breakout channels start with no record at all, which is different from a
+    # record of failure and is reported as such rather than as zero wins.
+    for channel in ("launch_platforms", "directories", "creator_newsletter",
+                    "social_community", "product_loops"):
+        evidence[channel] = breakout.get(channel, {
+            "attempts": 0, "wins": 0,
+            "detail": "no destination live yet; nothing has been attempted to judge"})
+    # A breakout destination can also carry a linkable asset, so merge rather
+    # than overwrite the experiment-derived record.
+    if "linkable_assets" in breakout:
+        merged = breakout["linkable_assets"]
+        evidence["linkable_assets"] = {
+            "attempts": assets["attempts"] + merged["attempts"],
+            "wins": assets["wins"] + merged["wins"],
+            "detail": assets["detail"] + "; " + merged["detail"],
+        }
+    return evidence
 
 
 # ---------------------------------------------------------------------------
@@ -327,7 +402,11 @@ def reallocate(connection: sqlite3.Connection) -> dict:
                          f"{minimum}. Weight unchanged: too little happened to learn from.")
         elif wins == 0:
             failures += 1
-            weight = max(WEIGHT_FLOOR, round(previous * REDUCE_FACTOR, 3))
+            floor = EXPLORATION_FLOOR if channel in HIGH_VARIANCE else WEIGHT_FLOOR
+            if channel in HIGH_VARIANCE and attempts < minimum * 2:
+                weight = max(floor, previous)
+            else:
+                weight = max(floor, round(previous * REDUCE_FACTOR, 3))
             decision = "reduce" if weight < previous else "hold"
             rationale = (f"{attempts} completed attempt(s), no wins ({failures} consecutive "
                          f"failing review). Weight {previous} -> {weight}; effort moves to "
