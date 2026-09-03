@@ -109,11 +109,25 @@ def authority(connection: sqlite3.Connection, since: str) -> dict:
             connection, "SELECT COUNT(*) FROM placements WHERE status='live'")),
         "placements_unverified": int(_one(
             connection, "SELECT COUNT(*) FROM placements WHERE status='unverified'")),
-        "outreach_sent_total": int(_one(connection, "SELECT COUNT(*) FROM outreach")),
+        # Counted from the audit rather than from the legacy `outreach` table,
+        # which the Level-1A path stopped writing to. `submitted` is the only
+        # state that means a message actually left; dry runs never did.
+        "outreach_sent_total": int(_one(
+            connection,
+            """SELECT COUNT(*) FROM level1a_action_audit
+                WHERE mode='live' AND delivery_state IN ('submitted','delivered')""")),
         "outreach_sent_this_week": int(_one(
-            connection, "SELECT COUNT(*) FROM outreach WHERE sent_at>=?", (since,))),
-        "outreach_replies": int(_one(
-            connection, "SELECT COUNT(*) FROM outreach WHERE response IS NOT NULL")),
+            connection,
+            """SELECT COUNT(*) FROM level1a_action_audit
+                WHERE mode='live' AND delivery_state IN ('submitted','delivered')
+                  AND finished_at>=?""", (since,))),
+        "outreach_bounced": int(_one(
+            connection,
+            "SELECT COUNT(*) FROM level1a_action_audit WHERE delivery_state='bounced'")),
+        "outreach_replies": int(_one(connection, "SELECT COUNT(*) FROM level1a_replies")),
+        "outreach_calibration": (connection.execute(
+            """SELECT recommendation FROM outreach_calibration
+                ORDER BY id DESC LIMIT 1""").fetchone() or ["no cohort judged yet"])[0],
     }
 
 

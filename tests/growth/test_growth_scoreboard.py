@@ -60,6 +60,55 @@ class ShapeTests(Fixture):
         velocity = scoreboard.build(self.connection)["velocity"]
         self.assertIn("not an amount billed", velocity["spend_note"])
 
+    def _outreach_action(self) -> None:
+        """The parent rows an audit entry needs. Built rather than stubbed so
+        the count is exercised against the real foreign keys."""
+        self.connection.execute(
+            """INSERT INTO prospects
+                 (id, domain, page_url, prospect_type, opportunity_score, risk,
+                  why_fit, audience, contact_method, source_url, discovered_at, updated_at)
+               VALUES (1, 'example.org', 'https://example.org/a', 'gap',
+                       1.0, 'low', 'fit', 'freelancers', 'email',
+                       'https://example.org/a', '2026-09-01', '2026-09-01')""")
+        self.connection.execute(
+            """INSERT INTO level1a_templates
+                 (template_id, version, action_type, subject_template, opening_template,
+                  fit_template, close_template, max_body_characters, created_at)
+               VALUES (1, 1, 'resource_suggestion', 's', 'o', 'f', 'c', 900,
+                       '2026-09-01')""")
+        self.connection.execute(
+            """INSERT INTO level1a_actions
+                 (id, prospect_id, organization, external_page_url, verified_contact_route,
+                  contact_kind, execution_class, action_type, target_url, allowed_intent,
+                  allowed_claim_keys_json, forbidden_claims_json, relevance_terms_json,
+                  template_id, template_version, subject_value, opening_value, fit_value,
+                  close_value, page_title, page_excerpt, created_at, updated_at)
+               VALUES (1, 1, 'Example', 'https://example.org/a', 'a@example.org',
+                       'email', 'level1a_email', 'resource_suggestion',
+                       'https://invoiceworkshop.com/', 'suggest', '[]', '[]', '[]',
+                       1, 1, 's', 'o', 'f', 'c', 't', 'e', '2026-09-01', '2026-09-01')""")
+        self.connection.commit()
+
+    def test_outreach_is_counted_from_what_actually_left(self):
+        """A dry run is not an email. The legacy `outreach` table is no longer
+        written to, so counting it reported zero while six had been sent."""
+        self._outreach_action()
+        for mode, state in (("dry_run", "none"), ("live", "none"),
+                            ("live", "submitted"), ("live", "delivered")):
+            self.connection.execute(
+                """INSERT INTO level1a_action_audit
+                     (action_id, message_id, attempt_number, mode, started_at,
+                      finished_at, subject, body, recipient_or_route, source_page,
+                      target_url, message_hash, validation_result,
+                      delivery_state, suppression_state, external_side_effects)
+                   VALUES (1, ?, 1, ?, '2026-09-01T00:00:00+00:00',
+                           '2026-09-01T00:00:00+00:00', 's', 'b', 'r', 'p',
+                           'https://invoiceworkshop.com/', 'hash', 'passed', ?,
+                           'none', 'email_sent')""",
+                (f"{mode}-{state}", mode, state))
+        self.connection.commit()
+        self.assertEqual(scoreboard.build(self.connection)["authority"]["outreach_sent_total"], 2)
+
     def test_addressable_demand_says_what_it_does_not_measure(self):
         surface = scoreboard.build(self.connection)["search_surface"]
         self.assertIn("no keyword-volume source is connected",
