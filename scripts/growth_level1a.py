@@ -786,9 +786,38 @@ def render_message(connection: sqlite3.Connection, action: sqlite3.Row, attempt_
         fit = str(action["fit_template"]).format_map(values).strip()
         close = str(action["close_template"]).format_map(values).strip()
         core = f"{opening}\n\n{context}\n\n{fit}\n\n{target}\n\n{close}"
-    body = f"{core}\n\n{_signature(connection)}"
+    body = _body_the_owner_approved(connection, action, subject, core)
     digest = _sha256(subject + "\n\n" + body)
     return RenderedMessage(int(action["id"]), attempt_number, subject, body, digest)
+
+
+def _body_the_owner_approved(
+    connection: sqlite3.Connection, action: sqlite3.Row, subject: str, core: str
+) -> str:
+    """The message body, preferring the exact text the owner signed.
+
+    The compliance footer is assembled from the owner-configured sender
+    identity, so configuring a postal address changes every rendered body --
+    and the executor refuses to send a body whose hash is not on the approved
+    list. That would silently block already-signed actions the moment the
+    address was filled in, which is the opposite of what configuring it is for.
+
+    So: render with the current footer, and if that is not what was approved
+    while the older footer IS, send the older one. Nothing is self-approved --
+    the message still has to match a hash the owner signed, and an action with
+    no approved hash at all is unaffected and gets the current footer.
+    """
+    current = f"{core}\n\n{_signature(connection)}"
+    try:
+        approved = json.loads(action["approved_message_hashes_json"] or "[]")
+    except (TypeError, ValueError, IndexError):
+        return current
+    if not approved:
+        return current
+    if _sha256(subject + "\n\n" + current) in approved:
+        return current
+    legacy = f"{core}\n\nInvoiceWorkshop\n{FROM_ADDRESS}"
+    return legacy if legacy != current else current
 
 
 def _signature(connection: sqlite3.Connection) -> str:

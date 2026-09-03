@@ -248,3 +248,77 @@ class PolicyIntegrationTests(Fixture):
     def test_the_policy_version_moved_so_an_old_signature_cannot_cover_it(self):
         self.assertEqual(policy.POLICY_VERSION, 2)
         self.assertIn("jurisdiction_layer", policy.POLICY)
+
+
+class ApprovedBodyTests(Fixture):
+    """Configuring the sender identity must never invalidate a message the owner
+    has already signed. It did, silently, until this was pinned."""
+
+    def _action_with_approved_hash(self):
+        import growth_level1a as l
+        self.connection.execute(
+            """INSERT INTO level1a_templates
+                 (template_id, version, action_type, subject_template, opening_template,
+                  context_template, fit_template, close_template, max_body_characters, created_at)
+               VALUES ('human_resource', 1, 'resource_suggestion', 'Subject {subject_value}',
+                       '{opening_value}', '{context_value}', '{fit_value}', '{close_value}',
+                       900, ?)""", (utc_now(),))
+        prospect = self.prospect()
+        # load_action joins the qualification record, so the fixture needs one.
+        self.connection.execute(
+            """INSERT INTO prospect_qualification
+                 (prospect_id, channel, page_evidence, target_url, proposed_action,
+                  confidence, second_pass_pass, review_reason, reviewed_at)
+               VALUES (?, 'freelancer', 'evidence', 'https://invoiceworkshop.com/',
+                       'resource_suggestion', 'high', 1, 'ok', ?)""",
+            (prospect["id"], utc_now()))
+        self.connection.execute(
+            """INSERT INTO level1a_actions
+                 (id, prospect_id, organization, external_page_url, verified_contact_route,
+                  contact_kind, recipient, execution_class, action_type, target_url,
+                  allowed_intent, allowed_claim_keys_json, forbidden_claims_json,
+                  relevance_terms_json, template_id, template_version, subject_value,
+                  opening_value, context_value, fit_value, close_value, page_title,
+                  page_excerpt, created_at, updated_at)
+               VALUES (900, ?, 'Example', 'https://example.com/r', 'https://example.com/r',
+                       'email', 'hello@example.com', 'level1a_email', 'resource_suggestion',
+                       'https://invoiceworkshop.com/', 'suggest', '[]', '[]', '[]',
+                       'human_resource', 1, 'a', 'b', 'c', 'd', 'e', 't', 'x', ?, ?)""",
+            (prospect["id"], utc_now(), utc_now()))
+        self.connection.commit()
+        rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
+        self.connection.execute(
+            """UPDATE level1a_actions SET external_action_approved=1, message_approved=1,
+                   approved_message_hash=?, approved_message_hashes_json=? WHERE id=900""",
+            (rendered.message_hash, f'["{rendered.message_hash}"]'))
+        self.connection.commit()
+        return rendered.message_hash
+
+    def test_a_signed_message_still_matches_after_identity_is_configured(self):
+        import growth_level1a as l
+        approved = self._action_with_approved_hash()
+        self.complete_identity()
+        rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
+        self.assertEqual(rendered.message_hash, approved)
+
+    def test_an_unapproved_action_gets_the_compliant_footer(self):
+        import growth_level1a as l
+        self._action_with_approved_hash()
+        self.connection.execute(
+            "UPDATE level1a_actions SET approved_message_hashes_json='[]' WHERE id=900")
+        self.connection.commit()
+        self.complete_identity()
+        rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
+        self.assertIn("1 Example Street", rendered.body)
+        self.assertIn("Reply STOP", rendered.body)
+
+    def test_the_fallback_cannot_approve_anything_the_owner_did_not_sign(self):
+        """It only ever returns a body; the executor still refuses one whose
+        hash is not on the owner's list."""
+        import growth_level1a as l
+        self._action_with_approved_hash()
+        self.connection.execute(
+            "UPDATE level1a_actions SET approved_message_hashes_json='[\"deadbeef\"]' WHERE id=900")
+        self.connection.commit()
+        rendered = l.render_message(self.connection, l.load_action(self.connection, 900), 0)
+        self.assertNotEqual(rendered.message_hash, "deadbeef")
