@@ -110,8 +110,35 @@ class EntityTests(Fixture):
 
 
 class VerdictTests(Fixture):
-    def _assess(self, text, **over):
-        return compliance.assess_row(self.connection, self.prospect(**over), text)
+    def _assess(self, text, recipient="hello@example.com", **over):
+        """The recipient lives on the action, not on the prospect: `contact_method`
+        holds the route URL. Reading it from the wrong place reported every
+        organization as having no address."""
+        prospect = self.prospect(**over)
+        if recipient:
+            self.connection.execute(
+                """INSERT INTO level1a_templates
+                     (template_id, version, action_type, subject_template,
+                      opening_template, fit_template, close_template,
+                      max_body_characters, created_at)
+                   VALUES ('t', 1, 'resource_suggestion', 's', 'o', 'f', 'c', 900, ?)
+                   ON CONFLICT DO NOTHING""", (utc_now(),))
+            self.connection.execute(
+                """INSERT INTO level1a_actions
+                     (prospect_id, organization, external_page_url, verified_contact_route,
+                      contact_kind, recipient, execution_class, action_type, target_url,
+                      allowed_intent, allowed_claim_keys_json, forbidden_claims_json,
+                      relevance_terms_json, template_id, template_version, subject_value,
+                      opening_value, fit_value, close_value, page_title, page_excerpt,
+                      created_at, updated_at)
+                   VALUES (?, 'Example', ?, ?, 'email', ?, 'level1a_email',
+                           'resource_suggestion', 'https://invoiceworkshop.com/',
+                           'suggest', '[]', '[]', '[]', 't', 1, 's', 'o', 'f', 'c',
+                           'title', 'excerpt', ?, ?)""",
+                (prospect["id"], prospect["page_url"], prospect["page_url"], recipient,
+                 utc_now(), utc_now()))
+            self.connection.commit()
+        return compliance.assess_row(self.connection, prospect, text)
 
     def test_a_published_refusal_is_honoured_before_anything_else(self):
         result = self._assess("Austin, TX 78701. No unsolicited email, please.")

@@ -208,8 +208,11 @@ def assess_row(connection: sqlite3.Connection, prospect: sqlite3.Row,
     jurisdiction, jurisdiction_why = classify_jurisdiction(domain, page_text)
     entity, entity_why = classify_entity(page_text, title)
     refuses = bool(NO_UNSOLICITED.search(page_text))
-    recipient = (prospect["contact_method"] or "").strip()
-    published = bool(recipient) and "@" in recipient and recipient.lower() in page_text.lower()
+    # The address lives on the action, not on the prospect: `contact_method`
+    # holds the route URL. Reading it there reported every recipient as having
+    # no address, which made the Canadian publication test unanswerable.
+    recipient = _recipient_for(connection, prospect["id"])
+    published = bool(recipient) and recipient.lower() in page_text.lower()
 
     reasons: list[str] = []
     verdict = "ELIGIBLE"
@@ -265,12 +268,23 @@ def assess_row(connection: sqlite3.Connection, prospect: sqlite3.Row,
 
     if not recipient or "@" not in recipient:
         verdict = "REVIEW"
-        reasons.append("no email address recorded, so there is no route to assess")
+        reasons.append("no verified email address extracted for this organization, so "
+                       "there is no route to assess")
 
     return _finish(connection, prospect, domain, recipient, jurisdiction,
                    jurisdiction_why, entity, entity_why, published, refuses,
                    bool((prospect["why_fit"] or "").strip()), verdict,
                    reasons or ["every condition for this jurisdiction is evidenced"])
+
+
+def _recipient_for(connection: sqlite3.Connection, prospect_id: int) -> str:
+    """The verified email address for this organization, if one was extracted."""
+    row = connection.execute(
+        """SELECT recipient FROM level1a_actions
+            WHERE prospect_id=? AND contact_kind='email'
+              AND recipient IS NOT NULL AND recipient <> ''
+            ORDER BY id DESC LIMIT 1""", (prospect_id,)).fetchone()
+    return (row["recipient"] or "").strip().lower() if row else ""
 
 
 def _finish(connection, prospect, domain, recipient, jurisdiction, jurisdiction_why,
@@ -376,7 +390,7 @@ def assess_all(connection: sqlite3.Connection, limit: int = 50) -> dict:
             results.append(_finish(
                 connection, prospect,
                 canonical_domain(prospect["page_url"] or "") or prospect["domain"],
-                (prospect["contact_method"] or "").strip(),
+                _recipient_for(connection, prospect["id"]),
                 "UNKNOWN", "the page could not be read", "unknown",
                 "the page could not be read", False, False, False, "REVIEW",
                 ["the page could not be read, so neither jurisdiction nor recipient "
