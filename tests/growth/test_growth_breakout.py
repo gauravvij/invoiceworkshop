@@ -351,3 +351,41 @@ class DistributionDebtTests(Fixture):
         breakout.prepare(self.connection)
         bundle = breakout.bundle(self.connection, "alternativeto")["bundle"]
         self.assertIn("no repeated owner research", bundle["after_setup"])
+
+
+class BundleFreshnessTests(Fixture):
+    """The launch is two weeks out and the product changes weekly. A bundle
+    describing the product as it was three families ago is worse than none."""
+
+    def test_the_tool_list_is_read_from_the_live_routes(self):
+        tools = breakout.live_tools()
+        self.assertIn("invoices", tools)
+        self.assertIn("receipts", tools)
+        self.assertIn("credit notes", tools)
+        self.assertIn("timesheet invoices", tools)
+        self.assertIn("delivery notes", tools)
+
+    def test_the_copy_is_generated_not_stored(self):
+        source = Path(breakout.__file__).read_text()
+        # A module-level constant is a snapshot; these have to be functions so a
+        # `prepare` run picks up whatever shipped since the last one.
+        self.assertNotIn("POSITIONING = (", source)
+        self.assertNotIn("DESCRIPTION = (", source)
+        self.assertNotIn("MAKER_COMMENT = (", source)
+
+    def test_the_positioning_is_a_workspace_not_an_invoice_generator(self):
+        self.assertIn("paperwork workspace", breakout.positioning())
+        self.assertIn("stopped being an invoice generator", breakout.description())
+        self.assertIn("The free no-signup paperwork workspace", breakout.TAGLINE)
+
+    def test_the_maker_comment_names_specific_product_decisions(self):
+        comment = breakout.maker_comment()
+        self.assertIn("delivery note has no prices", comment)
+        self.assertIn("reconciles", comment)
+
+    def test_re_preparing_refreshes_a_stale_bundle(self):
+        breakout.evaluate(self.connection)
+        breakout.prepare(self.connection)
+        first = breakout.bundle(self.connection, "ph-launch")["bundle"]
+        self.assertEqual(first["live_tools"], breakout.live_tools())
+        self.assertIn("does not go stale", first["positioning_note"])

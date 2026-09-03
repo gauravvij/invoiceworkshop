@@ -396,29 +396,72 @@ def evaluate(connection: sqlite3.Connection) -> dict:
 # Preparation: everything a human would otherwise have to write
 # ---------------------------------------------------------------------------
 
-TAGLINE = "Free invoices, receipts and credit notes. No signup, nothing uploaded."
+TAGLINE = "The free no-signup paperwork workspace for a small business."
 
-POSITIONING = (
-    "InvoiceWorkshop is a free business-document workspace that runs entirely in the "
-    "browser. Invoices, quotations, estimates, work orders, purchase orders, receipts "
-    "and credit notes, with saved customers and line items, live totals, per-line tax "
-    "and instant PDF download. No account, no upload, no watermark: the documents never "
-    "leave the device they are made on."
-)
+# What the site actually offers, read from the live routes rather than written
+# out here. A launch that describes the product as it was three families ago is
+# worse than no launch, and this is the part that goes stale first.
+TOOL_NAMES = {
+    "/": "invoices",
+    "/quotation-generator/": "quotations",
+    "/estimate-generator/": "estimates",
+    "/work-order-generator/": "work orders",
+    "/purchase-order-generator/": "purchase orders",
+    "/proforma-invoice-generator/": "proforma invoices",
+    "/receipt-generator/": "receipts",
+    "/credit-note-generator/": "credit notes",
+    "/timesheet-invoice-generator/": "timesheet invoices",
+    "/delivery-note-template/": "delivery notes",
+    "/progress-draw-schedule/": "construction progress draws with retainage",
+}
 
-DESCRIPTION = (
-    "Most free invoice tools ask for an email before showing you anything, put a "
-    "watermark on the PDF, or store your customer list on someone else's server. "
-    "InvoiceWorkshop does none of those. Open it, fill it in, download the PDF.\n\n"
-    "It covers the documents a small business actually cycles through rather than "
-    "invoices alone: quote a job, convert the quotation into an invoice, receipt the "
-    "payment when it lands, and issue a credit note if something comes back. Business "
-    "details, customers and common line items are remembered on the device, so the "
-    "second document takes seconds. There are country presets for UK VAT, India GST, "
-    "Australian tax invoices and Canadian GST/HST, each checked against the tax "
-    "authority's own guidance rather than a competitor's blog.\n\n"
-    "Free, no signup, no upload, no watermark."
-)
+
+def live_tools() -> list[str]:
+    """The document types currently shipped, in the order they are listed."""
+    from growth_opportunities import CANONICAL
+    routes = {url.replace("https://invoiceworkshop.com", "") or "/" for url in CANONICAL}
+    return [name for path, name in TOOL_NAMES.items() if path in routes]
+
+
+def _tool_sentence() -> str:
+    tools = live_tools()
+    if not tools:
+        return "business documents"
+    return ", ".join(tools[:-1]) + f" and {tools[-1]}" if len(tools) > 1 else tools[0]
+
+
+def positioning() -> str:
+    return (
+        "InvoiceWorkshop is a free business-paperwork workspace that runs entirely in "
+        f"the browser: {_tool_sentence()}. Saved customers and line items, live totals, "
+        "per-line tax, conversion between documents, and instant PDF download. No "
+        "account, no upload, no watermark -- the documents never leave the device they "
+        "are made on."
+    )
+
+
+def description() -> str:
+    return (
+        "Most free invoice tools want an email address before they will show you a "
+        "document, watermark the PDF, or keep your customer list on someone else's "
+        "server. InvoiceWorkshop does none of those. Open it, fill it in, download the "
+        "PDF.\n\n"
+        "It stopped being an invoice generator some time ago. It now covers the "
+        f"paperwork a small business actually cycles through -- {_tool_sentence()} -- "
+        "and moves between them: quote a job, turn the quotation into an invoice, "
+        "receipt the payment when it lands, credit it if something comes back. Your "
+        "business details, customers and common items are remembered on the device, so "
+        "the second document takes seconds.\n\n"
+        "The details are the point. Tax is computed per line and rounded there, the way "
+        "an accountant checks it. A delivery note carries no prices, because it is read "
+        "by whoever signs for the goods. A timesheet totals the hours as well as the "
+        "money, and the two reconcile. The construction draw schedule sums retainage "
+        "from the column rather than taking it on the total. There are country presets "
+        "for UK VAT, India GST, Australian tax invoices and Canadian GST/HST, each "
+        "checked against the tax authority's own guidance rather than a competitor's "
+        "blog -- which turned up three things we had wrong.\n\n"
+        "Free, no signup, no upload, no watermark."
+    )
 
 ASSET_LIST = (
     "240x240 icon (site mark on the brand ground)",
@@ -430,18 +473,24 @@ ASSET_LIST = (
     "Optional 45-second screen recording: quote -> invoice -> receipt, no narration",
 )
 
-MAKER_COMMENT = (
-    "I built this because every free invoice generator I tried wanted an email address "
-    "before it would show me a document, and half of them watermarked the PDF. This one "
-    "runs entirely in your browser -- your business details, customers and documents are "
-    "saved on your device and never uploaded, which is also why there is no account.\n\n"
-    "It has grown past invoices: quotations, estimates, work orders, purchase orders, "
-    "receipts and credit notes, with conversion between them so you are not retyping. "
-    "The country presets (UK VAT, India GST, Australia, Canada) were checked against the "
-    "tax authorities' own guidance -- I found three things I had got wrong from secondary "
-    "sources, which is its own argument for reading the primary one.\n\n"
-    "Happy to answer anything about how the local-only storage works."
-)
+def maker_comment() -> str:
+    return (
+        "I built this because every free invoice generator I tried wanted an email "
+        "address before it would show me a document, and half of them watermarked the "
+        "PDF. This one runs entirely in your browser -- your business details, "
+        "customers and documents are saved on your device and never uploaded, which is "
+        "also why there is no account.\n\n"
+        f"It has grown well past invoices: {_tool_sentence()}, with conversion between "
+        "them so you are not retyping. The parts I am most pleased with are the "
+        "unglamorous ones -- the delivery note has no prices on it because it gets read "
+        "in a loading bay, the timesheet's hours total reconciles with its money total, "
+        "and the construction draw schedule sums retainage down the column instead of "
+        "taking it off the total, which is the difference a reviewer actually finds.\n\n"
+        "The country presets were checked against the tax authorities' own guidance "
+        "rather than secondary sources. That turned up three things I had wrong, which "
+        "is its own argument for reading the primary source.\n\n"
+        "Happy to answer anything about how the local-only storage works."
+    )
 
 
 # The one launch with a date. Recorded here rather than left in a plan, so the
@@ -572,8 +621,9 @@ def bundle_for(destination: dict) -> dict:
         "submit_url": destination["submit_url"] or destination["url"],
         "tracked_url": tracked_url("/", key),
         "tagline": TAGLINE,
-        "positioning": POSITIONING,
-        "description": DESCRIPTION,
+        "positioning": positioning(),
+        "description": description(),
+        "live_tools": live_tools(),
         "assets_needed": list(ASSET_LIST),
         "requirements_verified_on": destination["verified_on"],
         "what_the_owner_must_do": destination.get("owner_action", ""),
@@ -582,8 +632,13 @@ def bundle_for(destination: dict) -> dict:
     }
     if key == "ph-launch":
         common.update({
-            "maker_comment": MAKER_COMMENT,
-            "topics": ["Productivity", "SaaS", "Design Tools", "Finance"],
+            "maker_comment": maker_comment(),
+            "topics": ["Productivity", "SaaS", "Finance", "Small Business"],
+            "positioning_note":
+                "Presented as a paperwork workspace, not as another invoice generator. "
+                "The tool list is read from the live routes when the bundle is written, "
+                "so it does not go stale between now and launch day; re-run `prepare` "
+                "before launching and re-read this.",
             "launch_day_advice": "Tuesday to Thursday, live at 12:01am PST",
             "what_the_owner_must_do":
                 "Sign in to a Product Hunt account that is at least 30 days old and has "
@@ -739,6 +794,19 @@ FAMILY_AUDIENCE = {
     "asset-progress-draw": ("contractor_creator", "https://invoiceworkshop.com/progress-draw-schedule/"),
 }
 
+# Families whose audience exists but has not been researched yet, with the
+# reason. Distinguished from a family nobody has thought about at all: the debt
+# is the same but what would clear it is different, and a message that says
+# "no audience segment chosen" for a UK VAT page is not actually true.
+PENDING_SEGMENT = {
+    "locale-gb": "UK bookkeeping and small-business creators. The researched segments "
+                 "are US-centric, and recommending a UK VAT page to a US newsletter "
+                 "would be a worse use of the contact than not sending it",
+    "locale-in": "India GST practitioners and small-business creators",
+    "locale-au": "Australian bookkeeping and trades creators",
+    "locale-ca": "Canadian small-business and bookkeeping creators",
+}
+
 # How much distribution a shipped family owes before it counts as launched.
 MIN_TARGETS_PER_FAMILY = 20
 MIN_LAUNCH_SURFACES = 3
@@ -761,8 +829,11 @@ def distribution_debt(connection: sqlite3.Connection) -> dict:
             "SELECT family_key, name FROM page_families WHERE status='built'"):
         audience = FAMILY_AUDIENCE.get(row["family_key"])
         if audience is None:
-            debts.append({"family": row["family_key"], "name": row["name"],
-                          "owes": "no audience segment chosen for it at all"})
+            pending = PENDING_SEGMENT.get(row["family_key"])
+            debts.append({
+                "family": row["family_key"], "name": row["name"],
+                "owes": (f"needs a segment that has not been researched: {pending}"
+                         if pending else "no audience segment chosen for it at all")})
             continue
         segment, target = audience
         available = int(connection.execute(
