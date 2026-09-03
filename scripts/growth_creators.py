@@ -175,6 +175,28 @@ PLATFORM_HOSTS = ("twitter.com", "x.com", "instagram.com", "facebook.com", "tikt
                   "linkedin.com", "youtube.com", "reddit.com", "medium.com", "threads.net")
 
 
+def _is_vendor(page_url: str, title: str, text: str) -> tuple[bool, str]:
+    """A company selling its own invoicing product is not a creator.
+
+    Reuses the competitor list and the vendor-content detector the backlink
+    engine already applies, because the mistake is the same one: an unpaid tool
+    suggestion sent to a competitor's content team, or to a large SaaS vendor
+    whose blog exists to sell their own product, is a waste of the contact and
+    reads as exactly the kind of mail this policy is written to avoid sending.
+    """
+    from growth_backlink_engine import _is_vendor_content
+    from growth_backlink_policy import BLOCKED_DOMAINS, COMPETITORS
+
+    domain = canonical_domain(page_url)
+    for blocked in set(COMPETITORS) | set(BLOCKED_DOMAINS):
+        if domain == blocked or domain.endswith("." + blocked):
+            return True, f"{domain} sells a competing product"
+    if _is_vendor_content(text, title):
+        return True, ("the page reads as vendor content for the site's own product "
+                      "rather than as editorial recommendation")
+    return False, ""
+
+
 def _provider():
     from growth_backlink_engine import provider
     return provider()
@@ -318,6 +340,16 @@ def fetch(connection: sqlite3.Connection, limit: int = 25) -> dict:
         parser = PageParser()
         parser.feed(body)
         text = parser.body_text
+        vendor, why = _is_vendor(row["page_url"], parser.title, text)
+        if vendor:
+            connection.execute(
+                """UPDATE creator_prospects
+                      SET status='rejected', http_status=?, fetched_at=?,
+                          rejection_reason=?, updated_at=?
+                    WHERE id=?""",
+                (status, now, why, now, row["id"]))
+            failed += 1
+            continue
         contact_url, contact_kind, recipient = find_contact_route(row["page_url"], parser)
         audience, evidence = _audience(text)
         connection.execute(

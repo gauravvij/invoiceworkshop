@@ -221,3 +221,33 @@ class PolicyTests(Fixture):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VendorTests(Fixture):
+    """A company selling its own invoicing product is not a creator, and an
+    unpaid tool suggestion to its content team is a wasted contact."""
+
+    def test_a_named_competitor_is_rejected_by_domain(self):
+        vendor, why = creators._is_vendor(
+            "https://www.billdu.com/blog/best-invoicing-software/", "Best invoicing", "")
+        self.assertTrue(vendor)
+        self.assertIn("sells a competing product", why)
+
+    def test_vendor_content_is_rejected_on_the_page_itself(self):
+        vendor, why = creators._is_vendor(
+            "https://someapp.example/blog/best-invoice-tools",
+            "Best Invoice Software for Freelancers", "")
+        self.assertTrue(vendor)
+        self.assertIn("vendor content", why)
+
+    def test_a_genuine_creator_page_is_not_flagged(self):
+        vendor, _ = creators._is_vendor(
+            "https://example.org/blog/tools-i-use",
+            "The tools I use to run my freelance practice",
+            "Here are the tools I use. I pay for none of these and nobody paid me.")
+        self.assertFalse(vendor)
+
+    def test_the_check_reuses_the_existing_engine_rather_than_a_second_list(self):
+        source = Path(creators.__file__).read_text()
+        self.assertIn("from growth_backlink_policy import BLOCKED_DOMAINS, COMPETITORS", source)
+        self.assertIn("from growth_backlink_engine import _is_vendor_content", source)
