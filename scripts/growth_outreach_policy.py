@@ -30,7 +30,7 @@ from growth_level1a_admin import (
     verify_signature,
 )
 
-POLICY_VERSION = 1
+POLICY_VERSION = 2
 
 # The policy the owner is asked to sign. Everything here is machine-checkable:
 # no clause depends on judgement at execution time.
@@ -38,6 +38,41 @@ POLICY: dict = {
     "policy_version": POLICY_VERSION,
     "channel": "verified_public_business_email",
     "purpose": "relevant resource or tool suggestion",
+    # A publicly published business address is not automatically contactable
+    # everywhere. Three regimes are handled explicitly and everything else goes
+    # to a person; the layer can block a send and can never authorise one that
+    # the quality gates would have refused.
+    "jurisdiction_layer": {
+        "supported": ["US", "UK", "CA"],
+        "everything_else": "REVIEW",
+        "unknown_jurisdiction": "REVIEW",
+        "evidence_read_from_the_targets_own_pages": True,
+        "US": {
+            "accurate_from_and_reply_to_identity": True,
+            "non_deceptive_subject": True,
+            "sender_identified_in_the_message": True,
+            "working_opt_out": True,
+            "physical_postal_address": True,
+            "postal_address_never_invented": True,
+            "suppression_honoured": True,
+            "blocked_until_identity_configured": True,
+        },
+        "UK": {
+            "corporate_subscriber": "eligible",
+            "sole_trader_or_individual_subscriber": "REVIEW",
+            "status_not_established": "REVIEW",
+        },
+        "CA": {
+            "basis": "implied consent through conspicuous publication",
+            "address_published_by_the_organization_itself": True,
+            "no_statement_refusing_unsolicited_messages": True,
+            "message_relevant_to_the_recipients_business_role": True,
+            "source_url_and_observation_timestamp_stored": True,
+            "any_condition_unevidenced": "REVIEW",
+        },
+        "published_refusal_is_honoured_in_every_jurisdiction": True,
+        "not_legal_advice_a_conservative_execution_gate": True,
+    },
     "recipient_requirements": {
         "must_be_published_by_target_organization": True,
         "must_be_organization_address": True,
@@ -48,6 +83,7 @@ POLICY: dict = {
         "forbidden_local_parts": ["ceo", "founder", "owner", "president", "director"],
     },
     "prospect_requirements": {
+        "must_pass_the_jurisdiction_layer": True,
         "must_be_in_reviewed_code_allowlist": True,
         "must_have_real_source_page": True,
         "must_pass_page_verification": True,
@@ -114,6 +150,15 @@ def signing_payload(policy: dict | None = None) -> str:
         "signature only when every requirement below holds. Anything else escalates.",
         "",
     ]
+    lines += ["", "JURISDICTION LAYER (can block a send; can never authorise one):"]
+    for key, value in sorted(policy["jurisdiction_layer"].items()):
+        if isinstance(value, dict):
+            lines.append(f"  [{key}]")
+            for inner, setting in sorted(value.items()):
+                lines.append(f"    {inner}={setting}")
+        else:
+            lines.append(f"  {key}={value}")
+    lines.append("")
     for group in ("recipient_requirements", "prospect_requirements", "message_constraints"):
         lines.append(f"[{group}]")
         for key, value in sorted(policy[group].items()):
@@ -194,6 +239,15 @@ def admit(connection: sqlite3.Connection, action_id: int) -> dict:
     expires = action["verification_expires_at"]
     checks["page_verification_current"] = bool(expires and expires > now)
 
+    # The jurisdiction layer. A prospect with no assessment is not assumed fine:
+    # an unassessed recipient is exactly the case this exists to catch.
+    assessment = connection.execute(
+        """SELECT c.verdict, c.jurisdiction, c.reasons FROM outreach_compliance c
+             JOIN level1a_actions a ON a.prospect_id = c.prospect_id
+            WHERE a.id = ?""", (action_id,)).fetchone()
+    checks["compliance_assessed"] = assessment is not None
+    checks["compliance_eligible"] = bool(assessment and assessment["verdict"] == "ELIGIBLE")
+
     # One organization, one contact — checked at organization level, not address.
     already = connection.execute(
         """SELECT 1 FROM level1a_action_audit aa JOIN level1a_actions a ON a.id=aa.action_id
@@ -213,6 +267,12 @@ def admit(connection: sqlite3.Connection, action_id: int) -> dict:
         "admitted": not failed,
         "reason": None if not failed else "failed policy checks: " + ", ".join(failed),
         "checks": checks,
+        "compliance": ({"verdict": assessment["verdict"],
+                        "jurisdiction": assessment["jurisdiction"],
+                        "reasons": assessment["reasons"]} if assessment else
+                       {"verdict": "UNASSESSED",
+                        "reasons": "no jurisdiction assessment on record for this "
+                                   "prospect, so nothing about its route is settled"}),
         "policy_version": active["version"],
         "policy_hash": active["hash"],
     }

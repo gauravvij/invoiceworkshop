@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '23')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '24')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1313,4 +1313,48 @@ CREATE TABLE IF NOT EXISTS product_distribution (
   priority_rank        INTEGER,
   priority_reason      TEXT NOT NULL DEFAULT '',
   updated_at           TEXT NOT NULL
+);
+
+-- Per-recipient compliance assessment, kept beside the outreach audit so the
+-- evidence a send relied on survives the send. A publicly published business
+-- address is not automatically contactable everywhere, and the record of WHY a
+-- particular message was considered lawful is the part that matters later.
+CREATE TABLE IF NOT EXISTS outreach_compliance (
+  prospect_id      INTEGER PRIMARY KEY REFERENCES prospects(id),
+  domain           TEXT NOT NULL,
+  recipient        TEXT,
+  jurisdiction     TEXT NOT NULL DEFAULT 'UNKNOWN'
+                     CHECK (jurisdiction IN ('US', 'UK', 'CA', 'OTHER', 'UNKNOWN')),
+  jurisdiction_evidence TEXT NOT NULL DEFAULT '',
+  entity_type      TEXT NOT NULL DEFAULT 'unknown'
+                     CHECK (entity_type IN ('corporate', 'sole_trader_or_individual',
+                                            'unknown')),
+  entity_evidence  TEXT NOT NULL DEFAULT '',
+  -- Canada: implied consent through conspicuous publication has to be evidenced,
+  -- not assumed, and the evidence has to be dated.
+  address_published_by_org INTEGER NOT NULL DEFAULT 0
+                     CHECK (address_published_by_org IN (0, 1)),
+  no_unsolicited_statement INTEGER NOT NULL DEFAULT 0
+                     CHECK (no_unsolicited_statement IN (0, 1)),
+  relevant_to_role INTEGER NOT NULL DEFAULT 0 CHECK (relevant_to_role IN (0, 1)),
+  evidence_source_url TEXT NOT NULL DEFAULT '',
+  evidence_observed_at TEXT,
+  verdict          TEXT NOT NULL DEFAULT 'REVIEW'
+                     CHECK (verdict IN ('ELIGIBLE', 'REVIEW', 'REJECT')),
+  reasons          TEXT NOT NULL DEFAULT '',
+  assessed_at      TEXT NOT NULL
+);
+
+-- Sender identity the messages carry. Kept in the database rather than in code
+-- so a missing postal address is a visible blocker instead of a silent omission.
+CREATE TABLE IF NOT EXISTS sender_identity (
+  id               INTEGER PRIMARY KEY CHECK (id = 1),
+  legal_name       TEXT NOT NULL DEFAULT '',
+  from_name        TEXT NOT NULL DEFAULT '',
+  from_address     TEXT NOT NULL DEFAULT '',
+  reply_to         TEXT NOT NULL DEFAULT '',
+  postal_address   TEXT NOT NULL DEFAULT '',
+  optout_line      TEXT NOT NULL DEFAULT '',
+  configured_by    TEXT NOT NULL DEFAULT '',
+  updated_at       TEXT NOT NULL DEFAULT ''
 );

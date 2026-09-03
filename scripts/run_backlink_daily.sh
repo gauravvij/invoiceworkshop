@@ -89,6 +89,10 @@ fi
 # nothing. Only the owner's signature can widen the channel.
 "$PYTHON" scripts/growth_allocation.py outreach-calibration
 
+# Jurisdiction and recipient-type assessment for every qualified prospect,
+# re-read from their own pages. Read-only, and it can only ever block a send.
+"$PYTHON" scripts/growth_compliance.py assess --limit 25
+
 # --- 6. the 90-day experiment ----------------------------------------------
 # Re-run the admission gate so any new family evidence is judged, then report
 # where the trajectory stands. Both are deterministic and cost nothing; the

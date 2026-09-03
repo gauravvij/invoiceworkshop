@@ -786,9 +786,28 @@ def render_message(connection: sqlite3.Connection, action: sqlite3.Row, attempt_
         fit = str(action["fit_template"]).format_map(values).strip()
         close = str(action["close_template"]).format_map(values).strip()
         core = f"{opening}\n\n{context}\n\n{fit}\n\n{target}\n\n{close}"
-    body = f"{core}\n\nInvoiceWorkshop\n{FROM_ADDRESS}"
+    body = f"{core}\n\n{_signature(connection)}"
     digest = _sha256(subject + "\n\n" + body)
     return RenderedMessage(int(action["id"]), attempt_number, subject, body, digest)
+
+
+def _signature(connection: sqlite3.Connection) -> str:
+    """Who sent this, how to stop it, and where we are.
+
+    Assembled from the owner-configured sender identity rather than hardcoded,
+    so a missing postal address shows up as a compliance block on the recipients
+    that need one instead of being quietly left out of the footer.
+    """
+    from growth_compliance import sender_identity
+
+    identity = sender_identity(connection)
+    lines = [identity.get("legal_name") or FROM_NAME, identity["from_address"]]
+    if identity.get("postal_address"):
+        lines.append(identity["postal_address"])
+    if identity.get("optout_line"):
+        lines.append("")
+        lines.append(identity["optout_line"])
+    return "\n".join(lines)
 
 
 def _validate_claim_support(
