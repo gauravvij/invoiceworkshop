@@ -277,8 +277,10 @@ DOCUMENTS = [
                                  "carrier and consignment reference"),
             _d("totals_logic", "Totals are unit counts, not money"),
         ],
-        "product_change": "new document kind with a priceless line model and a "
-                          "shipped/ordered quantity pair",
+        "product_change": "new document kind with a priceless line model, an "
+                          "ordered/delivered quantity pair with the back-order shown per "
+                          "line, a delivery address separate from the billing address, "
+                          "and unit-count totals in place of money totals",
     },
     {
         "key": "doc-timesheet-invoice", "expected_value": 5.0,
@@ -296,7 +298,9 @@ DOCUMENTS = [
             _d("totals_logic", "Total hours as well as total money, and both must reconcile"),
             _d("unit_defaults", "Hours as the default unit with quarter-hour increments"),
         ],
-        "product_change": "new document kind with dated hour lines and an hours subtotal",
+        "product_change": "new document kind with dated hour lines, hours as the default "
+                          "unit, and an hours subtotal summed from the lines at "
+                          "quarter-hour precision alongside the money subtotal",
     },
 ]
 

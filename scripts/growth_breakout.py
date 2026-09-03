@@ -609,7 +609,67 @@ def bundle_for(destination: dict) -> dict:
         common["what_the_owner_must_do"] = (
             "Start the submission with the product name and URL -- no account is needed "
             "for that step -- then sign up to save it. Do not pay for fast-track.")
+    setup = OWNER_SETUP.get(key)
+    if setup:
+        common["one_time_setup"] = setup["steps"]
+        common["minutes"] = setup["minutes"]
+        common["after_setup"] = setup["after_setup"]
     return common
+
+
+# The smallest one-time procedure for each destination that needs an account,
+# and what stops needing the owner once it exists. The point of recording the
+# second half is that routine updates must not come back to them.
+OWNER_SETUP = {
+    "ph-launch": {
+        "minutes": 20,
+        "steps": [
+            "Create or sign in to a personal Product Hunt account. It must be at "
+            "least ONE WEEK old on launch day -- create it today and 15 September is "
+            "comfortably clear.",
+            "Complete the onboarding prompts; a zero-activity account is weaker.",
+            "On launch day: Submit -> New Product, paste the prepared tagline, "
+            "description, topics and thumbnail, then post the maker comment.",
+            "Post yourself. A hunter is unnecessary, and paying one is against the "
+            "guidelines and can get the product removed.",
+        ],
+        "after_setup": ("nothing recurring. The launch is a one-off event; results are "
+                        "read from our own analytics by utm_source, not from the "
+                        "platform, so no further access is needed"),
+    },
+    "alternativeto": {
+        "minutes": 5,
+        "steps": [
+            "Create an account and add the app.",
+            "Paste the prepared description, categories and alternative-to list.",
+            "Upload two screenshots (the editor, and a finished PDF).",
+        ],
+        "after_setup": ("listing edits and new-tool entries can be prepared here and "
+                        "pasted; no repeated owner research is needed"),
+    },
+    "saashub": {
+        "minutes": 8,
+        "steps": [
+            "Create an account and submit the product URL.",
+            "Choose the prepared categories and paste the competitor list -- SaaSHub "
+            "prioritises submissions that name competitors.",
+            "Verify the product from an @invoiceworkshop.com address when prompted; "
+            "unverified submissions sit lower in the approval queue.",
+        ],
+        "after_setup": ("once verified, profile updates are a paste. The approval queue "
+                        "is theirs, not ours, so nothing here is worth chasing"),
+    },
+    "uneed": {
+        "minutes": 5,
+        "steps": [
+            "Open the submit page and enter the product name and URL. No account is "
+            "needed for this step; it scrapes the page.",
+            "Sign up when prompted to save the listing.",
+            "Decline the paid fast-track and queue-skip options.",
+        ],
+        "after_setup": "none; a listing is a one-time submission",
+    },
+}
 
 
 def prepare(connection: sqlite3.Connection, *, limit: int = 10) -> dict:
@@ -665,6 +725,76 @@ def bundle(connection: sqlite3.Connection, key: str) -> dict:
     return {"name": row["name"], "execution_class": row["execution_class"],
             "execution_reason": row["execution_reason"],
             "bundle": json.loads(row["bundle_json"] or "{}")}
+
+
+# Which creator segment each shipped product family should be put in front of,
+# and the page a message about it would point at. A family with no entry here
+# has shipped without anyone deciding who it is for, which is the condition
+# `distribution_debt` exists to surface.
+FAMILY_AUDIENCE = {
+    "doc-receipt": ("freelancer_newsletter", "https://invoiceworkshop.com/receipt-generator/"),
+    "doc-credit-note": ("bookkeeping_newsletter", "https://invoiceworkshop.com/credit-note-generator/"),
+    "doc-timesheet-invoice": ("freelancer_creator", "https://invoiceworkshop.com/timesheet-invoice-generator/"),
+    "doc-delivery-note": ("small_business_newsletter", "https://invoiceworkshop.com/delivery-note-template/"),
+    "asset-progress-draw": ("contractor_creator", "https://invoiceworkshop.com/progress-draw-schedule/"),
+}
+
+# How much distribution a shipped family owes before it counts as launched.
+MIN_TARGETS_PER_FAMILY = 20
+MIN_LAUNCH_SURFACES = 3
+
+
+def distribution_debt(connection: sqlite3.Connection) -> dict:
+    """Product families that shipped and were never put in front of anyone.
+
+    Building a generator and publishing it is half the work; the other half is
+    that somebody who needs it finds out. This makes the second half checkable
+    rather than aspirational, so a family cannot quietly count as launched
+    because its page went live.
+    """
+    surfaces = int(connection.execute(
+        """SELECT COUNT(*) FROM breakout_destinations
+            WHERE gate_status='admitted' AND channel IN ('launch_platforms', 'directories')"""
+    ).fetchone()[0])
+    debts = []
+    for row in connection.execute(
+            "SELECT family_key, name FROM page_families WHERE status='built'"):
+        audience = FAMILY_AUDIENCE.get(row["family_key"])
+        if audience is None:
+            debts.append({"family": row["family_key"], "name": row["name"],
+                          "owes": "no audience segment chosen for it at all"})
+            continue
+        segment, target = audience
+        available = int(connection.execute(
+            """SELECT COUNT(*) FROM creator_prospects
+                WHERE segment=? AND status='qualified'""", (segment,)).fetchone()[0])
+        missing = []
+        if available < MIN_TARGETS_PER_FAMILY:
+            missing.append(f"{available} qualified {segment} targets, "
+                           f"{MIN_TARGETS_PER_FAMILY} wanted")
+        if surfaces < MIN_LAUNCH_SURFACES:
+            missing.append(f"{surfaces} admitted launch or directory surfaces, "
+                           f"{MIN_LAUNCH_SURFACES} wanted")
+        if missing:
+            debts.append({"family": row["family_key"], "name": row["name"],
+                          "segment": segment, "target_url": target,
+                          "owes": "; ".join(missing)})
+    if debts:
+        record_escalation(
+            connection, kind="distribution_debt", severity="info",
+            subject=f"{len(debts)} shipped product famil(ies) have no distribution behind them",
+            detail=("A generator that nobody is told about is half-finished. Each of these "
+                    "shipped and is live, and the audience research or launch surface that "
+                    "would put it in front of someone does not exist yet: "
+                    + "; ".join(f"{d['name']} ({d['owes']})" for d in debts[:6])),
+            fingerprint="distribution_debt")
+    else:
+        from growth_common import resolve_escalation
+        resolve_escalation(connection, "distribution_debt")
+    return {"families_with_debt": debts, "launch_surfaces_admitted": surfaces,
+            "rule": (f"a shipped family owes {MIN_TARGETS_PER_FAMILY} qualified audience "
+                     f"targets and {MIN_LAUNCH_SURFACES} launch surfaces before it counts "
+                     "as launched rather than merely published")}
 
 
 def ranked(connection: sqlite3.Connection, limit: int = 20) -> list[dict]:
@@ -763,6 +893,8 @@ def main() -> None:
     launch.add_argument("--account-created-on",
                         help="ISO date the owner's Product Hunt account was created")
     commands.add_parser("launch-results", help="What the launch actually sent")
+    commands.add_parser("distribution-debt",
+                        help="Shipped families nobody has been told about")
     prep = commands.add_parser("prepare", help="Write the submission bundles")
     prep.add_argument("--limit", type=int, default=10)
     show = commands.add_parser("bundle", help="Print one prepared submission")
@@ -785,6 +917,8 @@ def main() -> None:
         result = launch_plan(connection, account_created_on=args.account_created_on)
     elif args.command == "launch-results":
         result = launch_results(connection)
+    elif args.command == "distribution-debt":
+        result = distribution_debt(connection)
     else:
         result = report(connection)
     print(json.dumps(result, indent=2, sort_keys=True, default=str))

@@ -243,3 +243,111 @@ class AllocationTests(Fixture):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LaunchTests(Fixture):
+    def test_the_eligibility_rule_is_one_week_not_thirty_days(self):
+        """The 30-day figure came from a third-party launch guide, not from
+        Product Hunt, and it was wrong."""
+        self.assertEqual(breakout.PRODUCT_HUNT_LAUNCH["account_min_age_days"], 7)
+        source = Path(breakout.__file__).read_text()
+        self.assertIn("ONE WEEK old", source)
+        self.assertNotIn("30+ days old", source)
+
+    def test_the_target_date_is_a_tuesday(self):
+        from datetime import date
+        self.assertEqual(date.fromisoformat(
+            breakout.PRODUCT_HUNT_LAUNCH["planned_for"]).weekday(), 1)
+
+    def test_without_an_account_date_the_launch_is_blocked_not_assumed_ready(self):
+        plan = breakout.launch_plan(self.connection)
+        self.assertEqual(plan["status"], "blocked")
+        self.assertIn("cannot be verified", plan["eligibility"])
+
+    def test_an_account_created_in_time_clears_the_date(self):
+        plan = breakout.launch_plan(self.connection, account_created_on="2026-09-03")
+        self.assertEqual(plan["status"], "planned")
+        self.assertIn("clear for the target date", plan["eligibility"])
+
+    def test_an_account_created_too_late_blocks_and_names_the_earliest_date(self):
+        plan = breakout.launch_plan(self.connection, account_created_on="2026-09-12")
+        self.assertEqual(plan["status"], "blocked")
+        self.assertIn("2026-09-19", plan["eligibility"])
+
+    def test_the_launch_is_not_judged_on_upvotes(self):
+        plan = breakout.launch_plan(self.connection)
+        self.assertNotIn("upvotes", plan["judged_on"])
+        self.assertIn("tool_starts", plan["judged_on"])
+        self.assertIn("pdf_downloads", plan["judged_on"])
+
+    def test_every_tool_page_gets_its_own_tracked_url(self):
+        urls = breakout.launch_plan(self.connection)["tracked_urls"]
+        self.assertEqual(len(set(urls.values())), len(urls))
+        for url in urls.values():
+            self.assertIn("utm_source=producthunt", url)
+
+    def test_results_come_from_our_analytics_not_the_platform(self):
+        breakout.launch_plan(self.connection)
+        result = breakout.launch_results(self.connection)
+        self.assertIn("landing_sessions", result)
+        self.assertIn("completion_rate", result)
+        self.assertNotIn("upvotes", result)
+
+
+class DistributionDebtTests(Fixture):
+    def _built(self, family_key: str, name: str = "Family"):
+        now = utc_now()
+        self.connection.execute(
+            """INSERT INTO page_families
+                 (family_key, dimension, name, demand_evidence, differentiation,
+                  product_change, status, created_at, updated_at)
+               VALUES (?, 'document', ?, 'demand', '[]', 'change', 'built', ?, ?)""",
+            (family_key, name, now, now))
+        self.connection.commit()
+
+    def test_a_family_that_shipped_with_no_audience_research_owes_distribution(self):
+        self._built("doc-receipt", "Receipt generator")
+        debt = breakout.distribution_debt(self.connection)
+        self.assertEqual(len(debt["families_with_debt"]), 1)
+        self.assertIn("qualified freelancer_newsletter targets",
+                      debt["families_with_debt"][0]["owes"])
+
+    def test_a_family_with_no_audience_chosen_at_all_is_named_as_such(self):
+        self._built("doc-mystery", "Something")
+        debt = breakout.distribution_debt(self.connection)
+        self.assertIn("no audience segment chosen",
+                      debt["families_with_debt"][0]["owes"])
+
+    def test_the_debt_is_escalated_so_it_cannot_be_quietly_skipped(self):
+        self._built("doc-receipt")
+        breakout.distribution_debt(self.connection)
+        row = self.connection.execute(
+            "SELECT detail FROM escalations WHERE kind='distribution_debt'").fetchone()
+        self.assertIsNotNone(row)
+        self.assertIn("half-finished", row["detail"])
+
+    def test_enough_audience_and_surfaces_clears_it(self):
+        self._built("doc-receipt")
+        breakout.evaluate(self.connection)
+        now = utc_now()
+        for n in range(breakout.MIN_TARGETS_PER_FAMILY):
+            self.connection.execute(
+                """INSERT INTO creator_prospects
+                     (domain, page_url, segment, status, discovered_at, updated_at)
+                   VALUES (?, ?, 'freelancer_newsletter', 'qualified', ?, ?)""",
+                (f"e{n}.org", f"https://e{n}.org/", now, now))
+        self.connection.commit()
+        self.assertEqual(breakout.distribution_debt(self.connection)["families_with_debt"], [])
+
+    def test_every_owner_required_destination_has_a_setup_procedure(self):
+        for key in ("ph-launch", "alternativeto", "saashub", "uneed"):
+            setup = breakout.OWNER_SETUP[key]
+            self.assertTrue(setup["steps"], key)
+            self.assertTrue(setup["after_setup"], key)
+            self.assertLessEqual(setup["minutes"], 20, key)
+
+    def test_setup_says_what_stops_needing_the_owner_afterwards(self):
+        breakout.evaluate(self.connection)
+        breakout.prepare(self.connection)
+        bundle = breakout.bundle(self.connection, "alternativeto")["bundle"]
+        self.assertIn("no repeated owner research", bundle["after_setup"])

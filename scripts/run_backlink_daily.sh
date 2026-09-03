@@ -109,3 +109,13 @@ fi
 # every destination that needs one of those is REVIEW by construction.
 "$PYTHON" scripts/growth_breakout.py evaluate
 "$PYTHON" scripts/growth_breakout.py prepare
+# A generator nobody is told about is half-finished. This names the families
+# that shipped without an audience behind them; it cannot contact anyone.
+"$PYTHON" scripts/growth_breakout.py distribution-debt
+
+# --- 8. creator and newsletter backlog --------------------------------------
+# Search, read each candidate's own page, and judge it on what that page says.
+# Read-only throughout: sending is governed by a separate owner-signed policy
+# and a qualified prospect sits in the backlog until that policy exists.
+"$PYTHON" scripts/growth_creators.py cycle --queries-per-segment 2 --fetch-limit 30
+"$PYTHON" scripts/growth_creator_policy.py status

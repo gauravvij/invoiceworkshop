@@ -60,3 +60,7 @@ fi
 # and referral traffic are sitting inside.
 "$PYTHON" scripts/growth_breakout.py traffic-mix
 "$PYTHON" scripts/growth_breakout.py ranked --limit 20
+
+# The creator backlog and where the Product Hunt launch stands.
+"$PYTHON" scripts/growth_creators.py report
+"$PYTHON" scripts/growth_breakout.py launch-plan
