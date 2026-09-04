@@ -121,6 +121,46 @@ class CoverageTests(Fixture):
         self.assertEqual(list(self.connection.execute("SELECT * FROM search_coverage")), [])
 
 
+class SitemapTests(Fixture):
+    class FakeClient:
+        def __init__(self, has, submitted=None):
+            self.has = has
+            self.submitted = submitted if submitted is not None else has
+            self.calls = []
+
+        def sitemap_state(self, site, sm):
+            return {"urls_google_has": self.has, "urls_google_indexed": 0}
+
+        def submit_sitemap(self, site, sm):
+            self.calls.append((site, sm))
+            self.has = self.submitted
+            return {"urls_google_has": self.has, "urls_google_indexed": 0}
+
+    def _sitemap(self, client, **kwargs):
+        import growth_google
+        with mock.patch.object(indexnow, "_get", self._get), \
+             mock.patch.object(growth_google, "GoogleSitemapClient", lambda *a, **k: client):
+            return indexnow.sitemap(self.connection, **kwargs)
+
+    def test_a_stale_google_copy_is_resubmitted(self):
+        # The real case: Google held 13 URLs while the live sitemap listed 22.
+        client = self.FakeClient(has=1, submitted=2)
+        result = self._sitemap(client)
+        self.assertEqual(result["action"], "resubmitted")
+        self.assertEqual(len(client.calls), 1)
+
+    def test_a_current_google_copy_is_left_alone(self):
+        client = self.FakeClient(has=2)
+        result = self._sitemap(client)
+        self.assertIn("none", result["action"])
+        self.assertEqual(client.calls, [])
+
+    def test_force_resubmits_even_when_current(self):
+        client = self.FakeClient(has=2)
+        self._sitemap(client, force=True)
+        self.assertEqual(len(client.calls), 1)
+
+
 class KeyTests(unittest.TestCase):
     def test_the_key_file_the_protocol_checks_is_actually_served_from_public(self):
         served = Path(__file__).resolve().parents[2] / "public" / f"{indexnow.KEY}.txt"

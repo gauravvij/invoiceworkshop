@@ -948,7 +948,7 @@ export const generators: Record<string, GeneratorContent> = {
   deliveryNoteTemplate: {
     path: '/delivery-note-template/', kind: 'deliveryNote', dynamic: true,
     title: 'Free Delivery Note Template & Packing Slip Generator | Invoice Workshop',
-    description: 'Create a delivery note free: quantity ordered against quantity delivered, back-ordered items, delivery address, carrier and consignment reference. No prices. No signup.',
+    description: 'Create a delivery note free: quantity ordered against delivered, back-ordered items, delivery address, carrier and consignment reference. No prices. No signup.',
     h1: 'Free Delivery Note Generator', eyebrow: 'Say what was in the box',
     intro: 'A delivery note lists what was shipped against what was ordered, with the shortfall shown per line. No prices appear on it at all, and the delivery address is separate from the billing address.',
     reassurance: 'Everything stays in this browser. Your business, customers and past documents are saved on this device only.',

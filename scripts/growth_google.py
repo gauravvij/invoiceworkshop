@@ -19,6 +19,13 @@ READ_ONLY_SCOPES = (
 )
 
 
+# Sitemap submission is the one write this system does against Google, and it is
+# kept in its own client with its own scope so the read path stays read-only by
+# construction rather than by convention. Submitting an already-submitted sitemap
+# is idempotent: it asks Google to re-fetch, nothing more.
+SITEMAP_WRITE_SCOPES = ("https://www.googleapis.com/auth/webmasters",)
+
+
 class GoogleReadError(RuntimeError):
     pass
 
@@ -83,3 +90,48 @@ class GoogleReadClient:
             f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id}:runReport",
             json=body,
         )
+
+
+class GoogleSitemapClient(GoogleReadClient):
+    """Resubmits the sitemap. Deliberately the only writing this does.
+
+    Google had downloaded the sitemap on 1 September and recorded 13 URLs when
+    the live file listed 22: nine pages shipped after its last fetch were absent
+    from Google's view of the site, and it re-fetches on its own schedule. A
+    submission asks for that fetch instead of waiting for it.
+    """
+
+    def __init__(self, credential_path: str | None = None, timeout: int = 30):
+        super().__init__(credential_path, timeout)
+        credentials = service_account.Credentials.from_service_account_file(
+            str(self.credential_path), scopes=SITEMAP_WRITE_SCOPES
+        )
+        credentials.refresh(Request())
+        self.session.headers.update({"Authorization": f"Bearer {credentials.token}"})
+
+    def _sitemap_url(self, site: str, sitemap: str) -> str:
+        return (f"https://www.googleapis.com/webmasters/v3/sites/{quote(site, safe='')}"
+                f"/sitemaps/{quote(sitemap, safe='')}")
+
+    def submit_sitemap(self, site: str, sitemap: str) -> dict:
+        response = self.session.put(self._sitemap_url(site, sitemap), timeout=self.timeout)
+        if not response.ok:
+            raise GoogleReadError(f"sitemap submit returned {response.status_code}: {response.text[:200]}")
+        return self.sitemap_state(site, sitemap)
+
+    def sitemap_state(self, site: str, sitemap: str) -> dict:
+        response = self.session.get(self._sitemap_url(site, sitemap), timeout=self.timeout)
+        if not response.ok:
+            raise GoogleReadError(f"sitemap read returned {response.status_code}")
+        body = response.json()
+        contents = (body.get("contents") or [{}])[0]
+        return {
+            "path": body.get("path"),
+            "last_submitted": body.get("lastSubmitted"),
+            "last_downloaded": body.get("lastDownloaded"),
+            "pending": body.get("isPending"),
+            "urls_google_has": int(contents.get("submitted", 0) or 0),
+            "urls_google_indexed": int(contents.get("indexed", 0) or 0),
+            "errors": int(body.get("errors", 0) or 0),
+            "warnings": int(body.get("warnings", 0) or 0),
+        }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""IndexNow submission for invoiceworkshop.com.
+"""Telling crawlers about our URLs directly, rather than waiting to be found.
 
 Every page on the site is currently `discovered_not_crawled`: Google holds the
 URL and has never fetched it. Rewriting a page Google has not read cannot help,
@@ -15,6 +15,12 @@ The protocol asks that a URL is submitted when its content changed, not on a
 schedule. So this fetches each URL, hashes what is actually live, and submits
 only the ones whose hash differs from what was last sent. A run where nothing
 changed sends nothing and says so -- that is the correct outcome, not a failure.
+
+Google is the other half. It does not take IndexNow, but it does re-fetch a
+sitemap on request, and on 4 September it was working from a copy downloaded on
+1 September listing 13 URLs when the live file listed 22 -- nine pages it simply
+did not know about. `sitemap` compares Google's count against the live one and
+resubmits when they disagree, which is a request to re-fetch and nothing more.
 """
 
 from __future__ import annotations
@@ -188,6 +194,26 @@ def coverage(connection: sqlite3.Connection, *, record: bool = True) -> dict:
     return {"observed_on": today, "engines": results}
 
 
+GSC_SITE = "sc-domain:invoiceworkshop.com"
+
+
+def sitemap(connection: sqlite3.Connection, *, force: bool = False) -> dict:
+    """Resubmit the sitemap when Google is working from a stale copy of it."""
+    from growth_google import GoogleSitemapClient
+
+    live = len(sitemap_urls())
+    client = GoogleSitemapClient()
+    before = client.sitemap_state(GSC_SITE, SITEMAP)
+    stale = before["urls_google_has"] != live
+    if not (stale or force):
+        return {"live_urls": live, "google_has": before["urls_google_has"],
+                "action": "none: Google's copy matches the live sitemap", "state": before}
+    after = client.submit_sitemap(GSC_SITE, SITEMAP)
+    return {"live_urls": live, "google_had": before["urls_google_has"],
+            "google_has": after["urls_google_has"],
+            "action": "resubmitted", "state": after}
+
+
 def status(connection: sqlite3.Connection) -> dict:
     rows = [dict(row) for row in connection.execute(
         "SELECT url, last_submitted_at, http_status, outcome FROM indexnow_submissions"
@@ -207,7 +233,8 @@ def status(connection: sqlite3.Connection) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["submit", "status", "changed", "coverage"])
+    parser.add_argument("command",
+                        choices=["submit", "status", "changed", "coverage", "sitemap"])
     parser.add_argument("--force", action="store_true",
                         help="resubmit every live URL, not only the changed ones")
     parser.add_argument("--dry-run", action="store_true")
@@ -219,6 +246,8 @@ def main() -> None:
 
     if args.command == "submit":
         result = submit(connection, force=args.force, dry_run=args.dry_run)
+    elif args.command == "sitemap":
+        result = sitemap(connection, force=args.force)
     elif args.command == "coverage":
         result = coverage(connection)
     elif args.command == "changed":

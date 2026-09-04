@@ -93,6 +93,10 @@ fi
 # Whether that worked. IndexNow reports acceptance, not indexing, so this counts
 # how many of our own URLs Bing will admit to holding. It was zero on 4 September.
 "$PYTHON" scripts/growth_indexnow.py coverage || true
+# Google does not take IndexNow, but it will re-fetch a sitemap on request.
+# On 4 September it was working from a copy listing 13 URLs while the live
+# file listed 22. This resubmits only when those counts disagree.
+"$PYTHON" scripts/growth_indexnow.py sitemap || true
 
 # Where the outreach calibration cohort has got to. Recommends; approves
 # nothing. Only the owner's signature can widen the channel.
