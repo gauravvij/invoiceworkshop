@@ -1,0 +1,174 @@
+{
+  "cookies": [
+    {
+      "name": "a2",
+      "value": "227%7Cfalse",
+      "domain": "alternativeto.net",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "cf_clearance",
+      "value": "aEsCbdR6DxnH3MSSn7kui6pIqMYizT7dgLbGnfDd5n0-1788509350-1.2.1.1-_Wsg29NOLfPZyHmOPKGrhB_3zEPNoAk.I6CAIwj8RTvLWnUhkO.Ke1CTP.kQQcPuEFfX35gypwWwMAJrYuDQh0aVs.Sb6tJW8.2Jl82eiBcifvPMltql8cCoEJ8QL57SJ1OayqAPnuyfi1ZY5.XVS9_28aUTPQGV5GZVSuE3dbnjLeclx6u1NSA_ZlIpsh.lbZTDNY11ZyM3zY5ljTN3YU_1.BKXhHBzfWYIHYwqlntI2msT6OtvHOOLHRMHsETPFZn_TEvfCGk1.hMGyx5zXn7DJI9Ey9QoT0andaN3pfr6E7xNklE9bxUtyZoZWOrAsbGEx5fNAO01_NhWO5dlElXcsGXIfCiPXRLKgyTgSweFpF5oRIIxcW8ekeh.CiyBOsmNqNPb.XlGyM7xVYvaAw",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1820045350.949141,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://alternativeto.net",
+      "_crHasCrossSiteAncestor": false
+    },
+    {
+      "name": "__Secure-better-auth.session_token",
+      "value": "h2SecPb2narhP3lYVylxCPI1V4CMO3fg.P5LDSt56HJglag5SBb3hDZU48vxrMt3%2BQPDza4coWG4%3D",
+      "domain": "alternativeto.net",
+      "path": "/",
+      "expires": 1789114187.949399,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__Secure-better-auth.session_data",
+      "value": "eyJzZXNzaW9uIjp7InNlc3Npb24iOnsiZXhwaXJlc0F0IjoiMjAyNi0wOS0xMVQwODowOTo0Ny44MTZaIiwidG9rZW4iOiJoMlNlY1BiMm5hcmhQM2xZVnlseENQSTFWNENNTzNmZyIsImNyZWF0ZWRBdCI6IjIwMjYtMDktMDRUMDg6MDk6NDcuODE2WiIsInVwZGF0ZWRBdCI6IjIwMjYtMDktMDRUMDg6MDk6NDcuODE2WiIsImlwQWRkcmVzcyI6IjIwLjE5My4xNDkuNjYiLCJ1c2VyQWdlbnQiOiJNb3ppbGxhLzUuMCAoWDExOyBMaW51eCB4ODZfNjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS8xMjguMC4wLjAgU2FmYXJpLzUzNy4zNiIsInVzZXJJZCI6IjZJaG9KSEJBMEs1R1JvNlRRZG5KaGhqVkY3ZHRldDZWIiwiaWQiOiJFc1hER21ycWhYWVpSSHRkNUZTaU8weWVVWWNjVTg0aCJ9LCJ1c2VyIjp7Im5hbWUiOiJwdXJwbGVtYW5nbyIsImVtYWlsIjoiaGVsbG9AaW52b2ljZXdvcmtzaG9wLmNvbSIsImVtYWlsVmVyaWZpZWQiOnRydWUsImltYWdlIjpudWxsLCJjcmVhdGVkQXQiOiIyMDI2LTA5LTA0VDA3OjQ5OjM1LjEwNVoiLCJ1cGRhdGVkQXQiOiIyMDI2LTA5LTA0VDA3OjUwOjE1LjU5MVoiLCJhbHQyVXNlcklkIjoiZmY0ZGM5M2ItMjljYi00YTkxLThmNjQtMTdlODc2NWE0ZjBjIiwic2VjdXJpdHlMZXZlbCI6NSwibmlja25hbWUiOiJwdXJwbGVtYW5nbyIsInVybE5pY2siOiJwdXJwbGVtYW5nbyIsImlkIjoiNklob0pIQkEwSzVHUm82VFFkbkpoaGpWRjdkdGV0NlYifSwidXBkYXRlZEF0IjoxNzg4NTA5Mzg3ODUwLCJ2ZXJzaW9uIjoiMSJ9LCJleHBpcmVzQXQiOjE3ODg1MDk2ODc4NTAsInNpZ25hdHVyZSI6Ims5UVN1T3Q3M3REUkdFTXUtSGZseWFOck1RaTB5UUJqcEVPUld2azZtczgifQ",
+      "domain": "alternativeto.net",
+      "path": "/",
+      "expires": 1788509687.949502,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "test_cookie",
+      "value": "CheckForPermission",
+      "domain": ".doubleclick.net",
+      "path": "/",
+      "expires": 1788510290.194067,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__gads",
+      "value": "ID=0e591896f42c02e0:T=1788509390:RT=1788509390:S=ALNI_MZX7OH2M0qgLL4hSDjOR7octf9nYw",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1822205390,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__gpi",
+      "value": "UID=00001561deb24abd:T=1788509390:RT=1788509390:S=ALNI_MbIPM_nn56YPX4x6TVGPXHvOOkVdg",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1822205390,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__eoi",
+      "value": "ID=a6fa6338aca8de9a:T=1788509390:RT=1788509390:S=AA-AfjaEbOpIUo1XJdTGOB-QytP8",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1804061390,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_ga_LBPG8X9HFM",
+      "value": "GS2.1.s1788509391$o1$g0$t1788509391$j60$l0$h0",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1823069391.411158,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.2098593704.1788509391",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1823069391.411911,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "FPID",
+      "value": "FPID2.2.L%2BUxByeXwNeXUCOEtSCQ2KVsA7%2Bq1wSwW8Lhb8pkcZU%3D.1788509391",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1823069392.078062,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "FPLC",
+      "value": "uHl%2B%2F%2B6EHicvrfbPMl1FsLq2Hq5lnWmZCzXPCU%2BD%2F0ddk3o8tJ%2B%2BsIxlgBqNiVnnttzUF0blJakBxLMCliBmDmWCIECxCXPFgcVZBJ3ui2TpOcKcADKh2s1j2GUp7Q%3D%3D",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1788581392.07817,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "FCCDCF",
+      "value": "%5Bnull%2Cnull%2Cnull%2Cnull%2Cnull%2Cnull%2C%5B%5B32%2C%22%5B%5C%229bb28767-657e-46c1-8795-d1c268204d30%5C%22%2C%5B1788509351%2C83000000%5D%5D%22%5D%5D%5D",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1822205392,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "FCNEC",
+      "value": "%5B%5B%22AKsRol8dwR_zCCV4H-qEvjdfPgBDCs0wn0n_cbj6sGzl-rsZz3-bV80KuTxK9IDzFNXdQx6gpBD55WY7vpR1rPhZBK22SfABNMDZcgxpvaVtROtrFpYeKTXJtHY2p0Du8GWuJpRpKtHkRXD8If3Tz3Rg-tFTfVayEA%3D%3D%22%5D%5D",
+      "domain": ".alternativeto.net",
+      "path": "/",
+      "expires": 1820045392,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://alternativeto.net",
+      "localStorage": [
+        {
+          "name": "__rm_sid_ts__",
+          "value": "1788509391116"
+        },
+        {
+          "name": "google_adsense_settings",
+          "value": "{\"ca-pub-8332396259212490\":[\"ca-pub-8332396259212490\",[[1]]]}"
+        },
+        {
+          "name": "__rm_sid__",
+          "value": "1788509351496208"
+        }
+      ]
+    },
+    {
+      "origin": "https://www.google.com",
+      "localStorage": [
+        {
+          "name": "rc::h",
+          "value": "1788509391134"
+        }
+      ]
+    }
+  ]
+}

@@ -72,7 +72,18 @@ const schemas = [defaultSchema, ...(Array.isArray(schema) ? schema : schema ? [s
         interactionEvents.forEach((event) => window.removeEventListener(event, loadAfterInteraction));
       };
       interactionEvents.forEach((event) => window.addEventListener(event, loadAfterInteraction, { once: true, passive: true }));
-      window.addEventListener('load', () => window.setTimeout(loadAnalytics, 8000), { once: true });
+      // Without an interaction this used to wait a flat 8s, so a visitor who read
+      // the page and left inside ~9s was never counted at all. That is most of a
+      // launch-day click-through. Load at the first idle moment instead, capped at
+      // 3s: still after `load`, still async, so it competes with nothing that
+      // matters, but the session is recorded.
+      window.addEventListener('load', () => {
+        if (typeof window.requestIdleCallback === 'function') {
+          window.requestIdleCallback(loadAnalytics, { timeout: 3000 });
+        } else {
+          window.setTimeout(loadAnalytics, 3000);
+        }
+      }, { once: true });
     </script>}
   </head>
   <body>
