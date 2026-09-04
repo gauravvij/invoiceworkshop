@@ -455,3 +455,80 @@ class PendingListingTests(Fixture):
         body = '<p>See invoiceworkshop.com for details</p>'
         self.assertEqual(self._state(self._run(body)),
                          "mentions the domain but does not link to it")
+
+
+class GuessedSlugTests(Fixture):
+    """A detail URL we guessed reads as 'never approved' when the guess is wrong."""
+
+    def setUp(self):
+        super().setUp()
+        self.connection.execute(
+            """INSERT INTO breakout_destinations
+                 (key, channel, name, url, submit_url, audience_fit, evidence, verified_on,
+                  source_url, requires_account, requires_payment, requires_personal_identity,
+                  requires_community_posting, reach, intent, speed_days, confidence, effort,
+                  score, gate_status, execution_class, execution_reason, status, bundle_json,
+                  notes, created_at, updated_at)
+               VALUES ('toolpromote','directories','ToolPromote','https://toolpromote.com/',
+                       'https://toolpromote.com/submit','tools','probed','2026-09-04',
+                       'https://toolpromote.com/',0,0,0,0,50,0.4,2,0.5,1.0,10.0,'admitted',
+                       'AUTO','open form','submitted','{}','', '2026-09-04','2026-09-04')""")
+        self.connection.commit()
+
+    def _run(self, pages):
+        """`pages` maps URL to (status, body); anything unlisted is a 404."""
+        import urllib.error
+        import urllib.request
+        from unittest import mock
+
+        def urlopen(request, *a, **k):
+            url = request.full_url if hasattr(request, "full_url") else request
+            status, body = pages.get(url, (404, ""))
+            if status != 200:
+                raise urllib.error.HTTPError(url, status, "", None, None)
+
+            class Response:
+                def __init__(self):
+                    self.status = status
+
+                def read(self):
+                    return body.encode()
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return Response()
+
+        with mock.patch.object(urllib.request, "urlopen", urlopen):
+            return breakout.pending_listings(self.connection)
+
+    def _state(self, result):
+        return next(r for r in result["listings"] if r["destination"] == "ToolPromote")
+
+    def test_the_index_finds_a_listing_the_guessed_slug_missed(self):
+        result = self._run({
+            "https://toolpromote.com/tools": (
+                200, '<a href="/tools/invoiceworkshop-free-paperwork">InvoiceWorkshop</a>'),
+            "https://toolpromote.com/tools/invoiceworkshop-free-paperwork": (
+                200, '<a href="https://invoiceworkshop.com">Visit</a>'),
+        })
+        row = self._state(result)
+        self.assertEqual(row["state"], "live and linking")
+        self.assertEqual(row["watch_page"],
+                         "https://toolpromote.com/tools/invoiceworkshop-free-paperwork")
+
+    def test_an_index_with_no_listing_still_reports_not_public(self):
+        result = self._run({"https://toolpromote.com/tools": (200, "<p>279 tools</p>")})
+        self.assertEqual(self._state(result)["state"], "not public yet")
+
+    def test_the_link_to_our_own_site_is_not_followed_as_the_listing(self):
+        # The index links out to invoiceworkshop.com in a sponsor slot. That is
+        # the thing being looked for, not the route to it.
+        result = self._run({
+            "https://toolpromote.com/tools": (
+                200, '<a href="https://invoiceworkshop.com">sponsor</a>'),
+        })
+        self.assertEqual(self._state(result)["state"], "not public yet")

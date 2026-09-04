@@ -876,12 +876,58 @@ WATCH_PAGES = {
     "alternativeto": "https://alternativeto.net/software/invoice-workshop/about/",
     "startupproject": "https://startupproject.org/?s=invoiceworkshop",
     "launchpedia": "https://launchpedia.co/?s=invoice+workshop",
+    "toolpromote": "https://toolpromote.com/tools/invoiceworkshop",
+    "bsdirectory": "https://directory.project-bs.com/products/invoiceworkshop",
 }
+
+# Where to go looking when the detail URL above is a guess at the slug and the
+# platform chose a different one. A slug we guessed wrong reads exactly like a
+# listing that was never approved, and reporting the second when the first is
+# true hides a placement for as long as nobody checks by hand.
+WATCH_INDEXES = {
+    "toolpromote": "https://toolpromote.com/tools",
+    "bsdirectory": "https://directory.project-bs.com/products",
+}
+
+# An internal link on the index page that names us. The link to our own domain
+# is not it -- that is the thing we are trying to find, not the way to it.
+BRAND_HREF = re.compile(r'href="([^"]*invoiceworkshop[^"]*)"', re.I)
 
 # Matching the brand name in the page text does not work on a search page: the
 # site echoes the query back, so "invoice workshop" is present on a page that
 # found nothing. Only a link counts, and only the domain identifies us.
 HREF_TO_SITE = re.compile(r'href="[^"]*invoiceworkshop\.com[^"]*"', re.I)
+
+
+def _fetch(url: str) -> tuple[int, str]:
+    """The page as an anonymous visitor sees it. A 404 is an answer, not a fault."""
+    import urllib.error
+    import urllib.request
+
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "Mozilla/5.0 (compatible; InvoiceWorkshop/1.0)"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return response.status, response.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as error:
+        return error.code, ""
+
+
+def _find_listing(index_url: str) -> tuple[str, int, str] | None:
+    """The listing's real URL, when the slug we guessed was not the one chosen."""
+    from urllib.parse import urljoin
+
+    status, body = _fetch(index_url)
+    if status != 200:
+        return None
+    for href in BRAND_HREF.findall(body):
+        if "invoiceworkshop.com" in href.lower():
+            continue  # our own site, which is what we are looking *for*
+        url = urljoin(index_url, href)
+        status, body = _fetch(url)
+        if status == 200:
+            return url, status, body
+    return None
 
 
 def pending_listings(connection: sqlite3.Connection) -> dict:
@@ -891,9 +937,6 @@ def pending_listings(connection: sqlite3.Connection) -> dict:
     separately from one that is still in a queue: the first is a placement that
     failed, the second has not happened yet.
     """
-    import urllib.error
-    import urllib.request
-
     now = utc_now()
     results = []
     for row in connection.execute(
@@ -903,13 +946,13 @@ def pending_listings(connection: sqlite3.Connection) -> dict:
         if not watch:
             results.append({"destination": row["name"], "state": "no watch page recorded"})
             continue
-        request = urllib.request.Request(
-            watch, headers={"User-Agent": "Mozilla/5.0 (compatible; InvoiceWorkshop/1.0)"})
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                status, body = response.status, response.read().decode("utf-8", "replace")
-        except urllib.error.HTTPError as error:
-            status, body = error.code, ""
+            status, body = _fetch(watch)
+            if status == 404 and row["key"] in WATCH_INDEXES:
+                found = _find_listing(WATCH_INDEXES[row["key"]])
+                if found:
+                    watch, status, body = found
+
         except Exception as error:  # a network failure is not evidence of anything
             results.append({"destination": row["name"], "state": f"unreachable: {error}"})
             continue
