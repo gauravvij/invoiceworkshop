@@ -479,28 +479,6 @@ export const generators: Record<string, GeneratorContent> = {
         },
       },
       {
-        heading: 'When the price you agreed already includes VAT',
-        paragraphs: [
-          'Fixed-fee and consumer work is often agreed as one gross figure — “£600 all in” — but the editor above takes a net unit price per line and adds the VAT on top of it. The number you agreed is therefore not the number you type, and getting from one to the other is a division, not a subtraction. Taking 20% off the agreed price is the common mistake, and it leaves you short.',
-          'Charging 20% means the gross is 1.2 times the net, so divide the agreed price by 1.2 to get the figure to enter; the VAT is then the agreed price divided by six. At the reduced 5% rate the gross is 1.05 times the net, so divide by 1.05, and the VAT is a twenty-first of the agreed price. Add the two results back together as a check: they should return the price you agreed, to the penny.',
-        ],
-        table: {
-          caption: 'Getting the net line figure out of a VAT-inclusive price',
-          columns: ['Agreed including VAT', 'Rate', 'Net figure to enter', 'VAT added', 'Total on the invoice'],
-          rows: [
-            ['£600.00', '20%', '£500.00', '£100.00', '£600.00'],
-            ['£1,234.80', '20%', '£1,029.00', '£205.80', '£1,234.80'],
-            ['£100.00', '20%', '£83.33', '£16.67', '£100.00'],
-            ['£262.50', '5%', '£250.00', '£12.50', '£262.50'],
-          ],
-          total: [
-            ['Divide: £600.00 ÷ 1.2', '£500.00 net + £100.00 VAT = £600.00'],
-            ['Subtract: £600.00 − 20%', '£480.00 net + £96.00 VAT = £576.00'],
-          ],
-          note: 'The third row is the one that does not divide evenly: £100.00 ÷ 1.2 is £83.333…, so the net is £83.33, and 20% of £83.33 is £16.666…, which rounds to £16.67 and brings the invoice back to £100.00. The editor rounds each line to the nearest penny the same way, so the total it shows should be the figure in the last column. The two footer rows are why subtraction fails: £480.00 plus VAT comes to £576.00, £24.00 less than the £600.00 you agreed to be paid.',
-        },
-      },
-      {
         heading: 'Rates, registration and thresholds',
         paragraphs: [
           'Three numbers do most of the work in UK VAT, and mixing them up is the common error.',
