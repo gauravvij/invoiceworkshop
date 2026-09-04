@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '25')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '26')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1369,4 +1369,17 @@ CREATE TABLE IF NOT EXISTS indexnow_submissions (
   last_submitted_at TEXT NOT NULL,
   http_status      INTEGER NOT NULL DEFAULT 0,
   outcome          TEXT NOT NULL DEFAULT ''
+);
+
+-- Whether telling the crawler actually worked. IndexNow reports that a URL was
+-- accepted, which is not the same as indexed, so this counts how many of the
+-- site's own URLs a Bing site: query returns on a given day. Zero on the day of
+-- the first submission is the baseline the later numbers are read against.
+CREATE TABLE IF NOT EXISTS search_coverage (
+  observed_on      TEXT NOT NULL,
+  engine           TEXT NOT NULL,
+  urls_seen        INTEGER NOT NULL,
+  sample_json      TEXT NOT NULL DEFAULT '[]',
+  note             TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (observed_on, engine)
 );

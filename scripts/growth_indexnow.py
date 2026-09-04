@@ -154,6 +154,40 @@ def submit(connection: sqlite3.Connection, *, force: bool = False, dry_run: bool
             "urls": [entry["url"] for entry in pending][:50]}
 
 
+# The site: operator on a plain search page. It is a coarse instrument -- engines
+# sample it and it is not an index count -- but the distinction that matters here
+# is zero versus not zero, and it needs no account to read.
+COVERAGE = {
+    "bing": "https://www.bing.com/search?q=site%3Ainvoiceworkshop.com&count=30",
+    "duckduckgo": "https://html.duckduckgo.com/html/?q=site%3Ainvoiceworkshop.com",
+}
+
+
+def coverage(connection: sqlite3.Connection, *, record: bool = True) -> dict:
+    """How many of our own URLs an engine will admit to holding."""
+    today = utc_now()[:10]
+    results = {}
+    for engine, query in COVERAGE.items():
+        status_code, body = _get(query)
+        if status_code != 200:
+            results[engine] = {"error": f"query returned {status_code}"}
+            continue
+        seen = sorted(set(re.findall(
+            r"https://invoiceworkshop\.com/[a-z0-9\-/]*", body.decode("utf-8", "replace"))))
+        results[engine] = {"urls_seen": len(seen), "sample": seen[:10]}
+        if record:
+            connection.execute(
+                """INSERT INTO search_coverage (observed_on, engine, urls_seen, sample_json, note)
+                   VALUES (?, ?, ?, ?, '')
+                   ON CONFLICT(observed_on, engine) DO UPDATE SET
+                     urls_seen=excluded.urls_seen, sample_json=excluded.sample_json""",
+                (today, engine, len(seen), json.dumps(seen[:20])),
+            )
+    if record:
+        connection.commit()
+    return {"observed_on": today, "engines": results}
+
+
 def status(connection: sqlite3.Connection) -> dict:
     rows = [dict(row) for row in connection.execute(
         "SELECT url, last_submitted_at, http_status, outcome FROM indexnow_submissions"
@@ -165,12 +199,15 @@ def status(connection: sqlite3.Connection) -> dict:
         "submitted_urls": len(rows),
         "sitemap_urls": len(sitemap_urls()),
         "recent": rows[:10],
+        "coverage": [dict(row) for row in connection.execute(
+            "SELECT observed_on, engine, urls_seen FROM search_coverage"
+            " ORDER BY observed_on DESC, engine LIMIT 6")],
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["submit", "status", "changed"])
+    parser.add_argument("command", choices=["submit", "status", "changed", "coverage"])
     parser.add_argument("--force", action="store_true",
                         help="resubmit every live URL, not only the changed ones")
     parser.add_argument("--dry-run", action="store_true")
@@ -182,6 +219,8 @@ def main() -> None:
 
     if args.command == "submit":
         result = submit(connection, force=args.force, dry_run=args.dry_run)
+    elif args.command == "coverage":
+        result = coverage(connection)
     elif args.command == "changed":
         result = {"changed": [entry["url"] for entry in changed(connection, force=args.force)]}
     else:

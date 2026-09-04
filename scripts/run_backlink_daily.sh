@@ -90,6 +90,9 @@ fi
 # account, and submits only URLs whose live content actually changed. A run with
 # no changes posts nothing.
 "$PYTHON" scripts/growth_indexnow.py submit || true
+# Whether that worked. IndexNow reports acceptance, not indexing, so this counts
+# how many of our own URLs Bing will admit to holding. It was zero on 4 September.
+"$PYTHON" scripts/growth_indexnow.py coverage || true
 
 # Where the outreach calibration cohort has got to. Recommends; approves
 # nothing. Only the owner's signature can widen the channel.

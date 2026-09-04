@@ -96,6 +96,31 @@ class SubmissionTests(Fixture):
         self.assertEqual(len(result["would_submit"]), 2)
 
 
+class CoverageTests(Fixture):
+    def _coverage(self, pages):
+        with mock.patch.object(indexnow, "_get", lambda url: pages.get(url, (200, b""))):
+            return indexnow.coverage(self.connection)
+
+    def test_a_zero_result_is_recorded_because_zero_is_the_baseline(self):
+        result = self._coverage({q: (200, b"nothing here") for q in indexnow.COVERAGE.values()})
+        self.assertEqual(result["engines"]["bing"]["urls_seen"], 0)
+        rows = list(self.connection.execute("SELECT engine, urls_seen FROM search_coverage"))
+        self.assertIn(("bing", 0), [tuple(r) for r in rows])
+
+    def test_found_urls_are_counted_once_each(self):
+        body = (b"https://invoiceworkshop.com/receipt-generator/ "
+                b"https://invoiceworkshop.com/receipt-generator/ "
+                b"https://invoiceworkshop.com/credit-note-generator/")
+        result = self._coverage({q: (200, body) for q in indexnow.COVERAGE.values()})
+        self.assertEqual(result["engines"]["bing"]["urls_seen"], 2)
+
+    def test_a_blocked_query_is_an_error_not_a_zero(self):
+        pages = {q: (202, b"") for q in indexnow.COVERAGE.values()}
+        result = self._coverage(pages)
+        self.assertIn("error", result["engines"]["bing"])
+        self.assertEqual(list(self.connection.execute("SELECT * FROM search_coverage")), [])
+
+
 class KeyTests(unittest.TestCase):
     def test_the_key_file_the_protocol_checks_is_actually_served_from_public(self):
         served = Path(__file__).resolve().parents[2] / "public" / f"{indexnow.KEY}.txt"
