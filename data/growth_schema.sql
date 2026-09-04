@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
-INSERT INTO schema_meta (key, value) VALUES ('schema_version', '24')
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '25')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS collection_runs (
@@ -1357,4 +1357,16 @@ CREATE TABLE IF NOT EXISTS sender_identity (
   optout_line      TEXT NOT NULL DEFAULT '',
   configured_by    TEXT NOT NULL DEFAULT '',
   updated_at       TEXT NOT NULL DEFAULT ''
+);
+
+-- IndexNow submission ledger. The protocol asks that a URL is pushed when its
+-- content actually changed, not on a timer, so what was last sent and the hash
+-- of what was live at the time are both recorded. A URL whose hash is unchanged
+-- is not resubmitted.
+CREATE TABLE IF NOT EXISTS indexnow_submissions (
+  url              TEXT PRIMARY KEY,
+  content_hash     TEXT NOT NULL,
+  last_submitted_at TEXT NOT NULL,
+  http_status      INTEGER NOT NULL DEFAULT 0,
+  outcome          TEXT NOT NULL DEFAULT ''
 );
