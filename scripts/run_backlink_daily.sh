@@ -85,6 +85,12 @@ fi
 "$PYTHON" scripts/growth_opportunities.py refresh
 "$PYTHON" scripts/growth_opportunities.py top --limit 8
 
+# Every page is discovered_not_crawled: Google holds the URL and has never
+# fetched it. IndexNow tells Bing, Yandex, Seznam and Naver outright, without an
+# account, and submits only URLs whose live content actually changed. A run with
+# no changes posts nothing.
+"$PYTHON" scripts/growth_indexnow.py submit || true
+
 # Where the outreach calibration cohort has got to. Recommends; approves
 # nothing. Only the owner's signature can widen the channel.
 "$PYTHON" scripts/growth_allocation.py outreach-calibration
@@ -117,11 +123,16 @@ fi
 # that shipped without an audience behind them; it cannot contact anyone.
 "$PYTHON" scripts/growth_breakout.py distribution-debt
 
-# --- 8. creator and newsletter backlog --------------------------------------
-# Search, read each candidate's own page, and judge it on what that page says.
-# Read-only throughout: sending is governed by a separate owner-signed policy
-# and a qualified prospect sits in the backlog until that policy exists.
-"$PYTHON" scripts/growth_creators.py cycle --queries-per-segment 2 --fetch-limit 30
+# --- 8. email outreach: background only --------------------------------------
+# Owner priority change, 2026-09-04. Resource-page email is a low-allocation
+# background channel: no new prospects are researched and nothing is sent. The
+# creator discovery cycle used to run here and no longer does -- 405 candidates
+# produced 4 reachable ones, and that search spend belongs on channels that can
+# reach people without waiting for one person to answer an email.
+#
+# What survives is monitoring, and it lives in step 1 (inbound poll) and step 2
+# (placement verification) above, so the nine delivered messages still report a
+# reply, a bounce or a placement the day it happens.
 
 # --- 9. distribution register -----------------------------------------------
 # One row per live product surface, carrying the only three numbers this phase
