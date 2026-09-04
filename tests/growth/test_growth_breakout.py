@@ -389,3 +389,69 @@ class BundleFreshnessTests(Fixture):
         first = breakout.bundle(self.connection, "ph-launch")["bundle"]
         self.assertEqual(first["live_tools"], breakout.live_tools())
         self.assertIn("does not go stale", first["positioning_note"])
+
+
+class PendingListingTests(Fixture):
+    def setUp(self):
+        super().setUp()
+        self.connection.execute(
+            """INSERT INTO breakout_destinations
+                 (key, channel, name, url, submit_url, audience_fit, evidence, verified_on,
+                  source_url, requires_account, requires_payment, requires_personal_identity,
+                  requires_community_posting, reach, intent, speed_days, confidence, effort,
+                  score, gate_status, execution_class, execution_reason, status, bundle_json,
+                  notes, created_at, updated_at)
+               VALUES ('launchpedia','directories','LaunchPedia','https://launchpedia.co/',
+                       'https://launchpedia.co/submit','tools','probed','2026-09-04',
+                       'https://launchpedia.co/',0,0,0,0,50,0.4,7,0.5,1.0,10.0,'admitted',
+                       'AUTO','open form','submitted','{}','', '2026-09-04','2026-09-04')""")
+        self.connection.commit()
+
+    def _run(self, body, status=200):
+        import urllib.request
+        from unittest import mock
+
+        class Response:
+            def __init__(self):
+                self.status = status
+
+            def read(self):
+                return body.encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        with mock.patch.object(urllib.request, "urlopen", lambda *a, **k: Response()):
+            return breakout.pending_listings(self.connection)
+
+    def _state(self, result):
+        return next(r for r in result["listings"] if r["destination"] == "LaunchPedia")["state"]
+
+    def test_a_search_page_echoing_the_query_is_not_a_listing(self):
+        # This is the actual failure: LaunchPedia's search page prints the query
+        # back, so a text match on the brand reports a hit for a search that
+        # found nothing.
+        body = '<title>Search results for: invoice workshop</title><p>Nothing found for "invoice workshop"</p>'
+        self.assertEqual(self._state(self._run(body)), "not public yet")
+
+    def test_a_link_to_the_site_is_a_listing(self):
+        body = '<a href="https://invoiceworkshop.com/">Invoice Workshop</a>'
+        self.assertEqual(self._state(self._run(body)), "live and linking")
+        status = self.connection.execute(
+            "SELECT status FROM breakout_destinations WHERE key='launchpedia'").fetchone()[0]
+        self.assertEqual(status, "live")
+
+    def test_a_link_becomes_a_placement_row_only_once(self):
+        body = '<a href="https://invoiceworkshop.com/">Invoice Workshop</a>'
+        self._run(body)
+        self._run(body)
+        rows = self.connection.execute("SELECT COUNT(*) FROM placements").fetchone()[0]
+        self.assertEqual(rows, 1)
+
+    def test_a_naked_mention_is_reported_separately_from_a_link(self):
+        body = '<p>See invoiceworkshop.com for details</p>'
+        self.assertEqual(self._state(self._run(body)),
+                         "mentions the domain but does not link to it")

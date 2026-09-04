@@ -125,6 +125,11 @@ fi
 # A generator nobody is told about is half-finished. This names the families
 # that shipped without an audience behind them; it cannot contact anyone.
 "$PYTHON" scripts/growth_breakout.py distribution-debt
+# Whether anything already submitted has gone public. A directory gives no
+# receipt beyond "in the queue", so the only honest way to know a listing
+# landed is to keep looking at the page it would appear on. Records a
+# placement the day a link to the site actually shows up.
+"$PYTHON" scripts/growth_breakout.py pending-listings || true
 
 # --- 8. email outreach: background only --------------------------------------
 # Owner priority change, 2026-09-04. Resource-page email is a low-allocation

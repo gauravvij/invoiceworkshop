@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 from datetime import date
 
@@ -868,6 +869,76 @@ def distribution_debt(connection: sqlite3.Connection) -> dict:
                      "as launched rather than merely published")}
 
 
+# Where to look for a submission that has not gone public yet. A directory
+# usually gives no receipt beyond "in the queue", so the only honest way to know
+# it landed is to keep looking at the page it would appear on.
+WATCH_PAGES = {
+    "alternativeto": "https://alternativeto.net/software/invoice-workshop/about/",
+    "startupproject": "https://startupproject.org/?s=invoiceworkshop",
+    "launchpedia": "https://launchpedia.co/?s=invoice+workshop",
+}
+
+# Matching the brand name in the page text does not work on a search page: the
+# site echoes the query back, so "invoice workshop" is present on a page that
+# found nothing. Only a link counts, and only the domain identifies us.
+HREF_TO_SITE = re.compile(r'href="[^"]*invoiceworkshop\.com[^"]*"', re.I)
+
+
+def pending_listings(connection: sqlite3.Connection) -> dict:
+    """Whether anything submitted has become public, and whether it links to us.
+
+    A listing that is live but carries no link to the site is worth knowing about
+    separately from one that is still in a queue: the first is a placement that
+    failed, the second has not happened yet.
+    """
+    import urllib.error
+    import urllib.request
+
+    now = utc_now()
+    results = []
+    for row in connection.execute(
+        "SELECT key, name, status FROM breakout_destinations WHERE status IN ('submitted','live')"
+    ):
+        watch = WATCH_PAGES.get(row["key"])
+        if not watch:
+            results.append({"destination": row["name"], "state": "no watch page recorded"})
+            continue
+        request = urllib.request.Request(
+            watch, headers={"User-Agent": "Mozilla/5.0 (compatible; InvoiceWorkshop/1.0)"})
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                status, body = response.status, response.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as error:
+            status, body = error.code, ""
+        except Exception as error:  # a network failure is not evidence of anything
+            results.append({"destination": row["name"], "state": f"unreachable: {error}"})
+            continue
+
+        # Anonymous fetch: a submission still in review is invisible to it, which
+        # is exactly the distinction being drawn.
+        links_out = bool(HREF_TO_SITE.search(body))
+        mentioned = "invoiceworkshop.com" in body.lower()
+        state = ("live and linking" if links_out
+                 else "mentions the domain but does not link to it" if mentioned
+                 else "not public yet")
+        if state == "live and linking":
+            connection.execute(
+                """UPDATE breakout_destinations SET status='live', notes=?, updated_at=?
+                   WHERE key=?""",
+                (f"public and linking as of {now[:10]} ({watch})", now, row["key"]))
+            connection.execute(
+                """INSERT INTO placements (prospect_id, placement_url, link_target, rel, anchor,
+                                           status, link_present, last_http_status, verified_at, notes)
+                   SELECT NULL, ?, ?, '', '', 'live', 1, ?, ?, ?
+                   WHERE NOT EXISTS (SELECT 1 FROM placements WHERE placement_url=?)""",
+                (watch, SITE, status, now, f"first seen by pending_listings on {now[:10]}", watch))
+        results.append({"destination": row["name"], "watch_page": watch,
+                        "http_status": status, "state": state})
+    connection.commit()
+    return {"checked_on": now[:10], "listings": results,
+            "live": sum(1 for r in results if r.get("state") == "live and linking")}
+
+
 def ranked(connection: sqlite3.Connection, limit: int = 20) -> list[dict]:
     return [dict(row) for row in connection.execute(
         """SELECT key, channel, name, execution_class, status, score, reach, intent,
@@ -964,6 +1035,8 @@ def main() -> None:
     launch.add_argument("--account-created-on",
                         help="ISO date the owner's Product Hunt account was created")
     commands.add_parser("launch-results", help="What the launch actually sent")
+    commands.add_parser("pending-listings",
+                        help="Whether anything submitted has gone public and links to us")
     commands.add_parser("distribution-debt",
                         help="Shipped families nobody has been told about")
     prep = commands.add_parser("prepare", help="Write the submission bundles")
@@ -988,6 +1061,8 @@ def main() -> None:
         result = launch_plan(connection, account_created_on=args.account_created_on)
     elif args.command == "launch-results":
         result = launch_results(connection)
+    elif args.command == "pending-listings":
+        result = pending_listings(connection)
     elif args.command == "distribution-debt":
         result = distribution_debt(connection)
     else:
