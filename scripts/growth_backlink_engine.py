@@ -60,6 +60,7 @@ from growth_search_providers import SearchProviderError, get_provider
 from growth_common import (
     apply_schema,
     canonical_domain,
+    public_domain_or_blank,
     connect_db,
     database_path,
     normalize_public_url,
@@ -434,13 +435,16 @@ def outbound_profile(page_url: str, parser: PageParser) -> tuple[int, int]:
     behaviour we need from it. One that links nowhere almost certainly will not
     start for us, however well it scores on topic.
     """
-    host = canonical_domain(page_url)
+    host = public_domain_or_blank(page_url)
     external: set[str] = set()
     for href, _ in parser.links:
         if not href or not href.startswith("http"):
             continue
-        domain = canonical_domain(urljoin(page_url, href))
-        if not domain or domain == host or domain.endswith("." + host):
+        # startswith("http") is not the same as "is a public URL": it admits
+        # credentials, localhost, private IPs and odd ports. Those are skipped,
+        # not fatal.
+        domain = public_domain_or_blank(urljoin(page_url, href))
+        if not domain or not host or domain == host or domain.endswith("." + host):
             continue
         if domain in SOCIAL_DOMAINS or any(domain.endswith("." + s) for s in SOCIAL_DOMAINS):
             continue

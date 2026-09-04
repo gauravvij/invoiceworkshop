@@ -35,6 +35,7 @@ from datetime import datetime, timedelta, timezone
 from growth_common import (
     apply_schema,
     canonical_domain,
+    public_domain_or_blank,
     connect_db,
     database_path,
     utc_now,
@@ -464,7 +465,7 @@ def discover(connection: sqlite3.Connection, segments: list[str] | None = None,
                 url = (result.get("page_url") or "").strip()
                 if not url.startswith("http"):
                     continue
-                domain = canonical_domain(url)
+                domain = public_domain_or_blank(url)
                 if not domain or domain in seen_domains:
                     continue
                 if any(domain == host or domain.endswith("." + host) for host in PLATFORM_HOSTS):

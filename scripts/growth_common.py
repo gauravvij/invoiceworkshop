@@ -364,6 +364,22 @@ def canonical_domain(url: str) -> str:
     return hostname.removeprefix("www.")
 
 
+def public_domain_or_blank(url: str) -> str:
+    """`canonical_domain` for links we did not write.
+
+    A page we fetched can link anywhere: `http://localhost/`, an intranet host,
+    a port that is not 80 or 443, credentials embedded in the URL. Every one of
+    those is a legitimate thing to find on someone else's page and none of them
+    is a public domain we can attribute. Raising on them means one malformed
+    href on one third-party page ends the whole discovery cycle, which is what
+    happened to the deep crawl on 2 September.
+    """
+    try:
+        return canonical_domain(url)
+    except ValueError:
+        return ""
+
+
 def fetch_public_url(url: str, *, timeout: int = 20, max_redirects: int = 5):
     """GET a public URL with every redirect target validated before access."""
     import requests

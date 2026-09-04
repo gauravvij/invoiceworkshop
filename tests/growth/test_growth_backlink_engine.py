@@ -435,3 +435,45 @@ class PipelineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OutboundProfileTolerationTests(unittest.TestCase):
+    """One malformed link on someone else's page must not end the crawl.
+
+    The deep crawl died on 2 September with `URL must have a public hostname and
+    no embedded credentials`, thrown while profiling outbound links on a fetched
+    page. It had already recorded 39 opportunities that run; the exception
+    discarded the rest of the cycle.
+    """
+
+    def _parser(self, html):
+        parser = engine.PageParser()
+        parser.feed(html)
+        return parser
+
+    def test_a_link_we_cannot_attribute_is_skipped_not_fatal(self):
+        for href in ("http://user:pass@example.test/", "http://localhost/x",
+                     "https://192.168.1.10/", "http://example.test:8080/"):
+            parser = self._parser(f'<a href="{href}">x</a>')
+            self.assertEqual(engine.outbound_profile("https://page.example/list", parser), (0, 0), href)
+
+    def test_good_links_are_still_counted_alongside_bad_ones(self):
+        parser = self._parser(
+            '<a href="http://user:pass@evil.test/">a</a>'
+            '<a href="https://freshbooks.com/x">b</a>'
+            '<a href="https://elsewhere.example/y">c</a>')
+        external, tools = engine.outbound_profile("https://page.example/list", parser)
+        self.assertEqual(external, 2)
+        self.assertEqual(tools, 1)
+
+    def test_a_page_url_that_is_not_public_profiles_nothing_rather_than_raising(self):
+        # Without a host for the page there is no way to tell a self-link from an
+        # outbound one, so the honest answer is "cannot profile this", not a
+        # count that treats the page's own links as external.
+        parser = self._parser('<a href="https://elsewhere.example/y">c</a>')
+        self.assertEqual(engine.outbound_profile("http://localhost/list", parser), (0, 0))
+
+    def test_the_helper_returns_blank_rather_than_raising(self):
+        from growth_common import public_domain_or_blank
+        self.assertEqual(public_domain_or_blank("http://localhost/"), "")
+        self.assertEqual(public_domain_or_blank("https://www.example.org/a"), "example.org")
