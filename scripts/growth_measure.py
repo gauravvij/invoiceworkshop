@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 from growth_common import (
+    BASE_URL,
     PRIORITY_URLS,
     apply_schema,
     connect_db,
@@ -312,12 +313,42 @@ def collect_sitemaps(client: GoogleReadClient, connection, site: str,
     return totals
 
 
+def _routes_to_inspect() -> tuple[str, ...]:
+    """Every URL the site asks Google to index, which is the live sitemap.
+
+    Not `canonical_routes()`: that excludes /about/, /privacy/, /terms/ and
+    /contact/, and /about/ is one of the pages Google has actually indexed. A
+    measurement of how much of the site is indexed has to cover the whole of
+    what is submitted, or it reports a number for a different site.
+    """
+    try:
+        from growth_indexnow import sitemap_urls
+        urls = tuple(sitemap_urls())
+        if urls:
+            return urls
+    except Exception:
+        pass
+    try:
+        from growth_opportunities import canonical_routes
+        routes = canonical_routes()
+        if routes:
+            return tuple(BASE_URL + route for route in routes)
+    except Exception:
+        pass
+    return PRIORITY_URLS
+
+
 def collect_inspections(client: GoogleReadClient, connection, site: str,
                         collected_at: str) -> dict:
     today = date.today().isoformat()
     passed = 0
     errors = []
-    for url in PRIORITY_URLS:
+    # PRIORITY_URLS is a hand-kept list of nine that stopped being the site some
+    # time ago: /about/ was indexed and never counted, and every page shipped
+    # since was invisible to this measurement. Inspect what is actually
+    # published, and fall back to the old list only if that cannot be read.
+    urls = _routes_to_inspect()
+    for url in urls:
         try:
             result = client.inspect_url(site, url).get("inspectionResult", {}).get("indexStatusResult", {})
             verdict = result.get("verdict")
@@ -353,7 +384,7 @@ def collect_inspections(client: GoogleReadClient, connection, site: str,
     status = "ok" if not errors else ("partial" if passed else "failed")
     record_snapshot(
         connection, collected_at, "inspection", today, today, status,
-        len(PRIORITY_URLS), {"passed": passed, "checked": len(PRIORITY_URLS)},
+        len(urls), {"passed": passed, "checked": len(urls)},
         " | ".join(errors) if errors else None,
     )
     if errors:

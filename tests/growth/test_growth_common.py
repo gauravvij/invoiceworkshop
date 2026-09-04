@@ -51,3 +51,64 @@ class PublicUrlTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IndexationMetricTests(unittest.TestCase):
+    """One canonical indexation metric, derived from coverageState.
+
+    A report once said 0 URLs were indexed while five were. Two things caused it:
+    Google's sitemap `contents[].indexed` counter, which it no longer populates,
+    and `verdict == "PASS"` standing in for "indexed" over a frozen list of nine
+    URLs that no longer described the site.
+    """
+
+    def _row(self, coverage, verdict="NEUTRAL", crawled=None):
+        return {"coverage_state": coverage, "verdict": verdict, "last_crawl_time": crawled}
+
+    def test_the_four_states_are_the_only_answers(self):
+        from growth_opportunities import classify_index
+        cases = {
+            "Submitted and indexed": "indexed",
+            "URL is unknown to Google": "unknown",
+            "Discovered - currently not indexed": "discovered_not_crawled",
+            "Crawled - currently not indexed": "crawled_not_indexed",
+        }
+        for coverage, expected in cases.items():
+            verdict = "PASS" if expected == "indexed" else "NEUTRAL"
+            crawled = "2026-09-01T00:00:00Z" if "Crawled" in coverage else None
+            self.assertEqual(
+                classify_index(self._row(coverage, verdict, crawled)), expected, coverage)
+
+    def test_a_page_google_has_never_fetched_is_not_crawled_not_indexed(self):
+        from growth_opportunities import classify_index
+        # The distinction the whole diagnosis rests on: nothing has read the
+        # page, so the content cannot be why it is missing.
+        self.assertEqual(
+            classify_index(self._row("Discovered - currently not indexed", crawled=None)),
+            "discovered_not_crawled")
+
+    def test_indexation_counts_every_state_and_nothing_twice(self):
+        from growth_daily_monitor import _indexation
+        rows = [self._row("Submitted and indexed", "PASS"),
+                self._row("Submitted and indexed", "PASS"),
+                self._row("Discovered - currently not indexed"),
+                self._row("URL is unknown to Google")]
+        counts = _indexation(rows)
+        self.assertEqual(counts, {"indexed": 2, "crawled_not_indexed": 0,
+                                  "discovered_not_crawled": 1, "unknown": 1})
+        self.assertEqual(sum(counts.values()), len(rows))
+
+    def test_inspection_covers_the_whole_sitemap_not_a_frozen_subset(self):
+        from growth_common import PRIORITY_URLS
+        from growth_measure import _routes_to_inspect
+        routes = _routes_to_inspect()
+        self.assertGreater(len(routes), len(PRIORITY_URLS))
+        # /about/ is indexed and was outside both the old list and canonical_routes().
+        self.assertIn("https://invoiceworkshop.com/about/", routes)
+
+    def test_the_deprecated_sitemap_counter_is_not_read(self):
+        import inspect
+
+        import growth_indexnow
+        source = inspect.getsource(growth_indexnow)
+        self.assertNotIn('contents.get("indexed"', source)

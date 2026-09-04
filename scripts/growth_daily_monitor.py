@@ -260,11 +260,26 @@ def _compact_context(connection, collection, signals: list[dict]) -> dict:
             name: len(report["gsc_breakdowns"][name])
             for name in ("query", "page", "country", "device")
         },
-        "indexed_priority_urls": sum(row["verdict"] == "PASS" for row in index_rows),
-        "priority_urls_recorded": len(index_rows),
+        # One canonical metric. `verdict == "PASS"` was standing in for
+        # "indexed" and is not the same thing: the verdict grades overall health,
+        # while coverageState is what actually says whether Google holds the
+        # page. classify_index reads coverageState and is the only place that
+        # decision is made.
+        "indexation": _indexation(index_rows),
+        "urls_inspected": len(index_rows),
         "google_reads": dict(operation),
         "external_side_effects": "none",
     }
+
+
+def _indexation(index_rows) -> dict:
+    from growth_opportunities import classify_index
+
+    buckets = {"indexed": 0, "crawled_not_indexed": 0,
+               "discovered_not_crawled": 0, "unknown": 0}
+    for row in index_rows:
+        buckets[classify_index(dict(row))] += 1
+    return buckets
 
 
 def run_daily_monitor(

@@ -129,12 +129,12 @@ class SitemapTests(Fixture):
             self.calls = []
 
         def sitemap_state(self, site, sm):
-            return {"urls_google_has": self.has, "urls_google_indexed": 0}
+            return {"urls_google_has": self.has}
 
         def submit_sitemap(self, site, sm):
             self.calls.append((site, sm))
             self.has = self.submitted
-            return {"urls_google_has": self.has, "urls_google_indexed": 0}
+            return {"urls_google_has": self.has}
 
     def _sitemap(self, client, **kwargs):
         import growth_google
