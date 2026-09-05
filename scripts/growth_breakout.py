@@ -944,7 +944,7 @@ def pending_listings(connection: sqlite3.Connection) -> dict:
     for row in connection.execute(
         """SELECT key, name, status FROM breakout_destinations
             WHERE status IN ('submitted','live')
-              AND channel <> 'linkable_asset'"""
+              AND channel <> 'linkable_assets'"""
     ):
         # A page we published ourselves is not sitting in anyone's review queue.
         # Watching it reported "no watch page recorded" every day and buried the

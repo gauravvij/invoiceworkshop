@@ -551,7 +551,7 @@ class AssetWatchTests(Fixture):
         self.connection.commit()
 
     def test_a_published_asset_is_not_reported_as_a_pending_listing(self):
-        self._add("asset-x", "linkable_asset", "live")
+        self._add("asset-x", "linkable_assets", "live")
         result = breakout.pending_listings(self.connection)
         self.assertEqual(result["listings"], [])
 
