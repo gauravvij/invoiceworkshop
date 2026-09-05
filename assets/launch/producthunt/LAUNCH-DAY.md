@@ -35,6 +35,17 @@ That is the whole list. No upvote solicitation, no coordinated engagement, no
 paid hunter — Product Hunt removes products for exactly that, and it is not
 something that will be done on your behalf.
 
+## Optional, if a comment asks about privacy
+
+Since 5 September there is a research page that measures what 44 free invoice
+generators do with what you type:
+`https://invoiceworkshop.com/research/free-invoice-generator-audit-2026/`
+
+It is a fair place to point someone who asks how we compare, because it does not
+flatter us: 25 of the 33 tools we could measure also keep your data in the
+browser, and Invoice Workshop is excluded from every figure on it. Link it if a
+question comes up. Do not lead with it.
+
 ## What is already done
 
 Copy, all six images, the tracked URL, and the analytics path that records it.
