@@ -258,3 +258,13 @@ const schema = {
     </p>
   </article>
 </BaseLayout>
+
+<style>
+  /* A URL and a hostname are single unbreakable words. At 360px the citation
+     block pushed the whole page sideways, which the mobile-overflow test in CI
+     is there to catch. */
+  .simple-page code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+</style>
