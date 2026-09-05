@@ -532,3 +532,30 @@ class GuessedSlugTests(Fixture):
                 200, '<a href="https://invoiceworkshop.com">sponsor</a>'),
         })
         self.assertEqual(self._state(result)["state"], "not public yet")
+
+
+class AssetWatchTests(Fixture):
+    """Our own published pages are not in anyone's review queue."""
+
+    def _add(self, key, channel, status):
+        self.connection.execute(
+            """INSERT INTO breakout_destinations
+                 (key, channel, name, url, submit_url, audience_fit, evidence, verified_on,
+                  source_url, requires_account, requires_payment, requires_personal_identity,
+                  requires_community_posting, reach, intent, speed_days, confidence, effort,
+                  score, gate_status, execution_class, execution_reason, status, bundle_json,
+                  notes, created_at, updated_at)
+               VALUES (?,?,?,'https://example.org/','','fit','probed','2026-09-05',
+                       '',0,0,0,0,10,0.4,7,0.5,1.0,1.0,'admitted','AUTO','x',?,'{}','',
+                       '2026-09-05','2026-09-05')""", (key, channel, key, status))
+        self.connection.commit()
+
+    def test_a_published_asset_is_not_reported_as_a_pending_listing(self):
+        self._add("asset-x", "linkable_asset", "live")
+        result = breakout.pending_listings(self.connection)
+        self.assertEqual(result["listings"], [])
+
+    def test_a_real_submission_is_still_watched(self):
+        self._add("dir-x", "directories", "submitted")
+        result = breakout.pending_listings(self.connection)
+        self.assertEqual([r["destination"] for r in result["listings"]], ["dir-x"])

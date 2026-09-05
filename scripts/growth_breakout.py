@@ -942,8 +942,13 @@ def pending_listings(connection: sqlite3.Connection) -> dict:
     now = utc_now()
     results = []
     for row in connection.execute(
-        "SELECT key, name, status FROM breakout_destinations WHERE status IN ('submitted','live')"
+        """SELECT key, name, status FROM breakout_destinations
+            WHERE status IN ('submitted','live')
+              AND channel <> 'linkable_asset'"""
     ):
+        # A page we published ourselves is not sitting in anyone's review queue.
+        # Watching it reported "no watch page recorded" every day and buried the
+        # listings that are actually pending.
         watch = WATCH_PAGES.get(row["key"])
         if not watch:
             results.append({"destination": row["name"], "state": "no watch page recorded"})
