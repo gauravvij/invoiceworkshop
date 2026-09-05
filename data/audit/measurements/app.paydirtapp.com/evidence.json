@@ -1,0 +1,184 @@
+{
+  "url": "https://app.paydirtapp.com/free_invoice_creator",
+  "measured_at": "2026-09-05T09:52:10.299Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://app.paydirtapp.com/free_invoice_creator",
+  "http_status": 200,
+  "page_title": "Free Invoice Template » Make an invoice to print, or download as a PDF.",
+  "fillable_fields": 16,
+  "fields_filled": 16,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "account_business_name",
+      "id": "",
+      "placeholder": "Your business name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "account_contact_name",
+      "id": "",
+      "placeholder": "Your name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "textarea",
+      "name": "account_address",
+      "id": "",
+      "placeholder": "Your address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "client_business_name",
+      "id": "",
+      "placeholder": "Recipient's business name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "client_contact_name",
+      "id": "",
+      "placeholder": "Recipient's name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "textarea",
+      "name": "client_address",
+      "id": "",
+      "placeholder": "Recipient's address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "padded_number",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "issued_at",
+      "id": "dp1788601932420",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "due_at",
+      "id": "dp1788601932421",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "textarea",
+      "name": "description",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "textarea",
+      "name": "description",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "quantity",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "rate",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "textarea",
+      "name": "footer",
+      "id": "",
+      "placeholder": "Payment Details",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "email",
+      "name": "user[email]",
+      "id": "user_email",
+      "placeholder": "Email address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "user[name]",
+      "id": "user_name",
+      "placeholder": "First name",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Download PDF",
+  "canary_left_the_browser": true,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [
+    {
+      "domain": "paydirtapp.com",
+      "method": "GET",
+      "url": "https://app.paydirtapp.com/users/verify_email?email=auditcanary7q3xf15%40example.invalid",
+      "where": "url",
+      "first_party": true
+    }
+  ],
+  "leaked_fields": [
+    {
+      "type": "email",
+      "name": "user[email]",
+      "id": "user_email",
+      "placeholder": "Email address",
+      "label": "",
+      "sent_to": "paydirtapp.com",
+      "first_party": true
+    }
+  ],
+  "third_party_domains": [
+    "cloudfront.net",
+    "doubleclick.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "google-analytics.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign up",
+  "login_form_present": true,
+  "notes": []
+}

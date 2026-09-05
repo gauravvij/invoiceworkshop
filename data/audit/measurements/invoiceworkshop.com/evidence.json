@@ -1,0 +1,264 @@
+{
+  "url": "https://invoiceworkshop.com/",
+  "measured_at": "2026-09-05T09:45:53.019Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://invoiceworkshop.com/",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator & Invoice Maker | Invoice Workshop",
+  "fillable_fields": 29,
+  "fields_filled": 29,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Acme Studio LLC",
+      "label": "Business name\n*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "email",
+      "name": "",
+      "id": "",
+      "placeholder": "billing@example.com",
+      "label": "Email"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "tel",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Phone"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Tax / business ID"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Street address"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "City"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "State / region"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Postal code"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Customer or company",
+      "label": "Name\n*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "email",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Email"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "tel",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Phone"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Tax ID"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Street address"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "City"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "State / region"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Postal code"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Document number\n*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Reference / PO"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Product or service",
+      "label": "Description"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF20",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Quantity"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Unit"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Unit price\nUSD"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF24",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF25",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF26",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF27",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Thank you for your business.",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF28",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Bank transfer, check, or payment link details",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF29",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "cloudflareinsights.com",
+    "google-analytics.com",
+    "googletagmanager.com"
+  ],
+  "ad_tracker_domains": [
+    "google-analytics.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "signup",
+  "login_form_present": false,
+  "notes": []
+}

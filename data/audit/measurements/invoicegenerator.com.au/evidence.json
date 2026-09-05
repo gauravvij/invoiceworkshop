@@ -1,0 +1,154 @@
+{
+  "url": "https://www.invoicegenerator.com.au/",
+  "measured_at": "2026-09-05T09:41:29.173Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.invoicegenerator.com.au/",
+  "http_status": 200,
+  "page_title": "Invoice Generator - Free invoice template",
+  "fillable_fields": 13,
+  "fields_filled": 13,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "myname",
+      "id": "myname",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "textarea",
+      "name": "myinfo",
+      "id": "myinfo",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "invoicetitle",
+      "id": "invoicetitle",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "invoicenumber",
+      "id": "invoicenumber",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "invoicedate",
+      "id": "invoicedate",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "invoiceduedate",
+      "id": "invoiceduedate",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "clientname",
+      "id": "clientname",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "textarea",
+      "name": "clientinfo",
+      "id": "clientinfo",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "textarea",
+      "name": "description[]",
+      "id": "desc-1",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "unit_price[]",
+      "id": "price-1",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "units[]",
+      "id": "unit-1",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "invoicepaid",
+      "id": "invoicepaid",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "textarea",
+      "name": "invoicenotes",
+      "id": "invoicenotes",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "adtrafficquality.google",
+    "bootstrapcdn.com",
+    "cloudflare.com",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "fbcdn.net",
+    "fontawesome.com",
+    "ggpht.com",
+    "google-analytics.com",
+    "google.com",
+    "googleapis.com",
+    "googlesyndication.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "jquery.com",
+    "youtube.com",
+    "ytimg.com"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "facebook.net",
+    "google-analytics.com",
+    "googlesyndication.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": []
+}

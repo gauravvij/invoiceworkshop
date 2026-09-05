@@ -1,0 +1,131 @@
+{
+  "url": "https://www.portant.co/invoice-generator/",
+  "measured_at": "2026-09-05T09:26:45.660Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.portant.co/invoice-generator/",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator: No Signup, No Watermark | Portant",
+  "fillable_fields": 13,
+  "fields_filled": 8,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Your business name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Your address, email, phone",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Client / company name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Their address, email",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "INV-0001",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Item or service",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Item or service",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Payment terms, thank-you note, etc.",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "ahrefs.com",
+    "aplo-evnt.com",
+    "apollo.io",
+    "cloudflareinsights.com",
+    "cloudfront.net",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google.co.in",
+    "google.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "hs-analytics.net",
+    "hs-banner.com",
+    "hs-scripts.com",
+    "hsadspixel.net",
+    "hsappstatic.net",
+    "hscollectedforms.net",
+    "hsforms.com",
+    "hubapi.com",
+    "hubspot.com",
+    "hubspotfeedback.com",
+    "licdn.com",
+    "linkedin.com",
+    "posthog.com",
+    "reddit.com",
+    "redditstatic.com",
+    "usemessages.com"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "hs-scripts.com",
+    "hubspot.com",
+    "licdn.com",
+    "linkedin.com",
+    "posthog.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "signup",
+  "login_form_present": false,
+  "notes": []
+}

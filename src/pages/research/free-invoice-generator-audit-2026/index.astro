@@ -1,0 +1,260 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import audit from '@/data/invoice-generator-audit-2026.json';
+
+const { summary, rows } = audit;
+const others = rows.filter((row) => row.publisher_own_tool === 'no');
+const ours = rows.filter((row) => row.publisher_own_tool === 'yes');
+const ordered = [...others, ...ours];
+
+const yesNo = (value: string) =>
+  value === 'yes' ? 'Yes' : value === 'no' ? 'No' : 'Not measured';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Dataset',
+  name: 'Free invoice generator audit 2026',
+  description:
+    'Measurements of ' + summary.third_party_tools + ' free invoice generators: whether text typed into the ' +
+    'page is sent to a server, how many third-party domains each page contacts, and whether a PDF can be ' +
+    'downloaded without an account.',
+  url: 'https://invoiceworkshop.com/research/free-invoice-generator-audit-2026/',
+  license: 'https://creativecommons.org/licenses/by/4.0/',
+  creator: { '@type': 'Organization', name: 'Invoice Workshop', url: 'https://invoiceworkshop.com/' },
+  datePublished: summary.drawn_on,
+  distribution: [{
+    '@type': 'DataDownload',
+    encodingFormat: 'text/csv',
+    contentUrl: 'https://invoiceworkshop.com/research/free-invoice-generator-audit-2026.csv',
+  }],
+};
+---
+<BaseLayout
+  title="Free invoice generator audit 2026 — what these tools do with what you type"
+  description={'We measured ' + summary.third_party_tools + ' free invoice generators: does what you type leave the browser, who receives it, and how many other companies are on the page. Method and data included.'}
+  path="/research/free-invoice-generator-audit-2026/"
+  schema={schema}
+>
+  <article class="simple-page">
+    <p class="eyebrow">Research · {summary.drawn_on}</p>
+    <h1>What free invoice generators do with what you type</h1>
+
+    <p class="lead">
+      An invoice carries a customer's name, their address and what they were charged. We measured{' '}
+      {summary.third_party_tools} free invoice generators to find out where that text goes when you
+      type it: whether it leaves the browser, who receives it, and how much of the page belongs to
+      companies other than the tool.
+    </p>
+
+    <p>
+      Every figure below is an observation, not a rating. There is no score, because a score is
+      only someone's weighting argued in public. The method is published, the raw data is
+      downloadable, and anyone can re-run it.
+    </p>
+
+    <div class="callout">
+      <strong>This is published by one of the tools in the table.</strong><br />
+      Invoice Workshop is measured on exactly the same terms as everything else and appears in
+      the table, but it is excluded from every figure quoted on this page. It did not rank in the
+      top 20 for any of the {summary.queries} queries used to draw the sample — it is in the
+      table only because we put it there, and that is worth knowing before you read further.
+    </div>
+
+    <h2>What we found</h2>
+
+    <p>
+      <strong>Most of them keep it in the browser.</strong> Of the {summary.measurable} tools where
+      the test ran to completion, {summary.kept_in_the_browser} never sent what we typed anywhere.
+      That is the opposite of what we expected before running it, and it is the most useful thing
+      on this page.
+    </p>
+
+    <p>
+      <strong>{summary.typed_data_left_the_browser} sent it to a server.</strong> For{' '}
+      {summary.sent_only_to_the_tools_own_service} of those the recipient was the tool's own
+      service, which is how a server-rendered PDF has to work and is not a criticism of anything.{' '}
+      {summary.sent_to_an_unrelated_company} sent something to a company that was not the tool:{' '}
+      {summary.unrelated_recipients.join(' and ')}. In both cases it was one field, not the
+      invoice, and the table names which one — because the difference between an email address in
+      a marketing form and a customer's address on an invoice line is the whole distinction, and a
+      study that blurs it is worthless.
+    </p>
+
+    <p>
+      Precisely: on invoicesimple.com the field labelled <em>Business Number</em> appeared in a
+      request to <code>api-iam.intercom.io</code>, a third-party customer-messaging service. The
+      rest of that invoice — business name, client name, street, item description, notes, both
+      email addresses — went to <code>data.getinvoicesimple.com</code>, which is a different
+      registered domain but carries the tool's own name. On xero.com's invoice template page, an
+      email address typed into the form on the page reached <code>api.unifyintent.com</code>, a
+      business visitor-identification service. No invoice content was involved in that one.
+    </p>
+
+    <p>
+      <strong>The exposure is the advertising, not the invoice.</strong> The median tool loaded
+      code from {summary.third_party_domains_median} other companies' domains while an invoice was
+      being filled in. The highest was <strong>{summary.third_party_domains_max}</strong>, on{' '}
+      {summary.third_party_domains_max_domain} — which was the first result for "free invoice
+      generator" when the sample was drawn. None of those companies received the invoice. All of them were told you were on a
+      page about invoicing, which is what an ad auction is for.
+    </p>
+
+    <p>
+      <strong>Almost nobody makes the promise.</strong> Only {summary.claimed_local_processing} of{' '}
+      {summary.third_party_tools} say anywhere on their site that your data stays in your browser.
+      Of those, {summary.claimed_local_but_sent_it_anyway} broke the claim. The claim is rare, not
+      unreliable.
+    </p>
+
+    <p>
+      <strong>{summary.not_measurable} of the {summary.third_party_tools} pages that rank are not
+      generators.</strong> They are
+      template galleries and landing pages: there is no invoice to fill in on the page you arrive
+      at. They are listed as not measured rather than assumed either way, and they are worth knowing
+      about before you click.
+    </p>
+
+    <h2>How the sample was drawn</h2>
+    <p>
+      The one place a comparison is normally rigged is deciding who is in it. Nobody decided here.
+      On {summary.drawn_on} we ran {summary.queries} search queries — the phrases people actually
+      type, fixed in advance and published in the data file — took the top 20 results for each,
+      removed app stores, forums and articles about tools, and kept one page per domain. That gave
+      {summary.third_party_tools} tools. No tool was added or dropped after the measurements were seen.
+    </p>
+
+    <h2>Method</h2>
+    <p>
+      Each tool was opened in a fresh browser with no history, no extensions and no stored data.
+      Every network request the page made was recorded. A unique string —
+      <code>AUDITCANARY7Q3X</code> — was typed into every text field on the page, the way a
+      person filling in an invoice would. The main action was then triggered: download, generate,
+      export, in that order of preference.
+    </p>
+    <p>
+      Afterwards, every request the page had made since the typing started was searched for that
+      string, in the URL and in the request body. If it appears, the text left the browser, and
+      the table records which domain received it. If it does not appear, it did not leave during
+      the test. That is the whole measurement — there is no judgement in it.
+    </p>
+    <p>
+      A destination on a different registered domain is not automatically a different company.
+      <code>invoicesimple.com</code> posts to <code>getinvoicesimple.com</code>; calling that a
+      third party would be a false accusation about a company's own backend. The rule used here is
+      mechanical: if the two names contain each other, they are counted as the same operator. It
+      is a statement about the names, not about who owns what.
+    </p>
+    <p>
+      Separately, the page's own words were searched for a claim of local processing — phrasings
+      like "never leaves your browser", "processed locally", "client-side". Pairing that with the
+      network result is what makes the claim column meaningful. A tool that makes no such claim and
+      processes your invoice on a server is not failing anything; it is being straightforward.
+    </p>
+
+    <h2>What this does not show</h2>
+    <ul>
+      <li>
+        It is one session per tool on one date. A tool that kept your data in the browser then can
+        change tomorrow, and this does not watch it.
+      </li>
+      <li>
+        Only the free flow a visitor gets was exercised — fill in the fields, click the main
+        button. Anything behind an account, and anything that happens when you email an invoice
+        from inside the tool, was never triggered and is not measured.
+      </li>
+      <li>
+        "Did not leave the browser" means the canary was not found in any request this test saw.
+        It is not an audit of a company, its servers, or how long it keeps anything.
+      </li>
+      <li>
+        The PDF column records whether a file actually downloaded during the test. Tools that open
+        a print dialog, render a preview, or email the PDF instead will read "No" here despite
+        giving you a usable invoice. Do not read that column as "no free PDF".
+      </li>
+      <li>
+        Third-party domain counts move with ad auctions and consent state. They measure how much of
+        the page is other people's code, not a fixed property of the tool.
+      </li>
+      <li>
+        The name-in-PDF column reports whether the tool's own name appears in the PDF's text. A
+        footer credit and a stamped watermark both trip it; it cannot tell them apart.
+      </li>
+      <li>
+        The harness fills every visible text field, so on a page that mixes an invoice editor with
+        a newsletter box it will type into both. That is why the table names which field left
+        rather than only that something did.
+      </li>
+    </ul>
+
+    <h2>The data</h2>
+    <figure class="doc-table-wrap">
+      <figcaption>
+        {summary.tools_in_frame} free invoice generators, measured {summary.drawn_on}
+      </figcaption>
+      <div class="doc-table-scroll" tabindex="0" role="region" aria-label="Audit results table">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th scope="col">Tool</th>
+              <th scope="col">Typed data left the browser</th>
+              <th scope="col">Sent to</th>
+              <th scope="col">Which fields</th>
+              <th scope="col">Claims local processing</th>
+              <th scope="col">PDF file downloaded in the test</th>
+              <th scope="col" class="numeric">Third-party domains</th>
+              <th scope="col">Own name in the PDF</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ordered.map((row) => (
+              <tr>
+                <th scope="row">
+                  {row.domain}
+                  {row.publisher_own_tool === 'yes' && <span> — this site</span>}
+                </th>
+                <td>{yesNo(row.typed_data_left_the_browser)}</td>
+                <td>{row.received_by || '—'}</td>
+                <td>{row.fields_that_left || '—'}</td>
+                <td>{yesNo(row.claims_local_processing)}</td>
+                <td>{yesNo(row.pdf_downloaded_without_account)}</td>
+                <td class="numeric">{row.third_party_domains_contacted}</td>
+                <td>{row.own_name_in_pdf_text ? yesNo(row.own_name_in_pdf_text) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="doc-table-note">
+        Blank cells mean the measurement was not made, not that the answer was no. The full
+        dataset carries the measured URL, timestamp, the exact claim quoted from each page, the
+        button that was clicked and any notes.
+      </p>
+    </figure>
+
+    <h2>Take the data</h2>
+    <p>
+      <a class="primary-link" href="/research/free-invoice-generator-audit-2026.csv" download>
+        Download the full dataset (CSV)
+      </a>
+    </p>
+    <p>
+      Published under <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a>.
+      Use it, quote it, re-run it, correct it.
+    </p>
+
+    <h2>How to cite this</h2>
+    <p>
+      Invoice Workshop, <em>Free invoice generator audit {summary.drawn_on.slice(0, 4)}</em>,{' '}
+      {summary.drawn_on}.
+      <br />
+      <code>https://invoiceworkshop.com/research/free-invoice-generator-audit-2026/</code>
+    </p>
+
+    <h2>Found a mistake?</h2>
+    <p>
+      If your tool is in the table and the measurement is wrong, tell us what to re-run and we
+      will re-run it and change the row. Write to <a href="/contact/">contact</a>. Corrections are
+      the point of publishing the method.
+    </p>
+  </article>
+</BaseLayout>

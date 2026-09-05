@@ -1,0 +1,226 @@
+{
+  "url": "https://www.waveapps.com/tools/invoice-generator",
+  "measured_at": "2026-09-05T09:31:55.042Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.waveapps.com/tools/invoice-generator",
+  "http_status": 200,
+  "page_title": "Free invoice generator - Online invoice maker—Wave",
+  "fillable_fields": 23,
+  "fields_filled": 19,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "sender[company_name]",
+      "id": "sender[company_name]",
+      "placeholder": "",
+      "label": "Company/Business"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "sender[address_line_1]",
+      "id": "sender[address_line_1]",
+      "placeholder": "",
+      "label": "Address Line 1"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "sender[address_line_2]",
+      "id": "sender[address_line_2]",
+      "placeholder": "",
+      "label": "Address Line 2"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "sender[city]",
+      "id": "sender[city]",
+      "placeholder": "",
+      "label": "City"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "sender[postal_code]",
+      "id": "sender[postal_code]",
+      "placeholder": "",
+      "label": "Postal/ZIP code"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "sender[state]",
+      "id": "sender[state]",
+      "placeholder": "",
+      "label": "Province/State"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "sender[country]",
+      "id": "sender[country]",
+      "placeholder": "",
+      "label": "Country"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "customer[company_name]",
+      "id": "customer[company_name]",
+      "placeholder": "",
+      "label": "Company/Business"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "customer[address_line_1]",
+      "id": "customer[address_line_1]",
+      "placeholder": "",
+      "label": "Address Line 1"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "customer[address_line_2]",
+      "id": "customer[address_line_2]",
+      "placeholder": "",
+      "label": "Address Line 2"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "customer[city]",
+      "id": "customer[city]",
+      "placeholder": "",
+      "label": "City"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "customer[postal_code]",
+      "id": "customer[postal_code]",
+      "placeholder": "",
+      "label": "Postal/ZIP code"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "customer[state]",
+      "id": "customer[state]",
+      "placeholder": "",
+      "label": "Province/State"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "customer[country]",
+      "id": "customer[country]",
+      "placeholder": "",
+      "label": "Country"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "invoice[title]",
+      "id": "invoice[title]",
+      "placeholder": "",
+      "label": "Invoice Title"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "invoice[summary]",
+      "id": "invoice[summary]",
+      "placeholder": "",
+      "label": "Summary"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "text",
+      "name": "invoice[items][0][name]",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "invoice[items][0][description]",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "textarea",
+      "name": "invoice[notes]",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "adtrafficquality.google",
+    "amplitude.com",
+    "app.link",
+    "bing.com",
+    "branch.io",
+    "cloudfront.net",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "geojs.io",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googleapis.com",
+    "googlesyndication.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "hs-analytics.net",
+    "hs-banner.com",
+    "hs-scripts.com",
+    "hsadspixel.net",
+    "hsforms.com",
+    "hubapi.com",
+    "hubspot.com",
+    "licdn.com",
+    "linkedin.com",
+    "nvfovu.com",
+    "quora.com",
+    "survicate-cdn.com",
+    "survicate.com",
+    "trustarc.com",
+    "website-files.com",
+    "youtube.com"
+  ],
+  "ad_tracker_domains": [
+    "amplitude.com",
+    "bing.com",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googlesyndication.com",
+    "googletagmanager.com",
+    "hs-scripts.com",
+    "hubspot.com",
+    "licdn.com",
+    "linkedin.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign up",
+  "login_form_present": false,
+  "notes": []
+}

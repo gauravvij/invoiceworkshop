@@ -1,0 +1,158 @@
+{
+  "url": "https://invoicefree.in/gst-invoice.html",
+  "measured_at": "2026-09-05T09:38:56.100Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://invoicefree.in/gst-invoice.html",
+  "http_status": 200,
+  "page_title": "Free GST Invoice Generator - CGST, SGST & IGST | InvoiceFree",
+  "fillable_fields": 15,
+  "fields_filled": 15,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "invoice",
+      "id": "input_focus",
+      "placeholder": "",
+      "label": "Invoice number"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "invoiceNo",
+      "id": "",
+      "placeholder": "Invoice No",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "companyName",
+      "id": "",
+      "placeholder": "Company Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "companyAddress",
+      "id": "",
+      "placeholder": " Address (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "companyCity",
+      "id": "",
+      "placeholder": "City (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "companyState",
+      "id": "",
+      "placeholder": "State (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "companyPostalCode",
+      "id": "",
+      "placeholder": "Postal Code (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "clientName",
+      "id": "",
+      "placeholder": "Client Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "clientAddress",
+      "id": "",
+      "placeholder": "Address (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "clientCity",
+      "id": "",
+      "placeholder": "City (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "clientState",
+      "id": "",
+      "placeholder": "State (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "clientPostalCode",
+      "id": "",
+      "placeholder": "Postal Code (Optional)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Product",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Rate",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Quantity",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Download Desktop App",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "ipinfo.io"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": []
+}

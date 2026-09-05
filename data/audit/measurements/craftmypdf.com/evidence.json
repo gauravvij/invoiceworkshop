@@ -1,0 +1,454 @@
+{
+  "url": "https://craftmypdf.com/tools/free-online-invoice-maker/",
+  "measured_at": "2026-09-05T09:53:09.505Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://craftmypdf.com/tools/free-online-invoice-maker/",
+  "http_status": 200,
+  "page_title": "Free Online Invoice Maker | Instant PDF Invoice | CraftMyPDF",
+  "fillable_fields": 41,
+  "fields_filled": 30,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "company_name",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "company_address",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "company_email",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "bill_to",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "bill_to_address",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "invoice_no",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "invoice_date",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "invoice_due_date",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "footer",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "balance",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "currency",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF20",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF24",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF25",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF26",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF27",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF28",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF29",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF30",
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Generate",
+  "canary_left_the_browser": true,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [
+    {
+      "domain": "craftmypdf.com",
+      "method": "POST",
+      "url": "https://app.craftmypdf.com/api/app-custom?type=pdf&template=b0777b2b1e7bc89e&app_name=invoice",
+      "where": "request body",
+      "first_party": true
+    }
+  ],
+  "leaked_fields": [
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "td",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "company_name",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "company_address",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "company_email",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "bill_to",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "bill_to_address",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "invoice_no",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "invoice_date",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "invoice_due_date",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "footer",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "balance",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "currency",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "craftmypdf.com",
+      "first_party": true
+    }
+  ],
+  "third_party_domains": [
+    "amazonaws.com",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googleadservices.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "plausible.io",
+    "wdfl.co"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googleadservices.com",
+    "googletagmanager.com",
+    "plausible.io"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}

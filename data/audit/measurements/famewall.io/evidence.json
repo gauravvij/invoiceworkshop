@@ -1,0 +1,51 @@
+{
+  "url": "https://famewall.io/tools/online-invoice-maker/",
+  "measured_at": "2026-09-05T09:30:29.328Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://famewall.io/tools/online-invoice-maker/",
+  "http_status": 200,
+  "page_title": "Free Online Invoice Maker | No login needed",
+  "fillable_fields": 1,
+  "fields_filled": 1,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "email",
+      "name": "email",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Continue with Google | Continue with Microsoft | Continue with Twitter/X",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "bootstrapcdn.com",
+    "canny.io",
+    "cloudflare.com",
+    "crisp.chat",
+    "google.com",
+    "googleapis.com",
+    "gstatic.com",
+    "ip2c.org",
+    "jsdelivr.net",
+    "mailerlite.com",
+    "mux.com",
+    "prismic.io",
+    "stripe.com",
+    "stripe.network",
+    "tolt.io"
+  ],
+  "ad_tracker_domains": [],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign up",
+  "login_form_present": false,
+  "notes": [
+    "clicked \"Get Started for FREE\" to reach the editor"
+  ]
+}

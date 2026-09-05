@@ -1,0 +1,210 @@
+{
+  "url": "https://www.justdial.com/business-tools/free-invoice-generator",
+  "measured_at": "2026-09-05T09:39:52.717Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.justdial.com/business-tools/free-invoice-generator",
+  "http_status": 200,
+  "page_title": "Free GST Invoice Generator Tool | Online Bill & Invoice Maker - Justdial",
+  "fillable_fields": 22,
+  "fields_filled": 21,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "companyName",
+      "id": "seller-companyName",
+      "placeholder": "Your Company Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "name",
+      "id": "seller-name",
+      "placeholder": "Your Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "gstin",
+      "id": "seller-gstin",
+      "placeholder": "Your Company’s GSITIN",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "textarea",
+      "name": "address",
+      "id": "seller-address",
+      "placeholder": "Your Company’s Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "city",
+      "id": "seller-city",
+      "placeholder": "City",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "State",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "clientCompanyName",
+      "id": "billto-clientCompanyName",
+      "placeholder": "Your Client’s Company Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "gstin",
+      "id": "billto-gstin",
+      "placeholder": "Client’s GSTIN",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "textarea",
+      "name": "address",
+      "id": "billto-address",
+      "placeholder": "Your Client’s Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "city",
+      "id": "billto-city",
+      "placeholder": "City",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "State",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "invoiceNumber",
+      "id": "invoice-invoiceNumber",
+      "placeholder": "Invoice# (Number)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Select State",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "invoiceData",
+      "id": "",
+      "placeholder": "Invoice Date",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "dueDate",
+      "id": "",
+      "placeholder": "Due Date",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "description",
+      "id": "item-0-description",
+      "placeholder": "Enter Description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "text",
+      "name": "hsn",
+      "id": "item-0-hsn",
+      "placeholder": "e.g. 9983",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "text",
+      "name": "quantity",
+      "id": "item-0-quantity",
+      "placeholder": "1",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "rate",
+      "id": "item-0-rate",
+      "placeholder": "0.00",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "textarea",
+      "name": "addNote",
+      "id": "invoice-addNote",
+      "placeholder": "Add Notes Optional",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "textarea",
+      "name": "terms",
+      "id": "invoice-terms",
+      "placeholder": "Enter Terms & Conditions",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Download",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "127777.com",
+    "bing.com",
+    "doubleclick.net",
+    "go-mpulse.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "jdmagicbox.com",
+    "openai.com"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}

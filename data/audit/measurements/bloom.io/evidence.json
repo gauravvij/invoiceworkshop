@@ -1,0 +1,86 @@
+{
+  "url": "https://bloom.io/invoice-generator",
+  "measured_at": "2026-09-05T09:22:40.270Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://bloom.io/invoice-generator",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator - Bloom",
+  "fillable_fields": 7,
+  "fields_filled": 6,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "invoiceNumber",
+      "id": "_r_6_",
+      "placeholder": "Invoice #",
+      "label": "Invoice Number"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "textarea",
+      "name": "from",
+      "id": "",
+      "placeholder": "From (your name and address)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "textarea",
+      "name": "billTo",
+      "id": "",
+      "placeholder": "Bill to (your customer’s name and address)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "textarea",
+      "name": "items[0].description",
+      "id": "",
+      "placeholder": "Description of service or product",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "items[0].price",
+      "id": "number-input:_r_9_:input",
+      "placeholder": "Price",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "textarea",
+      "name": "notes",
+      "id": "_r_b_",
+      "placeholder": "Enter any additional notes here",
+      "label": "Memo"
+    }
+  ],
+  "action_clicked": "Download FREE PDF",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "amazonaws.com",
+    "cello.so",
+    "cloudflareinsights.com",
+    "facebook.com",
+    "facebook.net",
+    "fullstory.com",
+    "googleapis.com",
+    "gstatic.com"
+  ],
+  "ad_tracker_domains": [
+    "facebook.com",
+    "facebook.net",
+    "fullstory.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": []
+}

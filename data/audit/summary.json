@@ -1,0 +1,24 @@
+{
+  "drawn_on": "2026-09-05",
+  "queries": 18,
+  "tools_in_frame": 45,
+  "third_party_tools": 44,
+  "measurable": 33,
+  "not_measurable": 11,
+  "typed_data_left_the_browser": 8,
+  "sent_to_an_unrelated_company": 2,
+  "sent_only_to_the_tools_own_service": 6,
+  "unrelated_recipients": [
+    "intercom.io",
+    "unifyintent.com"
+  ],
+  "kept_in_the_browser": 25,
+  "editor_behind_an_account": 0,
+  "claimed_local_processing": 4,
+  "claimed_local_but_sent_it_anyway": 0,
+  "pdf_without_an_account": 4,
+  "third_party_domains_median": 11,
+  "third_party_domains_max": 162,
+  "third_party_domains_max_domain": "invoice-generator.com",
+  "csv": "public/research/free-invoice-generator-audit-2026.csv"
+}

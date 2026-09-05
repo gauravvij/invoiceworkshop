@@ -1,0 +1,248 @@
+{
+  "url": "https://www.zoho.com/us/invoice/free-invoice-generator.html",
+  "measured_at": "2026-09-05T09:23:44.223Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.zoho.com/us/invoice/free-invoice-generator.html",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator | Free Invoice Maker | Zoho Invoice",
+  "fillable_fields": 41,
+  "fields_filled": 26,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "title",
+      "id": "title",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "company_name",
+      "id": "address1",
+      "placeholder": "Your Company",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "user_name",
+      "id": "custName",
+      "placeholder": "Your Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "company_address_1",
+      "id": "address2",
+      "placeholder": "Company’s Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "company_address_2",
+      "id": "address3",
+      "placeholder": "City, State Zip",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "company_country",
+      "id": "companyCountry",
+      "placeholder": "Country",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "bill_to_label",
+      "id": "billToLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "customer_name",
+      "id": "billingAddress1",
+      "placeholder": "Your Client’s Company",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "customer_billing_address_1",
+      "id": "billingAddress2",
+      "placeholder": "Client’s Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "customer_billing_address_2",
+      "id": "billingAddress3",
+      "placeholder": "City, State Zip",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "customer_billing_country",
+      "id": "customerCountry",
+      "placeholder": "Country",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "invoice_number_label",
+      "id": "invNumberLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "invoice_number",
+      "id": "invNumber",
+      "placeholder": "INV-12",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "invoice_date_label",
+      "id": "invoiceDateLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "invoice_date",
+      "id": "invoiceDate",
+      "placeholder": "Sep 05, 2026",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "due_date_label",
+      "id": "dueDateLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "text",
+      "name": "due_date",
+      "id": "dueDate",
+      "placeholder": "Sep 05, 2026",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "text",
+      "name": "name",
+      "id": "itemDescLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "quantity",
+      "id": "itemQtyLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF20",
+      "type": "text",
+      "name": "rate",
+      "id": "itemRateLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "text",
+      "name": "tax1",
+      "id": "itemTaxLabel1",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "text",
+      "name": "amount",
+      "id": "itemAmtLabel",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "textarea",
+      "name": "itemDesc.1",
+      "id": "itemDesc.1",
+      "placeholder": "Enter item name/description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF25",
+      "type": "text",
+      "name": "itemRate.1",
+      "id": "itemRate.1",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF27",
+      "type": "textarea",
+      "name": "itemDesc.2",
+      "id": "itemDesc.2",
+      "placeholder": "Enter item name/description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF29",
+      "type": "text",
+      "name": "itemRate.2",
+      "id": "itemRate.2",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Download/Print | Generate Estimates",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "cloudflare.com",
+    "pagesense.io",
+    "zoho.ae",
+    "zoho.com.au",
+    "zoho.eu",
+    "zoho.in",
+    "zoho.jp",
+    "zoho.sa",
+    "zoho.sg",
+    "zohocdn.com",
+    "zohocloud.ca",
+    "zohopublic.in",
+    "zohosalesiq.com",
+    "zohowebstatic.com"
+  ],
+  "ad_tracker_domains": [],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign up",
+  "login_form_present": true,
+  "notes": []
+}

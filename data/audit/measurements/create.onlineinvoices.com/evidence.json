@@ -1,0 +1,274 @@
+{
+  "url": "https://create.onlineinvoices.com/",
+  "measured_at": "2026-09-05T09:27:35.068Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://create.onlineinvoices.com/",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator | Online Invoices",
+  "fillable_fields": 33,
+  "fields_filled": 30,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "div",
+      "name": "",
+      "id": "business_info_editor",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "div",
+      "name": "",
+      "id": "extra_editor",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "label_bill_to",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "div",
+      "name": "",
+      "id": "client_info_editor",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "label_invoice_no",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "no",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "label_date",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "",
+      "id": "date",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "",
+      "id": "label_field1",
+      "placeholder": "[ADD MORE]",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "",
+      "id": "field1_value",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "",
+      "id": "label_field10",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "",
+      "id": "field9_value",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "",
+      "id": "label_description",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "",
+      "id": "label_qty",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "",
+      "id": "label_unit_price",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "",
+      "id": "label_item_subtotal",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "text",
+      "name": "",
+      "id": "label_total",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "text",
+      "name": "",
+      "id": "label_paid",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "",
+      "id": "paid",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF20",
+      "type": "text",
+      "name": "",
+      "id": "label_unpaid",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF24",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF25",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF26",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF27",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF28",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF29",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF30",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Blank invoice template Free Download | Preview / Print",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "google-analytics.com",
+    "googleapis.com",
+    "googletagmanager.com"
+  ],
+  "ad_tracker_domains": [
+    "google-analytics.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": [
+    "clicked \"Create Your Invoice Now Free Invoice Gen\" to reach the editor"
+  ]
+}

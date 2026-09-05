@@ -1,0 +1,62 @@
+{
+  "url": "https://www.pinebill.app/tools/invoice-generator",
+  "measured_at": "2026-09-05T09:24:56.258Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.pinebill.app/tools/invoice-generator",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator | Create an Invoice Online",
+  "fillable_fields": 7,
+  "fields_filled": 2,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Product name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Model/SKU",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Download PDF",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "amazonaws.com",
+    "bunny.net",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googleadservices.com",
+    "googletagmanager.com",
+    "on.aws"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googleadservices.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": true,
+  "download_name": "Invoice-INV-298273-721.pdf",
+  "signup_wall_text": "Start Free Trial",
+  "login_form_present": false,
+  "notes": []
+}

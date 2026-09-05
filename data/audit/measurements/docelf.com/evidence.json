@@ -1,0 +1,91 @@
+{
+  "url": "https://docelf.com/invoice-generator",
+  "measured_at": "2026-09-05T09:25:17.965Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://docelf.com/invoice-generator",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator | Create Invoices Online",
+  "fillable_fields": 6,
+  "fields_filled": 6,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "invoice_number",
+      "id": "invoice_number",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "profile_name",
+      "id": "profile_name",
+      "placeholder": "Your Company Inc.",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "textarea",
+      "name": "profile_address",
+      "id": "profile_address",
+      "placeholder": "1234 Company St.\nCompany Town ST 12345",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "contact_name",
+      "id": "contact_name",
+      "placeholder": "Customer Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "textarea",
+      "name": "contact_address",
+      "id": "contact_address",
+      "placeholder": "1234 Customer St.\nCustomer Town ST 12345",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "div",
+      "name": "",
+      "id": "notes_displayed",
+      "placeholder": "",
+      "label": "Notes"
+    }
+  ],
+  "action_clicked": "Preview",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "bing.com",
+    "cloudflareinsights.com",
+    "doubleclick.net",
+    "fontawesome.com",
+    "google.co.in",
+    "google.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "jquery.com",
+    "jsdelivr.net"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Start Free Trial",
+  "login_form_present": true,
+  "notes": []
+}

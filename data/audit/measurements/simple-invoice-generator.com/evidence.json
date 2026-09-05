@@ -1,0 +1,249 @@
+{
+  "url": "https://simple-invoice-generator.com/",
+  "measured_at": "2026-09-05T09:42:59.542Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://simple-invoice-generator.com/",
+  "http_status": 200,
+  "page_title": "Simple Invoice Generator | Free PDF Invoices Online",
+  "fillable_fields": 33,
+  "fields_filled": 26,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "type",
+      "id": "",
+      "placeholder": "Type",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Invoice Number",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Value",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Date",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Due Date",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "From",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "textarea",
+      "name": "from",
+      "id": "",
+      "placeholder": "Who is this invoice from? (required)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Bill To",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "textarea",
+      "name": "billTo",
+      "id": "",
+      "placeholder": "Customer or company you are invoicing (required)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Ship To",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "textarea",
+      "name": "shipTo",
+      "id": "",
+      "placeholder": "Only if delivery goes somewhere else",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Line items column label"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Quantity column label"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Rate column label"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "Amount column label"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Item name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Notes",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "textarea",
+      "name": "notes",
+      "id": "",
+      "placeholder": "Notes - any relevant information not already covered",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Terms",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF24",
+      "type": "textarea",
+      "name": "terms",
+      "id": "",
+      "placeholder": "Terms and conditions - late fees, payment methods , delivery schedule",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF25",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF26",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF28",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF30",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    }
+  ],
+  "action_clicked": "Download / Print | Create invoice",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "cloudflareinsights.com",
+    "doubleclick.net",
+    "flagcdn.com",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googleadservices.com",
+    "googletagmanager.com"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googleadservices.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}

@@ -1,0 +1,202 @@
+{
+  "url": "https://portal.billgenerator.in/hotel-bill",
+  "measured_at": "2026-09-05T10:00:47.307Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://portal.billgenerator.in/hotel-bill",
+  "http_status": 200,
+  "page_title": "Hotel Stay Bill & Room Invoice | Bill Generator",
+  "fillable_fields": 19,
+  "fields_filled": 15,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "hotel_name",
+      "placeholder": "Hotel Name",
+      "label": "Hotel Name*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "textarea",
+      "name": "",
+      "id": "hotel_address",
+      "placeholder": "Hotel Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "bill_no",
+      "placeholder": "Bill no",
+      "label": "Bill no*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "",
+      "id": "nationality",
+      "placeholder": "Nationality",
+      "label": "Nationality"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "room_no",
+      "placeholder": "Room no",
+      "label": "Room no*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "room_type",
+      "placeholder": "Room type",
+      "label": "Room Type*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "cin",
+      "placeholder": "Enter CIN",
+      "label": "Enter CIN"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "url",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter logo URL (e.g., https://example.com/image.png)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Room description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "url",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter receptionist signature URL (e.g., https://example.com/image.png)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "",
+      "id": "cust_name",
+      "placeholder": "Guest Name",
+      "label": "Guest Name*"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "",
+      "id": "age",
+      "placeholder": "Age",
+      "label": "Age"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "textarea",
+      "name": "",
+      "id": "cust_address",
+      "placeholder": "Guest Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "url",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter customer signature URL (e.g., https://example.com/image.png)",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "",
+      "id": "filename",
+      "placeholder": "Enter File Name",
+      "label": "Download File Name"
+    }
+  ],
+  "action_clicked": "Login to Generate PDF",
+  "canary_left_the_browser": true,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [
+    {
+      "domain": "billgenerator.in",
+      "method": "GET",
+      "url": "https://portal.billgenerator.in/AUDITCANARY7Q3XF8",
+      "where": "url",
+      "first_party": true
+    }
+  ],
+  "leaked_fields": [
+    {
+      "type": "url",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter logo URL (e.g., https://example.com/image.png)",
+      "label": "",
+      "sent_to": "billgenerator.in",
+      "first_party": true
+    },
+    {
+      "type": "url",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter receptionist signature URL (e.g., https://example.com/image.png)",
+      "label": "",
+      "sent_to": "billgenerator.in",
+      "first_party": true
+    },
+    {
+      "type": "url",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter customer signature URL (e.g., https://example.com/image.png)",
+      "label": "",
+      "sent_to": "billgenerator.in",
+      "first_party": true
+    }
+  ],
+  "third_party_domains": [
+    "amazonaws.com",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google.co.in",
+    "google.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "hotjar.com",
+    "hotjar.io",
+    "logto.io",
+    "tawk.to",
+    "web.app"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "googletagmanager.com",
+    "hotjar.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}

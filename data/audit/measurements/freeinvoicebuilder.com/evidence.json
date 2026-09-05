@@ -1,0 +1,26 @@
+{
+  "url": "https://freeinvoicebuilder.com/uk-invoice-template/",
+  "measured_at": "2026-09-05T09:54:14.749Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://freeinvoicebuilder.com/uk-invoice-template/",
+  "http_status": 200,
+  "page_title": "",
+  "fillable_fields": 0,
+  "fields_filled": 0,
+  "field_map": [],
+  "action_clicked": null,
+  "canary_left_the_browser": null,
+  "canary_left_to_third_party": null,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [],
+  "ad_tracker_domains": [],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": [
+    "no editable invoice fields were reachable on this page"
+  ]
+}

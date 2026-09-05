@@ -1,0 +1,45 @@
+{
+  "url": "https://www.refrens.com/en/free-online-invoice-generator",
+  "measured_at": "2026-09-05T09:53:32.935Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.refrens.com/en/free-online-invoice-generator",
+  "http_status": 200,
+  "page_title": "Free Online Invoice Generator - Online Invoicing",
+  "fillable_fields": 0,
+  "fields_filled": 0,
+  "field_map": [],
+  "action_clicked": null,
+  "canary_left_the_browser": null,
+  "canary_left_to_third_party": null,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "bing.com",
+    "clarity.ms",
+    "cloudfront.net",
+    "crisp.chat",
+    "doubleclick.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "sentry.io"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "clarity.ms",
+    "doubleclick.net",
+    "google-analytics.com",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Signup",
+  "login_form_present": false,
+  "notes": [
+    "no editable invoice fields were reachable on this page"
+  ]
+}

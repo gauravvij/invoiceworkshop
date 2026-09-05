@@ -1,0 +1,190 @@
+{
+  "url": "https://www.xolo.io/zz-en/free-invoice-generator/sales",
+  "measured_at": "2026-09-05T09:31:19.136Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.xolo.io/zz-en/free-invoice-generator/sales",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator for Freelancers | Create Invoices Easily with Xolo",
+  "fillable_fields": 14,
+  "fields_filled": 14,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "textarea",
+      "name": "companyInfo",
+      "id": "company-info",
+      "placeholder": "Enter your company name, registration number, and VAT ID here",
+      "label": "From"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "textarea",
+      "name": "customerInfo",
+      "id": "customer-info",
+      "placeholder": "Enter your clients company name, registration number, and VAT ID here",
+      "label": "Bill to"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "invoiceNumber",
+      "id": "invoice-number",
+      "placeholder": "",
+      "label": "Invoice number"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "interest",
+      "id": "invoice-interest",
+      "placeholder": "",
+      "label": "Interest"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "invoiceDate",
+      "id": "invoice-date",
+      "placeholder": "",
+      "label": "Invoice date"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "dueDate",
+      "id": "invoice-due-date",
+      "placeholder": "",
+      "label": "Due date"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "items[0].description",
+      "id": "",
+      "placeholder": "Enter item name/description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "items[0].quantity",
+      "id": "quantity",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "items[0].price",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "items[0].discountPercentage",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "textarea",
+      "name": "additionalNotes",
+      "id": "additional-notes",
+      "placeholder": "Some additional comments here",
+      "label": "Additional notes"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "textarea",
+      "name": "bankAccountDetails",
+      "id": "bank-account-details",
+      "placeholder": "",
+      "label": "Your bank account details"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "tax",
+      "id": "invoice-tax",
+      "placeholder": "",
+      "label": "Tax"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "roundingAmount",
+      "id": "invoice-rounding-amount",
+      "placeholder": "",
+      "label": "Rounding amount"
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": true,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [
+    {
+      "domain": "xolo.io",
+      "method": "POST",
+      "url": "https://www.xolo.io/zz-en/free-invoice-generator/sales/recalculate",
+      "where": "request body",
+      "first_party": true
+    }
+  ],
+  "leaked_fields": [
+    {
+      "type": "text",
+      "name": "items[0].quantity",
+      "id": "quantity",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "xolo.io"
+    },
+    {
+      "type": "text",
+      "name": "items[0].price",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "xolo.io"
+    },
+    {
+      "type": "text",
+      "name": "items[0].discountPercentage",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "xolo.io"
+    },
+    {
+      "type": "text",
+      "name": "tax",
+      "id": "invoice-tax",
+      "placeholder": "",
+      "label": "Tax",
+      "sent_to": "xolo.io"
+    },
+    {
+      "type": "text",
+      "name": "roundingAmount",
+      "id": "invoice-rounding-amount",
+      "placeholder": "",
+      "label": "Rounding amount",
+      "sent_to": "xolo.io"
+    }
+  ],
+  "third_party_domains": [
+    "cdn-cookieyes.com",
+    "cookieyes.com",
+    "visualwebsiteoptimizer.com"
+  ],
+  "ad_tracker_domains": [],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign up",
+  "login_form_present": false,
+  "notes": []
+}

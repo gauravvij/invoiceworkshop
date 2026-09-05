@@ -1,0 +1,222 @@
+{
+  "url": "https://www.flowlu.com/tools/invoice-generator/",
+  "measured_at": "2026-09-05T09:26:29.799Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.flowlu.com/tools/invoice-generator/",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator | Create & Download Invoices Fast 🧾",
+  "fillable_fields": 24,
+  "fields_filled": 22,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "issueDate",
+      "id": "issueDate",
+      "placeholder": "09/01/2026",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "dueDate",
+      "id": "dueDate",
+      "placeholder": "09/01/2026",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "orderNumber",
+      "id": "orderNumber",
+      "placeholder": "0001",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "invoiceTitle",
+      "id": "invoiceTitle",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "companyFromName",
+      "id": "",
+      "placeholder": "Company name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "textarea",
+      "name": "companyFromAddress",
+      "id": "",
+      "placeholder": "Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "textarea",
+      "name": "cityStateZIPFrom",
+      "id": "",
+      "placeholder": "City, State, ZIP",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "fromCountry",
+      "id": "fromCountry",
+      "placeholder": "Country",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "tel",
+      "name": "phoneFrom",
+      "id": "",
+      "placeholder": "Phone",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "tel",
+      "name": "vatFrom",
+      "id": "",
+      "placeholder": "VAT",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "companyToName",
+      "id": "",
+      "placeholder": "Company name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "textarea",
+      "name": "companyToAddress",
+      "id": "",
+      "placeholder": "Address",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "textarea",
+      "name": "cityStateZIPTo",
+      "id": "",
+      "placeholder": "City, State, ZIP",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "toCountry",
+      "id": "toCountry",
+      "placeholder": "Country",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "tel",
+      "name": "phoneTo",
+      "id": "",
+      "placeholder": "Phone",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "tel",
+      "name": "vatTo",
+      "id": "",
+      "placeholder": "VAT",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "textarea",
+      "name": "items[0][name]",
+      "id": "",
+      "placeholder": "Item name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "textarea",
+      "name": "items[0][description]",
+      "id": "",
+      "placeholder": "Description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "text",
+      "name": "invoiceBalance",
+      "id": "invoiceBalance",
+      "placeholder": "0.00",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "textarea",
+      "name": "invoiceNote",
+      "id": "",
+      "placeholder": "Add Note",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "textarea",
+      "name": "invoiceTerms",
+      "id": "",
+      "placeholder": "Add Terms",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF24",
+      "type": "text",
+      "name": "email",
+      "id": "",
+      "placeholder": "Email",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "ahrefs.com",
+    "bing.com",
+    "clarity.ms",
+    "cloudflareinsights.com",
+    "doubleclick.net",
+    "firstpromoter.com",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "intercom.io",
+    "intercomcdn.com",
+    "yadro.ru"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "clarity.ms",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "intercom.io"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}

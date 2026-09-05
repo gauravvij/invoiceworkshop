@@ -1,0 +1,113 @@
+{
+  "url": "https://rtcsuite.com/e-invoicing-spain/",
+  "measured_at": "2026-09-05T09:38:41.011Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://rtcsuite.com/e-invoicing-spain/",
+  "http_status": 200,
+  "page_title": "e-Invoicing in Spain: B2B, B2G and B2C Complete Guide ",
+  "fillable_fields": 9,
+  "fields_filled": 9,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "textarea",
+      "name": "comment",
+      "id": "comment",
+      "placeholder": "",
+      "label": "Comment *"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "author",
+      "id": "author",
+      "placeholder": "",
+      "label": "Name *"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "email",
+      "name": "email",
+      "id": "email",
+      "placeholder": "",
+      "label": "Email *"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "url",
+      "name": "url",
+      "id": "url",
+      "placeholder": "",
+      "label": "Website"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "s",
+      "id": "",
+      "placeholder": "Type and hit enter",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "1069332_633489pi_1069332_633489",
+      "id": "1069332_633489pi_1069332_633489",
+      "placeholder": "",
+      "label": "First Name *"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "1069332_633492pi_1069332_633492",
+      "id": "1069332_633492pi_1069332_633492",
+      "placeholder": "",
+      "label": "Last Name *"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "1069332_633495pi_1069332_633495",
+      "id": "1069332_633495pi_1069332_633495",
+      "placeholder": "",
+      "label": "Business Email *"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "1069332_633498pi_1069332_633498",
+      "id": "1069332_633498pi_1069332_633498",
+      "placeholder": "",
+      "label": "Company *"
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "licdn.com",
+    "linkedin.com"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "licdn.com",
+    "linkedin.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": []
+}

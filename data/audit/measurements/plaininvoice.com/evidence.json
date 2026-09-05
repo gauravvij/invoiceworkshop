@@ -1,0 +1,130 @@
+{
+  "url": "https://plaininvoice.com/",
+  "measured_at": "2026-09-05T09:51:04.130Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://plaininvoice.com/",
+  "http_status": 200,
+  "page_title": "PlainInvoice - Free Invoice Generator, No Signup Required",
+  "fillable_fields": 7,
+  "fields_filled": 5,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "fromName",
+      "placeholder": "",
+      "label": "Name"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "",
+      "id": "toName",
+      "placeholder": "",
+      "label": "Client Name"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "textarea",
+      "name": "",
+      "id": "comments",
+      "placeholder": "",
+      "label": "Comments"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "textarea",
+      "name": "",
+      "id": "footerText",
+      "placeholder": "",
+      "label": "Footer Text"
+    }
+  ],
+  "action_clicked": "Download PDF",
+  "canary_left_the_browser": true,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [
+    {
+      "domain": "plaininvoice.com",
+      "method": "POST",
+      "url": "https://plaininvoice.com/livewire-6d741352/update",
+      "where": "request body",
+      "first_party": true
+    }
+  ],
+  "leaked_fields": [
+    {
+      "type": "text",
+      "name": "",
+      "id": "fromName",
+      "placeholder": "",
+      "label": "Name",
+      "sent_to": "plaininvoice.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "",
+      "id": "toName",
+      "placeholder": "",
+      "label": "Client Name",
+      "sent_to": "plaininvoice.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": "",
+      "sent_to": "plaininvoice.com",
+      "first_party": true
+    },
+    {
+      "type": "textarea",
+      "name": "",
+      "id": "comments",
+      "placeholder": "",
+      "label": "Comments",
+      "sent_to": "plaininvoice.com",
+      "first_party": true
+    },
+    {
+      "type": "textarea",
+      "name": "",
+      "id": "footerText",
+      "placeholder": "",
+      "label": "Footer Text",
+      "sent_to": "plaininvoice.com",
+      "first_party": true
+    }
+  ],
+  "third_party_domains": [
+    "bunny.net",
+    "cloudflareinsights.com",
+    "dododirectory.com",
+    "easylaunch.dev",
+    "huzzler.so",
+    "nicklaunches.com",
+    "twelve.tools",
+    "usefathom.com",
+    "verifieddr.com",
+    "wired.business"
+  ],
+  "ad_tracker_domains": [],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign up",
+  "login_form_present": false,
+  "notes": []
+}

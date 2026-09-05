@@ -1,0 +1,150 @@
+{
+  "url": "https://wise.com/us/invoice-generator",
+  "measured_at": "2026-09-05T09:23:03.919Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://wise.com/us/invoice-generator/",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator | How to Create an Invoice Online - Wise",
+  "fillable_fields": 12,
+  "fields_filled": 12,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "invoice-number",
+      "placeholder": "",
+      "label": "Invoice number"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "",
+      "id": "purchase-order",
+      "placeholder": "",
+      "label": "Purchase order"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "textarea",
+      "name": "",
+      "id": "company-details",
+      "placeholder": "",
+      "label": "Your company details"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "textarea",
+      "name": "",
+      "id": "client-details",
+      "placeholder": "",
+      "label": "Bill to"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "desc-item-1788600186565",
+      "placeholder": "",
+      "label": "Item description"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "",
+      "id": "rate-item-1788600186565",
+      "placeholder": "",
+      "label": "Unit cost"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "quantity-item-1788600186565",
+      "placeholder": "",
+      "label": "Quantity"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "textarea",
+      "name": "",
+      "id": "terms",
+      "placeholder": "Payment is due within 15 days",
+      "label": "Notes / payment terms"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "textarea",
+      "name": "",
+      "id": "bank-details",
+      "placeholder": "",
+      "label": "Bank account details"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "text",
+      "name": "",
+      "id": "tax-percent",
+      "placeholder": "",
+      "label": "Tax %"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "",
+      "id": "discount",
+      "placeholder": "",
+      "label": "Discount ($)"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "",
+      "id": "shipping-fee",
+      "placeholder": "",
+      "label": "Shipping fee"
+    }
+  ],
+  "action_clicked": "Create the invoice",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "adalyser.com",
+    "adnxs.com",
+    "adsrvr.org",
+    "bidr.io",
+    "bidswitch.net",
+    "bing.com",
+    "bing.net",
+    "casalemedia.com",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "mixpanel.com",
+    "mxpnl.com",
+    "pubmatic.com",
+    "reddit.com",
+    "redditstatic.com",
+    "rubiconproject.com",
+    "slim02.jp",
+    "tvsquared.com",
+    "yahoo.co.jp",
+    "yimg.jp"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "doubleclick.net",
+    "google.com",
+    "googletagmanager.com",
+    "mixpanel.com"
+  ],
+  "pdf_downloaded": true,
+  "download_name": "Invoice.pdf",
+  "signup_wall_text": "Sign up",
+  "login_form_present": false,
+  "notes": []
+}

@@ -1,0 +1,235 @@
+{
+  "url": "https://sbent.tech/free-invoice-generator",
+  "measured_at": "2026-09-05T09:42:01.455Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://sbent.tech/free-invoice-generator",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator Online | Create, Save & Download Invoices | SBENT",
+  "fillable_fields": 25,
+  "fields_filled": 25,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "text",
+      "name": "",
+      "id": "businessName",
+      "placeholder": "Your business name",
+      "label": "BUSINESS NAME"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "email",
+      "name": "",
+      "id": "businessEmail",
+      "placeholder": "billing@example.com",
+      "label": "BUSINESS EMAIL"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "businessPhone",
+      "placeholder": "+233 00 000 0000",
+      "label": "PHONE NUMBER"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "",
+      "id": "businessWebsite",
+      "placeholder": "https://example.com",
+      "label": "WEBSITE"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "businessTax",
+      "placeholder": "TIN, VAT, RC, or registration ID",
+      "label": "TAX OR REGISTRATION NUMBER"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "textarea",
+      "name": "",
+      "id": "businessAddress",
+      "placeholder": "Street, city, country",
+      "label": "BUSINESS ADDRESS"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "customerName",
+      "placeholder": "Client company",
+      "label": "CUSTOMER OR COMPANY NAME"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "email",
+      "name": "",
+      "id": "customerEmail",
+      "placeholder": "client@example.com",
+      "label": "CUSTOMER EMAIL"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF9",
+      "type": "text",
+      "name": "",
+      "id": "customerPhone",
+      "placeholder": "+233 00 000 0000",
+      "label": "CUSTOMER PHONE"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF10",
+      "type": "textarea",
+      "name": "",
+      "id": "customerAddress",
+      "placeholder": "Billing address",
+      "label": "CUSTOMER ADDRESS"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "text",
+      "name": "",
+      "id": "invoiceNumber",
+      "placeholder": "INV-2026-0001",
+      "label": "INVOICE NUMBER"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF12",
+      "type": "text",
+      "name": "",
+      "id": "paymentTerms",
+      "placeholder": "Due on receipt, Net 7, Net 14",
+      "label": "PAYMENT TERMS"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF13",
+      "type": "text",
+      "name": "",
+      "id": "reference",
+      "placeholder": "PO-0001",
+      "label": "REFERENCE OR PO NUMBER"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF14",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Service or product",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF15",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "1",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF16",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "0.00",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF17",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "0.00",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF18",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "0",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF19",
+      "type": "text",
+      "name": "",
+      "id": "additionalDiscount",
+      "placeholder": "0.00",
+      "label": "ADDITIONAL DISCOUNT"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF20",
+      "type": "text",
+      "name": "",
+      "id": "shipping",
+      "placeholder": "0.00",
+      "label": "SHIPPING OR ADDITIONAL CHARGE"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF21",
+      "type": "text",
+      "name": "",
+      "id": "amountPaid",
+      "placeholder": "0.00",
+      "label": "AMOUNT PAID"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF22",
+      "type": "textarea",
+      "name": "",
+      "id": "notes",
+      "placeholder": "Optional notes for your customer",
+      "label": "NOTES"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF23",
+      "type": "textarea",
+      "name": "",
+      "id": "paymentInstructions",
+      "placeholder": "Payment method, due instructions, or account holder name",
+      "label": "PAYMENT INSTRUCTIONS"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF24",
+      "type": "textarea",
+      "name": "",
+      "id": "bankDetails",
+      "placeholder": "Bank account, mobile money number, wallet, or payment link",
+      "label": "BANK OR MOBILE MONEY DETAILS"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF25",
+      "type": "textarea",
+      "name": "",
+      "id": "terms",
+      "placeholder": "Optional terms, refund policy, or late payment conditions",
+      "label": "TERMS AND CONDITIONS"
+    }
+  ],
+  "action_clicked": "Generate Invoice | Save Draft",
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "cloudflareinsights.com",
+    "google-analytics.com",
+    "googleapis.com",
+    "googletagmanager.com",
+    "gstatic.com",
+    "tailwindcss.com"
+  ],
+  "ad_tracker_domains": [
+    "google-analytics.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}

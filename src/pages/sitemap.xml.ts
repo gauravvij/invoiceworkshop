@@ -8,7 +8,7 @@ import { generators } from '@/content/generators';
  * e2e suite asserts every canonical page appears here, and that check is what
  * makes the hand-maintained half safe.
  */
-const standalonePaths = ['/progress-draw-schedule/'];
+const standalonePaths = ['/progress-draw-schedule/', '/research/free-invoice-generator-audit-2026/'];
 const staticPaths = ['/about/', '/privacy/', '/terms/', '/contact/'];
 
 export const GET: APIRoute = () => {

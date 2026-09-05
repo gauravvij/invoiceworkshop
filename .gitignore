@@ -33,3 +33,10 @@ data/reports/
 data/plans/
 data/research-batches/
 task_brief_cc*.md
+
+# Audit evidence: the JSON is the record and is committed. The screenshots,
+# captured PDFs and raw request logs are megabytes of re-derivable artefacts
+# that live on the machine that ran the measurement.
+data/audit/measurements/*/screenshot.png
+data/audit/measurements/*/requests.json
+data/audit/measurements/*/download-*

@@ -1,0 +1,162 @@
+{
+  "url": "https://invoicehome.com/",
+  "measured_at": "2026-09-05T09:51:41.996Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://invoicehome.com/",
+  "http_status": 200,
+  "page_title": "100 Free Invoice Templates | Print & Email Invoices",
+  "fillable_fields": 7,
+  "fields_filled": 7,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "textarea",
+      "name": "invoice[from]",
+      "id": "invoice_from",
+      "placeholder": "Your Company or Name\nAddress",
+      "label": "From"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "textarea",
+      "name": "invoice[billing]",
+      "id": "invoice_billing",
+      "placeholder": "Your customer's billing address",
+      "label": "Bill To"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "invoice[number]",
+      "id": "invoice_number",
+      "placeholder": "Invoice Number",
+      "label": "Invoice #"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "invoice[date_issued_string]",
+      "id": "invoice_date_issued_string",
+      "placeholder": "dd/mm/yy",
+      "label": "Invoice Date"
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "textarea",
+      "name": "invoice[items_attributes][0][description]",
+      "id": "invoice_items_attributes_0_description",
+      "placeholder": "Description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "text",
+      "name": "invoice[items_attributes][0][amount]",
+      "id": "invoice_items_attributes_0_amount",
+      "placeholder": "Amount",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "textarea",
+      "name": "invoice[footer_1]",
+      "id": "invoice_footer_1",
+      "placeholder": "Optional",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": true,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [
+    {
+      "domain": "invoicehome.com",
+      "method": "POST",
+      "url": "https://invoicehome.com/invoices/208533619",
+      "where": "request body",
+      "first_party": true
+    }
+  ],
+  "leaked_fields": [
+    {
+      "type": "textarea",
+      "name": "invoice[from]",
+      "id": "invoice_from",
+      "placeholder": "Your Company or Name\nAddress",
+      "label": "From",
+      "sent_to": "invoicehome.com",
+      "first_party": true
+    },
+    {
+      "type": "textarea",
+      "name": "invoice[billing]",
+      "id": "invoice_billing",
+      "placeholder": "Your customer's billing address",
+      "label": "Bill To",
+      "sent_to": "invoicehome.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "invoice[number]",
+      "id": "invoice_number",
+      "placeholder": "Invoice Number",
+      "label": "Invoice #",
+      "sent_to": "invoicehome.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "invoice[date_issued_string]",
+      "id": "invoice_date_issued_string",
+      "placeholder": "dd/mm/yy",
+      "label": "Invoice Date",
+      "sent_to": "invoicehome.com",
+      "first_party": true
+    },
+    {
+      "type": "textarea",
+      "name": "invoice[items_attributes][0][description]",
+      "id": "invoice_items_attributes_0_description",
+      "placeholder": "Description",
+      "label": "",
+      "sent_to": "invoicehome.com",
+      "first_party": true
+    },
+    {
+      "type": "text",
+      "name": "invoice[items_attributes][0][amount]",
+      "id": "invoice_items_attributes_0_amount",
+      "placeholder": "Amount",
+      "label": "",
+      "sent_to": "invoicehome.com",
+      "first_party": true
+    }
+  ],
+  "third_party_domains": [
+    "bing.com",
+    "clarity.ms",
+    "cloudfront.net",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "hcaptcha.com"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "clarity.ms",
+    "doubleclick.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": [
+    "clicked \"Create Invoice\" to reach the editor"
+  ]
+}

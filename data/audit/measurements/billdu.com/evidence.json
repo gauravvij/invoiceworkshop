@@ -1,0 +1,35 @@
+{
+  "url": "https://www.billdu.com/free-invoice-generator-uk/",
+  "measured_at": "2026-09-05T09:53:53.435Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.billdu.com/free-invoice-generator-uk/",
+  "http_status": 200,
+  "page_title": "Free Online PDF Invoice Generator UK - Ready in a Few Clicks",
+  "fillable_fields": 0,
+  "fields_filled": 0,
+  "field_map": [],
+  "action_clicked": null,
+  "canary_left_the_browser": null,
+  "canary_left_to_third_party": null,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "doubleclick.net",
+    "google.com",
+    "googletagmanager.com",
+    "smartlook.com"
+  ],
+  "ad_tracker_domains": [
+    "doubleclick.net",
+    "google.com",
+    "googletagmanager.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": null,
+  "login_form_present": false,
+  "notes": [
+    "no editable invoice fields were reachable on this page"
+  ]
+}

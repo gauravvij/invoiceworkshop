@@ -1,0 +1,138 @@
+{
+  "url": "https://www.helcim.com/free-invoice-generator/",
+  "measured_at": "2026-09-05T09:43:33.438Z",
+  "canary": "AUDITCANARY7Q3X",
+  "reachable": true,
+  "final_url": "https://www.helcim.com/free-invoice-generator/",
+  "http_status": 200,
+  "page_title": "Free Invoice Generator - Create & Download Invoices Online",
+  "fillable_fields": 11,
+  "fields_filled": 9,
+  "field_map": [
+    {
+      "token": "AUDITCANARY7Q3XF1",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Your Business Address, City, State/Province, Zip Code\nTelephone or Email",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF2",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Invoice #",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF3",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF4",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF5",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "—",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF6",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Your Customer's Name\nBilling Address\nCity, State/Province, Zip Code, Country\nTelephone or Email",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF7",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Product/Service Name",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF8",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Item Description",
+      "label": ""
+    },
+    {
+      "token": "AUDITCANARY7Q3XF11",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Enter comments here or leave blank...",
+      "label": ""
+    }
+  ],
+  "action_clicked": null,
+  "canary_left_the_browser": false,
+  "canary_left_to_third_party": false,
+  "canary_destinations": [],
+  "leaked_fields": [],
+  "third_party_domains": [
+    "ahrefs.com",
+    "amazonaws.com",
+    "bing.com",
+    "clarity.ms",
+    "cloudflare.com",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "g2.com",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "hs-analytics.net",
+    "hs-banner.com",
+    "hs-scripts.com",
+    "hsadspixel.net",
+    "hscollectedforms.net",
+    "hsforms.com",
+    "hubapi.com",
+    "hubspot.com",
+    "on.aws",
+    "reddit.com",
+    "redditstatic.com",
+    "s10h.io",
+    "tiktok.com",
+    "tiktokw.us",
+    "trustpilot.com",
+    "wingify.net"
+  ],
+  "ad_tracker_domains": [
+    "bing.com",
+    "clarity.ms",
+    "doubleclick.net",
+    "facebook.com",
+    "facebook.net",
+    "google.co.in",
+    "google.com",
+    "googletagmanager.com",
+    "hs-scripts.com",
+    "hubspot.com",
+    "tiktok.com"
+  ],
+  "pdf_downloaded": false,
+  "download_name": null,
+  "signup_wall_text": "Sign Up",
+  "login_form_present": false,
+  "notes": []
+}
