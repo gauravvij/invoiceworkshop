@@ -878,6 +878,7 @@ WATCH_PAGES = {
     "launchpedia": "https://launchpedia.co/?s=invoice+workshop",
     "toolpromote": "https://toolpromote.com/tools/invoiceworkshop",
     "bsdirectory": "https://directory.project-bs.com/products/invoiceworkshop",
+    "launchfree": "https://launchfree.io/listings/invoiceworkshop.html",
 }
 
 # Where to go looking when the detail URL above is a guess at the slug and the
@@ -887,6 +888,7 @@ WATCH_PAGES = {
 WATCH_INDEXES = {
     "toolpromote": "https://toolpromote.com/tools",
     "bsdirectory": "https://directory.project-bs.com/products",
+    "launchfree": "https://launchfree.io/directory.html",
 }
 
 # An internal link on the index page that names us. The link to our own domain
